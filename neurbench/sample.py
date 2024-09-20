@@ -40,6 +40,8 @@ def sample_from_distribution(distribution: List[float], values: list, num_sample
                 sampled_values[i] = sample_rng.uniform(v.left, v.right)
             elif isinstance(v.left, int):
                 sampled_values[i] = sample_rng.integers(v.left, v.right)
+            elif isinstance(v.left, np.integer):
+                sampled_values[i] = sample_rng.integers(int(v.left), int(v.right))
             else:
                 raise ValueError(f"Unsupported value type: {type(v.left)}")
 

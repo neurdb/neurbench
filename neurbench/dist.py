@@ -9,7 +9,17 @@ def categorical_dist(series: pd.Series):
 
 def numerical_dist(series: pd.Series, n_bins: int):
     """get the distribution of numerical values, put them into n_bins bins"""
-    return series.value_counts(bins=n_bins, normalize=True)
+    # if series values are integers, return bins of integers
+    if all(isinstance(x, int) for x in series):
+        print("all values are integers")
+        edges = np.linspace(series.min(), series.max(), n_bins+1).astype(int)
+        labels = [edges[i+1] for i in range(n_bins)]
+        result = pd.cut(series, bins=labels, precision=0, include_lowest=True).value_counts(normalize=True)
+        # result.index = result.index.map(lambda x: pd.Interval(round(x.left), round(x.right))).
+        
+        return result
+    else:
+        return series.value_counts(bins=n_bins, normalize=True)
 
 
 def numerical_dist_on_predefined_bins(series: pd.Series, bins: list):

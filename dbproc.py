@@ -39,6 +39,7 @@ class NumericalDistributionHelpers:
             raise ValueError("n_bins is required for numerical columns")
 
         d = dist.numerical_dist(self._series, n_bins=self._n_bins)
+        print(d)
         return d
 
     @property
@@ -157,16 +158,14 @@ class TableProcessor:
                 continue
 
             i = str(i)
-            
-            # check if the column contains numerical values
+
             d = self._get_dist(self.df[i])
-            # print(d)
+            print(d)
 
             self.dists[str(self.df[i].name)] = d
 
     def dump_config(self):
-        with open(self.config_path, "w") as f:
-            f.write(json.dumps(self.config, indent=4))
+        fileop.dump_json(self.config, self.config_path)
 
     def _get_dist(self, series):
         if self.config:
