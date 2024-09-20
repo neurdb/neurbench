@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # TPC-H generate data
-/tpch-kit/**/*.tbl
+*.tbl
 /tpch-kit/ref_data/
 
 # Generated config files

@@ -2,15 +2,12 @@ import argparse
 from functools import cached_property
 import json
 import os
-from typing import Optional
+from typing import List, Optional
 
-import numpy as np
 import pandas as pd
-import config
-import dist
-from drift import find_q, jensenshannon
-from util import formatted_list
-import deterministic
+from neurbench import config, dist, deterministic, sample, fileop
+from neurbench.drift import find_q, jensenshannon
+from neurbench.util import formatted_list
 
 deterministic.seed_everything(42)
 
@@ -115,6 +112,7 @@ class TableProcessor:
         output_path: str,
         config_path: str,
         n_bins: int,
+        skewed: int,
     ):
         # TODO: Support other databases than TPC-H
         self.dbname = dbname
@@ -123,11 +121,17 @@ class TableProcessor:
         self.output_path = output_path
         self.config_path = config_path
         self.n_bins = n_bins
+        self.skewed = skewed
 
         self.applicable_columns_list = config.TPCH_DB_APPLICABLE_COLUMNS[table]
         self.predefined_bins = None
         self.config = {}
         self.dists = {}
+        self.new_data = {}
+
+        self.load_bin_values()
+        self.df = self.load_data()
+        self.compute_dists()
 
     def load_bin_values(self):
         if not os.path.exists(self.config_path):
@@ -139,19 +143,26 @@ class TableProcessor:
         except:
             print("WARN  Invalid config. ignoring.")
 
-    def load_data(self):
-        with open(self.input_path, "r") as f:
-            df = pd.read_csv(f, sep="|", header=None)
+        print("config loaded from: ", self.config_path)
 
+    def load_data(self):
+        df = pd.read_csv(self.input_path, sep="|", header=None)
+        df.columns = df.columns.astype(str)
+        
+        return df
+
+    def compute_dists(self):
         for i in range(len(self.applicable_columns_list)):
             if not self.applicable_columns_list[i]:
                 continue
 
+            i = str(i)
+            
             # check if the column contains numerical values
-            d = self._get_dist(df[i])
-            print(d)
+            d = self._get_dist(self.df[i])
+            # print(d)
 
-            self.dists[str(df[i].name)] = d
+            self.dists[str(self.df[i].name)] = d
 
     def dump_config(self):
         with open(self.config_path, "w") as f:
@@ -170,16 +181,28 @@ class TableProcessor:
 
     def apply_drift(self, drift: float):
         for k in self.dists.keys():
-            p = self.dists[k].get().values
-            q = find_q(p, drift)
+            dist = self.dists[k].get()
+            p = dist.values
+            q = find_q(p, drift, self.skewed)
 
             print(formatted_list(p))
             print(formatted_list(q))
             print(f"JS divergence={jensenshannon(p, q)}")
 
-            self.dists[k] = q
+            self.new_data[k] = self._sample_data(
+                q, dist.index.values, len(self.df.index)
+            )
 
-        # self.dump_config()
+    def _sample_data(self, dist: List[float], index: list, size: int):
+        return sample.sample_from_distribution(dist, index, size)[0]
+
+    def save_data(self):
+        df = self.df.copy()
+
+        for k in self.new_data.keys():
+            df[k] = self.new_data[k]
+
+        fileop.dump_tbl(df, self.output_path)
 
 
 def main():
@@ -217,6 +240,13 @@ def main():
         default="./{table}-config.json",
         help="Path to table config file, including bin values (default: ./{table}-config.json)",
     )
+    parser.add_argument(
+        "-s",
+        "--skewed",
+        type=int,
+        default=1,
+        help="Whether to distribution shifts towards more skewed. 1 = yes, 0 = no (default: 1)",
+    )
 
     args = parser.parse_args()
 
@@ -237,13 +267,14 @@ def main():
         args.output,
         args.config,
         args.n_bins,
+        args.skewed,
     )
-
-    tp.load_bin_values()
-    tp.load_data()
 
     tp.apply_drift(args.drift)
     print(f"Processed data with drift factor {args.drift}")
+
+    tp.save_data()
+    print(f"Data saved to {args.output}")
 
     tp.dump_config()
     print(f"Table config dumped to {args.config}")

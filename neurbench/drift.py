@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 from scipy.optimize import minimize
 from scipy.spatial.distance import jensenshannon
-from dist import zipf_dist
+from .dist import zipf_dist
 
 
 def _objective(q, p, alpha):
@@ -13,12 +13,12 @@ def _constraint(q):
     return np.sum(q) - 1.0
 
 
-def find_q(p: List[float], d: float) -> List[float]:
+def find_q(p: List[float], d: float, skewed: bool = True) -> List[float]:
     n = len(p)
-    if max(p) > 0.9:
-        q0 = np.ones(n) / n
+    if skewed:
+        q0 = zipf_dist(n, 1.0)
     else:
-        q0 = zipf_dist(n, 5.0)
+        q0 = np.ones(n) / n
 
     cons = {"type": "eq", "fun": _constraint}
     bounds = [(0, 1) for _ in range(n)]
