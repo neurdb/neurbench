@@ -64,8 +64,9 @@ class CategoricalDistributionHelpers:
             d = dist.categorical_dist_on_predefined_bins(
                 self._series, bins=self._config["values"]
             )
+        else:
+            d = dist.categorical_dist(self._series)
 
-        d = dist.categorical_dist(self._series)
         return d
 
     @property
@@ -182,7 +183,7 @@ class TableProcessor:
         for k in self.dists.keys():
             dist = self.dists[k].get()
             p = dist.values
-            q = find_q(p, drift, self.skewed)
+            q = find_q(p, drift, self.skewed == 1)
 
             print(formatted_list(p))
             print(formatted_list(q))
@@ -269,14 +270,15 @@ def main():
         args.skewed,
     )
 
+    tp.dump_config()
+    print(f"Table config dumped to {args.config}")
+
     tp.apply_drift(args.drift)
     print(f"Processed data with drift factor {args.drift}")
 
     tp.save_data()
     print(f"Data saved to {args.output}")
 
-    tp.dump_config()
-    print(f"Table config dumped to {args.config}")
 
 
 if __name__ == "__main__":
