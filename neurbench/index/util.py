@@ -18,7 +18,7 @@ class KeyType(enum.Enum):
             return None
 
     @staticmethod
-    def resolve_type_from_filename(self, filename: str) -> Optional["KeyType"]:
+    def resolve_type_from_filename(filename: str) -> Optional["KeyType"]:
         if "uint32" in filename:
             return KeyType.UINT32
         elif "uint64" in filename:
@@ -27,7 +27,7 @@ class KeyType(enum.Enum):
             raise ValueError(f"Unknown key type in file {filename}.")
 
     @staticmethod
-    def resolve_type(self, type: str) -> Optional["KeyType"]:
+    def resolve_type(type: str) -> Optional["KeyType"]:
         if type == "uint32":
             return KeyType.UINT32
         elif type == "uint64":
@@ -36,7 +36,7 @@ class KeyType(enum.Enum):
             raise ValueError("Unknown key type.")
 
 
-def load_uint32_key_set(filepath: Union[str, Path]) -> Optional[np.ndarray]:
+def load_key_set(filepath: Union[str, Path]) -> Optional[np.ndarray]:
     """
     Load the numerical key set from a binary file.
     """
@@ -54,7 +54,8 @@ def load_uint32_key_set(filepath: Union[str, Path]) -> Optional[np.ndarray]:
         return None
 
     key_set = None
-    with filepath.open("rb") as f:
-        key_set = np.fromfile(f, dtype=data_type.to_numpy_type())
-    return key_set
+    np_type = data_type.to_numpy_type()
 
+    key_set = np.fromfile(filepath, dtype=np_type)
+
+    return key_set
