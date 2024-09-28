@@ -57,3 +57,4 @@ def load_uint32_key_set(filepath: Union[str, Path]) -> Optional[np.ndarray]:
     with filepath.open("rb") as f:
         key_set = np.fromfile(f, dtype=data_type.to_numpy_type())
     return key_set
+
