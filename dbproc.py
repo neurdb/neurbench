@@ -18,10 +18,10 @@ def is_numerical_column(series: pd.Series):
 
 class NumericalDistributionHelpers:
     def __init__(
-        self,
-        series: pd.Series,
-        n_bins: Optional[int] = None,
-        config: Optional[dict] = None,
+            self,
+            series: pd.Series,
+            n_bins: Optional[int] = None,
+            config: Optional[dict] = None,
     ):
         self._series = series
         self._n_bins = n_bins
@@ -76,10 +76,10 @@ class CategoricalDistributionHelpers:
 
 class SeriesDistribution:
     def __init__(
-        self,
-        series: pd.Series,
-        n_bins: Optional[int] = None,
-        config: Optional[dict] = None,
+            self,
+            series: pd.Series,
+            n_bins: Optional[int] = None,
+            config: Optional[dict] = None,
     ):
         self._series = series
         self._n_bins = n_bins
@@ -107,14 +107,14 @@ class SeriesDistribution:
 
 class TableProcessor:
     def __init__(
-        self,
-        dbname: str,
-        table: str,
-        input_path: str,
-        output_path: str,
-        config_path: str,
-        n_bins: int,
-        skewed: int,
+            self,
+            dbname: str,
+            table: str,
+            input_path: str,
+            output_path: str,
+            config_path: str,
+            n_bins: int,
+            skewed: int,
     ):
         # TODO: Support other databases than TPC-H
         self.dbname = dbname
@@ -150,7 +150,7 @@ class TableProcessor:
     def load_data(self):
         df = pd.read_csv(self.input_path, sep="|", header=None)
         df.columns = df.columns.astype(str)
-        
+
         return df
 
     def compute_dists(self):
@@ -182,6 +182,7 @@ class TableProcessor:
     def apply_drift(self, drift: float):
         for k in self.dists.keys():
             dist = self.dists[k].get()
+            # dist.values: frequence of bin/value
             p = dist.values
             q = find_q(p, drift, self.skewed == 1)
 
@@ -278,7 +279,6 @@ def main():
 
     tp.save_data()
     print(f"Data saved to {args.output}")
-
 
 
 if __name__ == "__main__":
