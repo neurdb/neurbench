@@ -42,7 +42,13 @@
 #include "config.h"
 #include <stdio.h>
 #ifndef _POSIX_SOURCE
+
+#ifdef __linux__
 #include <malloc.h>
+#else
+#include <stdlib.h>
+#endif
+
 #endif /* POSIX_SOURCE */
 #if (defined(_POSIX_)||!defined(WIN32))
 #include <unistd.h>
