@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pd
-import cudf
+import cudf as pd
 
 
 def categorical_dist(series: pd.Series):
@@ -35,7 +34,7 @@ def numerical_dist_ori(series: pd.Series, n_bins: int):
         print("all values are integers")
         edges = np.linspace(series.min(), series.max(), n_bins + 1).astype(int)
         labels = [edges[i + 1] for i in range(n_bins)]
-        result = cudf.cut(series, bins=labels, precision=0, include_lowest=True).value_counts(normalize=True)
+        result = pd.cut(series, bins=labels, precision=0, include_lowest=True).value_counts(normalize=True)
         # result.index = result.index.map(lambda x: pd.Interval(round(x.left), round(x.right))).
 
         return result
@@ -46,7 +45,7 @@ def numerical_dist_ori(series: pd.Series, n_bins: int):
 def numerical_dist_on_predefined_bins(series: pd.Series, bins: list):
     """get the distribution of numerical values in pre-defined bins"""
     indices = pd.IntervalIndex.from_tuples([(x["start"], x["end"]) for x in bins])
-    return cudf.cut(series, bins=indices).value_counts(normalize=True)
+    return pd.cut(series, bins=indices).value_counts(normalize=True)
 
 
 def categorical_dist_on_predefined_bins(series: pd.Series, bins: list):
