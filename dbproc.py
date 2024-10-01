@@ -13,7 +13,7 @@ deterministic.seed_everything(42)
 
 
 def is_numerical_column(series: pd.Series, threshold: int = 20):
-    # if there is flow, => numerical
+    # if there is float, => numerical
     for x in series:
         if isinstance(x, float):
             return True
