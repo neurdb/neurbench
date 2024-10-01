@@ -4,7 +4,7 @@ import json
 import os
 from typing import List, Optional
 
-import cudf as pd
+import pandas as pd
 from neurbench import config, dist, deterministic, sample, fileop
 from neurbench.drift import find_q, jensenshannon
 from neurbench.util import formatted_list

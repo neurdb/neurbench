@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import cudf as pd
+import pandas as pd
 
 
 class NumpyEncoder(json.JSONEncoder):

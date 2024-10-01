@@ -1,6 +1,6 @@
 from typing import List, Union
 import numpy as np
-import cudf as pd
+import pandas as pd
 from .deterministic import sample_rng
 
 
