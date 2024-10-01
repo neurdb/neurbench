@@ -12,8 +12,22 @@ from neurbench.util import formatted_list
 deterministic.seed_everything(42)
 
 
-def is_numerical_column(series: pd.Series):
-    return all(isinstance(x, int) or isinstance(x, float) for x in series)
+def is_numerical_column(series: pd.Series, threshold: int):
+    # if there is flow, => numerical
+    for x in series:
+        if isinstance(x, float):
+            return True
+
+    # if all int + (unique values < thresholw) => cate
+    if all(isinstance(x, int) for x in series):
+        unique_count = series.nunique()
+        if unique_count < threshold:
+            return False
+        else:
+            return True
+
+    # If the series contains non-integer/non-float types, return False by default
+    return False
 
 
 class NumericalDistributionHelpers:
