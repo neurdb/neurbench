@@ -29,6 +29,7 @@ class NumericalDistributionHelpers:
 
     @cached_property
     def dist(self):
+        print("called dist on numerical_dist_on_predefined_bins")
         if self._config:
             d = dist.numerical_dist_on_predefined_bins(
                 self._series, bins=self._config["values"]
