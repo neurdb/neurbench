@@ -37,3 +37,27 @@ python dbproc.py -t customer -i 1.tbl -o 2.tbl -b $nbins -D $d -s $skewed
 python dbproc.py -t customer -i 2.tbl -o 3.tbl -b $nbins -D $d -s $skewed
 # ...
 ```
+
+### Run Query Processor (qpre, qproc)
+
+#### Generate base queries
+
+```bash
+DSS_QUERY=./queries ./qgen -v -d -s 1 -r 42 > tpch-stream.sql
+```
+
+#### Preprocess
+
+```bash
+python qpre.py -i tpch-kit/dbgen/tpch-stream.sql
+```
+
+#### Convert tbl to csv
+
+```bash
+python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
+```
+
+#### Process
+
+TODO
