@@ -70,6 +70,14 @@ class SQLInfoExtractor(Visitor):
                         self.predicates.add((lexpr[0].sval, lexpr[1].sval, node.name[0].sval, rexpr))
                     elif len(lexpr) == 1:
                         self.predicates.add(("", lexpr[0].sval, node.name[0].sval, rexpr))
+                elif hasattr(node.rexpr, 'arg'):
+                    if hasattr(node.rexpr.arg, 'val'):
+                        if hasattr(node.rexpr.arg.val, 'sval'):
+                            rexpr = node.rexpr.arg.val.sval
+                            if len(lexpr) == 2:
+                                self.predicates.add((lexpr[0].sval, lexpr[1].sval, node.name[0].sval, rexpr))
+                            elif len(lexpr) == 1:
+                                self.predicates.add(("", lexpr[0].sval, node.name[0].sval, rexpr))
 
         # Handle subqueries and additional join conditions
         if isinstance(node, ast.SubLink):
@@ -139,7 +147,7 @@ def main():
         with open(args.input, "r") as f:
             sqls = f.read().split(";")
             for sql_id, sql in enumerate(sqls):
-                if sql.strip():
+                if sql.strip() and "--select" not in sql:
                     try:
                         print(f"processing {sql_id}, {sql} \n")
                         node = pglast.parse_sql(sql)
