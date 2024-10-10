@@ -60,4 +60,8 @@ python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
 
 #### Process
 
+```bash
+python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
+```
+
 TODO
