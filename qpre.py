@@ -37,7 +37,7 @@ def main():
     parser.add_argument(
         "-I",
         "--input_dir",
-        default="./q_train_0",
+        default="",
         help="Path to the folder of input files",
     )
 
@@ -63,6 +63,7 @@ def main():
     print(args)
 
     if args.input_dir:
+        print("processing sql folders")
         if os.path.exists(args.output):
             os.remove(args.output)
 
@@ -80,6 +81,7 @@ def main():
                     fo.write("\n")
         return
 
+    print("processing sql file")
     with open(args.input, "r") as f:
         sqls = f.read().split(";")
         sqls = [preprocess(sql) for sql in sqls if sql]
