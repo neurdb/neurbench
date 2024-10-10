@@ -1,6 +1,8 @@
 """qpre: Preprocessing query SQLs"""
 
 import argparse
+import os
+import glob
 
 
 def remove_comments(sql):
@@ -33,6 +35,13 @@ def main():
         help="Path to the input file (default: ./{dbname}.tbl)",
     )
     parser.add_argument(
+        "-I",
+        "--input_dir",
+        default="./q_train_0",
+        help="Path to the folder of input files",
+    )
+
+    parser.add_argument(
         "-o",
         "--output",
         default="./{dbname}-pp.sql",
@@ -52,6 +61,24 @@ def main():
             args.__dict__[k] = v.format(dbname=args.dbname)
 
     print(args)
+
+    if args.input_dir:
+        if os.path.exists(args.output):
+            os.remove(args.output)
+
+        sql_files = glob.glob(os.path.join(args.input_dir, "*.sql"))
+        for sql_file in sql_files:
+            with open(sql_file, "r") as f:
+                sqls = f.read().split(";")
+                sqls = [preprocess(sql) for sql in sqls if sql]
+                sqls = [sql for sql in sqls if sql.strip()]
+                sqls = [sql for sql in sqls if not sql.startswith("limit")]
+                sqls = [f"{sql};" for sql in sqls]
+
+                with open(args.output, "a+") as fo:
+                    fo.write(sqls[0])
+                    fo.write("\n")
+        return
 
     with open(args.input, "r") as f:
         sqls = f.read().split(";")
