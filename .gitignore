@@ -167,3 +167,8 @@ cython_debug/
 
 # Generated config files
 *-config.json
+
+
+# Customied by Lingze
+/data/keys
+/data/workload
