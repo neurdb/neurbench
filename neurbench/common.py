@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import json
 import os
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from . import fileop
 from . import common
@@ -13,7 +13,7 @@ class Processor(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def apply_drift(self, drift: float):
+    def apply_drift(self, drift: float, n_samples: Optional[int]):
         raise NotImplementedError
 
     @abstractmethod
@@ -26,15 +26,17 @@ class Processor(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-def load_config(config_path: str) -> Tuple[dict, Optional[str]]:
+def load_config(
+    config_path: str, default: Optional[Any] = None
+) -> Tuple[dict, Optional[str]]:
     if not os.path.exists(config_path):
-        return {}, "no such file: " + config_path
+        return default if default is not None else {}, "no such file: " + config_path
 
     try:
         with open(config_path, "r") as f:
             return json.loads(f.read()), None
     except:
-        return {}, "invalid config. ignoring"
+        return default if default is not None else {}, "invalid config. ignoring"
 
     print("config loaded from: ", config_path)
 
@@ -49,13 +51,14 @@ def make_drift(
     output_path: str,
     config_path: str,
     drift: float,
+    n_samples: Optional[int] = None,
 ):
     processor.load(input_path)
 
     common.dump_config(processor.config, config_path)
     print(f"Table config dumped to {config_path}")
 
-    processor.apply_drift(drift)
+    processor.apply_drift(drift, n_samples)
     print(f"Processed data with drift factor {drift}")
 
     processor.save(output_path)

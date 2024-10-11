@@ -1,26 +1,86 @@
-from parser import sql_parser, table_parser
+import argparse
+import glob
+import os
+from pprint import pprint
 
-CREATE_TABLE_PATH = "testdata/tpch-ddl.sql"
-PREPROCESSED_QUERIES_PATH = "testdata/tpch-pp.sql"
+import pglast
+from neurbench.query import SQLInfoExtractor
+
+
+def print_info(extractor: SQLInfoExtractor):
+    # Print extracted information
+    print("Tables used:", extractor.tables)
+    print("Alias to full table name mapping:", extractor.aliasname_fullname)
+    print("Joins:", extractor.joins)
+    print("Predicates:", extractor.predicates)
+    print("-" * 80)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Preprocessing query SQLs")
+
+    parser.add_argument(
+        "-d", "--dbname", default="tpch", help="Database name (default: tpch)"
+    )
+
+    parser.add_argument(
+        "-I",
+        "--input_dir",
+        default="",
+        help="Path to the folder of input files",
+    )
+
+    parser.add_argument(
+        "-i",
+        "--input",
+        default="./testdata/tpch-pp.sql",
+        help="Path to the input file (default: ./{dbname}.tbl)",
+    )
+
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="./{dbname}-pp.sql",
+        help="Path to the output sql, metadata pair",
+    )
+
+    args = parser.parse_args()
+
+    for k, v in args.__dict__.items():
+        if isinstance(v, str) and "{dbname}" in v:
+            args.__dict__[k] = v.format(dbname=args.dbname)
+
+    print(args)
+
+    if args.input_dir:
+        sql_files = glob.glob(os.path.join(args.input_dir, "*.sql"))
+        for sql_file in sql_files:
+            with open(sql_file, "r") as f:
+                sql = f.read().split(";")
+                node = pglast.parse_sql(sql)
+                extractor = SQLInfoExtractor()
+                extractor(node)
+
+                info = extractor.info
+                pprint(info)
+    else:
+        with open(args.input, "r") as f:
+            sqls = f.read().split(";")
+            for sql_id, sql in enumerate(sqls):
+                if sql.strip() and "--select" not in sql:
+                    try:
+                        print(f"processing {sql_id}, {sql} \n")
+                        node = pglast.parse_sql(sql)
+                        extractor = SQLInfoExtractor()
+                        extractor(node)
+
+                        info = extractor.info
+                        pprint(info)
+                    except Exception as e:
+                        print("ERROR", sql)
+                        print(e)
+                        print("-" * 80)
 
 
 if __name__ == "__main__":
-    with open(PREPROCESSED_QUERIES_PATH, "r") as f:
-        sqls = f.read().split(";")
-
-    table_names, _, table_attr_types_map, short_name_full_name_map = table_parser.get_all_table_attr_infos(
-        CREATE_TABLE_PATH
-    )
-    print(table_names)
-    print(table_attr_types_map)
-    print(short_name_full_name_map)
-
-    db_data_info = table_parser.retrieve_db_info(
-        table_names,
-        table_attr_types_map,
-        short_name_full_name_map,
-        "/Users/kevin/project_python/AI4QueryOptimizer/AI4QueryOptimizer/datasets/dynamic_datasets/tpch/data_0_csv",
-        "testdata/tables_info.json",
-    )
-
-    base_queries_info = sql_parser.parse_queries_on_batch(sqls, db_data_info)
+    main()

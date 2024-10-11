@@ -10,8 +10,6 @@ from neurbench import config, dist, deterministic, sample, fileop
 from neurbench.drift import find_q, jensenshannon
 from neurbench.util import formatted_list
 
-deterministic.seed_everything(42)
-
 
 def is_numerical_column(series: pd.Series, threshold: int = 20):
     # if there is float, => numerical
@@ -183,7 +181,10 @@ class TableProcessor(neurbench.Processor):
     def _update_config(self, series_name, bin_values):
         self.config[str(series_name)] = bin_values
 
-    def apply_drift(self, drift: float):
+    def apply_drift(self, drift: float, n_samples: Optional[int]):
+        if n_samples is not None:
+            raise NotImplementedError("n_samples is not supported")
+            
         for k in self.dists.keys():
             dist = self.dists[k].get()
             # dist.values: frequence of bin/value
