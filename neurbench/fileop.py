@@ -1,4 +1,6 @@
 import json
+import os
+from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 
@@ -23,3 +25,8 @@ def dump_tbl(df: pd.DataFrame, path: str):
 def dump_json(obj, path):
     with open(path, "w") as f:
         f.write(json.dumps(obj, indent=4, cls=NumpyEncoder))
+
+
+def dump_text(text: str, path: str):
+    with open(path, "w") as f:
+        f.write(text)
