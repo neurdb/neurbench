@@ -187,9 +187,15 @@ class QueryProcessor(neurbench.Processor):
 
         return result
 
-    def save(self, output_path: str):
+    def save_to_single_file(self, output_path: str):
         text = ";\n".join(self.new_data[self.type])
         fileop.dump_text(text, output_path)
+
+    def save(self, output_path: str):
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+        for i, sql in enumerate(self.new_data[self.type]):
+            fileop.dump_text(sql, os.path.join(output_path, f"{i}.sql"))
 
 
 def main():

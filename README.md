@@ -40,6 +40,21 @@ python dbproc.py -t customer -i 2.tbl -o 3.tbl -b $nbins -D $d -s $skewed
 
 ### Run Query Processor (qpre, qproc)
 
+```bash
+# drift factor
+d=0.4
+# whether to skew the data distribution 
+# 0 means use uniform distribution to flatten the distribution
+skewed=1 
+# number of samples
+n=1000
+# type of metadata to drift. for available types, see `python qproc.py -h`
+type=tables
+python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
+```
+
+# Helper funcs
+
 #### Generate base queries
 
 ```bash
@@ -60,19 +75,7 @@ python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
 
 #### Process
 
-<!-- ```bash
-python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
-``` -->
-
 ```bash
-# drift factor
-d=0.4
-# whether to skew the data distribution 
-# 0 means use uniform distribution to flatten the distribution
-skewed=1 
-# number of samples
-n=1000
-# type of metadata to drift. for available types, see `python qproc.py -h`
-type=tables
-python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
+python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
 ```
+
