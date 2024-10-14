@@ -274,7 +274,7 @@ def main():
         args.skewed,
     )
 
-    neurbench.make_drift(tp, args.input, args.output, args.config, args.drift)
+    neurbench.make_drift(tp, "", args.input, args.output, args.config, args.drift)
 
 
 if __name__ == "__main__":

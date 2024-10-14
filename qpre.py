@@ -75,9 +75,10 @@ def main():
                 sqls = [sql for sql in sqls if sql.strip()]
                 sqls = [sql for sql in sqls if not sql.startswith("limit")]
                 sqls = [f"{sql};" for sql in sqls]
-
+                sql_name = sql_file.split("/")[-1]
+                sql_name = sql_name.split(".sql")[0]
                 with open(args.output, "a+") as fo:
-                    fo.write(sqls[0])
+                    fo.write(f"q{sql_name}#####"+sqls[0])
                     fo.write("\n")
         return
 

@@ -36,10 +36,10 @@ class MetadataDistributionHelpers:
 
 class MetadataDistribution:
     def __init__(
-        self,
-        type: str,
-        data: Sequence[Any],
-        slots: Optional[List[str]] = None,
+            self,
+            type: str,
+            data: Sequence[Any],
+            slots: Optional[List[str]] = None,
     ):
         self._type = type
         self._data = data
@@ -64,11 +64,11 @@ class MetadataDistribution:
 
 class QueryProcessor(neurbench.Processor):
     def __init__(
-        self,
-        dbname: str,
-        type: str,
-        config_path: str,
-        skewed: int,
+            self,
+            dbname: str,
+            type: str,
+            config_path: str,
+            skewed: int,
     ):
         # TODO: Support other databases than TPC-H
         self.dbname = dbname
@@ -104,6 +104,35 @@ class QueryProcessor(neurbench.Processor):
 
         return [str(k) for k in data_dict]
 
+    def load_from_file(self, input_file: str):
+        with open(input_file, "r") as f:
+            sqls = f.readlines()
+            for s in sqls:
+                node = pglast.parse_sql(s)
+                extractor = SQLInfoExtractor()
+                extractor(node)
+
+                info = extractor.info
+                for k in info.keys():
+                    if k not in self.data:
+                        self.data[k] = []
+
+                    info_k_values = sorted(info[k])
+                    info_k_values = tuple_to_list(info_k_values)
+
+                    self.data[k].append(info_k_values)
+
+                    if self._create:
+                        if k not in self.config["map"]:
+                            self.config["map"][k] = {}
+
+                        info_k_values_str = str(info_k_values)
+                        if info_k_values_str not in self.config["map"][k]:
+                            self.config["map"][k][info_k_values_str] = []
+
+                        self.config["map"][k][info_k_values_str].append(s)
+        self.compute_dist()
+
     def load(self, input_path: str):
         sql_files = glob.glob(os.path.join(input_path, "*.sql"))
         for sql_file in sql_files:
@@ -125,7 +154,7 @@ class QueryProcessor(neurbench.Processor):
 
                     info_k_values = sorted(info[k])
                     info_k_values = tuple_to_list(info_k_values)
-                    
+
                     self.data[k].append(info_k_values)
 
                     if self._create:
@@ -204,10 +233,18 @@ def main():
     parser.add_argument(
         "-d", "--dbname", default="tpch", help="Database name (default: tpch)"
     )
+
+    parser.add_argument(
+        "-i",
+        "--input_file",
+        default="",
+        help=".sql file",
+    )
+
     parser.add_argument(
         "-I",
-        "--input-dir",
-        required=True,
+        "--input_dir",
+        default="",
         help="Path to the directory of input files",
     )
     parser.add_argument(
@@ -264,7 +301,7 @@ def main():
     p = QueryProcessor(args.dbname, args.type, args.config, args.skewed)
 
     neurbench.make_drift(
-        p, args.input_dir, args.output, args.config, args.drift, args.n_samples
+        p, args.input_file, args.input_dir, args.output, args.config, args.drift, args.n_samples
     )
 
 
