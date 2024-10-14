@@ -21,6 +21,9 @@ class NumpyEncoder(json.JSONEncoder):
 def dump_tbl(df: pd.DataFrame, path: str):
     df.to_csv(path, index=False, header=False, sep="|")
 
+def dump_csv(df: pd.DataFrame, path: str):
+    df.to_csv(path, index=False, header=False)
+
 
 def dump_json(obj, path):
     with open(path, "w") as f:

@@ -128,14 +128,15 @@ class TableProcessor(neurbench.Processor):
         n_bins: int,
         skewed: int,
     ):
-        # TODO: Support other databases than TPC-H
         self.dbname = dbname
         self.table = table
         self.config_path = config_path
         self.n_bins = n_bins
         self.skewed = skewed
 
-        self.applicable_columns_list = config.TPCH_DB_APPLICABLE_COLUMNS[table]
+        self.applicable_columns_list = config.DB_MAP[dbname][
+            "drift_applicable_columns"
+        ][table]
         self.predefined_bins = None
         self.dists = {}
         self.new_data = {}
@@ -149,7 +150,21 @@ class TableProcessor(neurbench.Processor):
         return self._config
 
     def load(self, input_path: str):
-        df = pd.read_csv(input_path, sep="|", header=None)
+        if input_path.endswith(".csv"):
+            sep = ","
+        elif input_path.endswith(".tbl"):
+            sep = "|"
+        else:
+            raise ValueError(f"Unknown file type: {input_path}")
+
+        df = pd.read_csv(
+            input_path,
+            sep=sep,
+            header=None,
+            doublequote=False,
+            escapechar="\\",
+            low_memory=False,
+        )
         df.columns = df.columns.astype(str)
         self.df = df
 
@@ -184,7 +199,7 @@ class TableProcessor(neurbench.Processor):
     def apply_drift(self, drift: float, n_samples: Optional[int]):
         if n_samples is not None:
             raise NotImplementedError("n_samples is not supported")
-            
+
         for k in self.dists.keys():
             dist = self.dists[k].get()
             # dist.values: frequence of bin/value
@@ -208,7 +223,10 @@ class TableProcessor(neurbench.Processor):
         for k in self.new_data.keys():
             df[k] = self.new_data[k]
 
-        fileop.dump_tbl(df, output_path)
+        if output_path.endswith(".tbl"):
+            fileop.dump_tbl(df, output_path)
+        else:
+            fileop.dump_csv(df, output_path)
 
 
 def main():
@@ -243,8 +261,8 @@ def main():
     parser.add_argument(
         "-c",
         "--config",
-        default="./{table}-config.json",
-        help="Path to table config file, including bin values (default: ./{table}-config.json)",
+        default="./{dbname}-table-{table}-config.json",
+        help="Path to table config file, including bin values (default: ./{dbname}-table-{table}-config.json)",
     )
     parser.add_argument(
         "-s",
@@ -257,8 +275,8 @@ def main():
     args = parser.parse_args()
 
     for k, v in args.__dict__.items():
-        if isinstance(v, str) and "{table}" in v:
-            args.__dict__[k] = v.format(table=args.table)
+        if isinstance(v, str) and ("{dbname}" in v or "{table}" in v):
+            args.__dict__[k] = v.format(dbname=args.dbname, table=args.table)
 
     print(args)
 
