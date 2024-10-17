@@ -1,4 +1,4 @@
-# NeurBench
+# NeuralBench
 
 > Benchmarking Learned Databases with Data and Workload Drift Modeling
 
