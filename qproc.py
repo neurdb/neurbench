@@ -200,8 +200,8 @@ class QueryProcessor(neurbench.Processor):
         p = dist.values
         q = find_q(p, drift, self.skewed == 1)
 
-        print(formatted_list(p))
-        print(formatted_list(q))
+        print("previous dist", formatted_list(p))
+        print("after dist", formatted_list(q))
         print(f"JS divergence={jensenshannon(p, q)}")
 
         self.new_data[self.type] = self._sample_data(q, dist.index.values, n_samples)
