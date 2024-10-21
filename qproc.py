@@ -2,18 +2,17 @@ import argparse
 from functools import cached_property
 import glob
 import os
-from pprint import pprint
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
 import pglast
 from scipy.spatial.distance import jensenshannon
 
-import neurbench
-from neurbench import dist, sample, deterministic, fileop
-from neurbench.drift import find_q
-from neurbench.util import formatted_list, tuple_to_list
-from neurbench.query import SQLInfoExtractor
+import neuralbench
+from neuralbench import dist, sample, deterministic, fileop
+from neuralbench.drift import find_q
+from neuralbench.util import formatted_list, tuple_to_list
+from neuralbench.query import SQLInfoExtractor
 
 TYPES = ["tables", "predicates", "joins", "aliasname_fullname"]
 
@@ -62,7 +61,7 @@ class MetadataDistribution:
 """
 
 
-class QueryProcessor(neurbench.Processor):
+class QueryProcessor(neuralbench.Processor):
     def __init__(
             self,
             dbname: str,
@@ -85,7 +84,7 @@ class QueryProcessor(neurbench.Processor):
 
         self._create = False
 
-        self._config, err = neurbench.load_config(
+        self._config, err = neuralbench.load_config(
             self.config_path, {"bin_values": {}, "map": {}}
         )
         if err is not None:
@@ -300,7 +299,7 @@ def main():
 
     p = QueryProcessor(args.dbname, args.type, args.config, args.skewed)
 
-    neurbench.make_drift(
+    neuralbench.make_drift(
         p, args.input_file, args.input_dir, args.output, args.config, args.drift, args.n_samples
     )
 

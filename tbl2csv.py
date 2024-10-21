@@ -1,7 +1,7 @@
 import argparse
 import os
 from typing import List, Optional
-from neurbench.config import DB_MAP
+from neuralbench.config import DB_MAP
 
 
 def process(input_path: str, output_path: str, columns: List[str]) -> Optional[str]:
