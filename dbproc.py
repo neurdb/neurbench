@@ -4,6 +4,7 @@ import json
 import os
 from typing import List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import neurbench
 from neurbench import config, dist, deterministic, sample, fileop
@@ -165,6 +166,38 @@ class TableProcessor(neurbench.Processor):
             escapechar="\\",
             low_memory=False,
         )
+        
+        def test_and_convert_column_dtypes(series):
+            """Convert series to correct dtype based on the first 10 values.
+            
+            If all values in the series are integers, convert the series to integers.
+            If all values in the series are floats, convert the series to floats.
+            If all values in the series are strings, convert the series to strings.
+            If some values in the series are integers and some are floats, convert the series to floats.
+            """
+            # print(series.head())
+            
+            if all(isinstance(x, float) for x in series.head()):
+                if any(series.head().isna()):
+                    return series                
+                elif all(abs(x - int(x)) < 1e-5 for x in series.head()):
+                    return series.fillna(value=0).apply(int)
+                else:
+                    return series
+            
+            if all(isinstance(x, str) for x in series.head()):
+                return series.apply(str)
+            else:
+                return series
+            
+        # for column, dtype in df.dtypes.items():
+        #     print(f"{column}: {dtype}")
+            
+        df = df.apply(test_and_convert_column_dtypes, axis=0)
+        
+        # for column, dtype in df.dtypes.items():
+        #     print(f"{column}: {dtype}")
+        
         df.columns = df.columns.astype(str)
         self.df = df
 

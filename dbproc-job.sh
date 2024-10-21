@@ -31,22 +31,22 @@ TABLE_NAMES=(
 )
 N_BINS=20
 
-# DRIFT_FACTOR=0.1
-# DEST_DIR=data_1
+DRIFT_FACTOR=0.1
+DEST_DIR=data_01
 
-# mkdir -p "${DATASETS_DIR}/imdb/${DEST_DIR}"
+mkdir -p "${DATASETS_DIR}/imdb/${DEST_DIR}"
 
-# for TABLE_NAME in "${TABLE_NAMES[@]}"; do
-#     python dbproc.py -d "$DBNAME" -t "$TABLE_NAME" \
-#         -i "${DATASETS_DIR}/imdb/imdb/${TABLE_NAME}.csv" \
-#         -o "${DATASETS_DIR}/imdb/${DEST_DIR}/${TABLE_NAME}.csv" \
-#         -b $N_BINS -D $DRIFT_FACTOR -s 1
-#     head -n 10 "${DATASETS_DIR}/imdb/${DEST_DIR}/${TABLE_NAME}.csv" \
-#         >"sample-${TABLE_NAME}-drifted-${DRIFT_FACTOR}.csv"
-# done
+for TABLE_NAME in "${TABLE_NAMES[@]}"; do
+    python dbproc.py -d "$DBNAME" -t "$TABLE_NAME" \
+        -i "${DATASETS_DIR}/imdb/imdb/${TABLE_NAME}.csv" \
+        -o "${DATASETS_DIR}/imdb/${DEST_DIR}/${TABLE_NAME}.csv" \
+        -b $N_BINS -D $DRIFT_FACTOR -s 1
+    head -n 10 "${DATASETS_DIR}/imdb/${DEST_DIR}/${TABLE_NAME}.csv" \
+        >"sample-${TABLE_NAME}-drifted-${DRIFT_FACTOR}.csv"
+done
 
 DRIFT_FACTOR=0.3
-DEST_DIR=data_2
+DEST_DIR=data_03
 
 mkdir -p "${DATASETS_DIR}/imdb/${DEST_DIR}"
 
@@ -60,7 +60,7 @@ for TABLE_NAME in "${TABLE_NAMES[@]}"; do
 done
 
 DRIFT_FACTOR=0.5
-DEST_DIR=data_3
+DEST_DIR=data_05
 
 mkdir -p "${DATASETS_DIR}/imdb/${DEST_DIR}"
 
@@ -74,7 +74,7 @@ for TABLE_NAME in "${TABLE_NAMES[@]}"; do
 done
 
 DRIFT_FACTOR=0.7
-DEST_DIR=data_4
+DEST_DIR=data_07
 
 mkdir -p "${DATASETS_DIR}/imdb/${DEST_DIR}"
 
