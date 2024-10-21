@@ -9,7 +9,7 @@ DRIFT_FACTOR=0.2
 python dbproc.py -t $TABLE_NAME -i "tpch-kit/dbgen/1g/${TABLE_NAME}.tbl" -o "${TABLE_NAME}-drifted-1.tbl" -b $N_BINS -D $DRIFT_FACTOR -s 1
 head -n 10 "${TABLE_NAME}-drifted-1.tbl" > "sample-${TABLE_NAME}-drifted-1.tbl"
 
-for ((i = 1; i < 10; i++)); do
+for ((i = 1; i < 3; i++)); do
     drift_factor=$(echo "0.05 * $i" | bc)
     next=$((i + 1))
 

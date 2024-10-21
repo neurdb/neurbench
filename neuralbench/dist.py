@@ -50,6 +50,8 @@ def numerical_dist_on_predefined_bins(series: pd.Series, bins: list):
 
 def categorical_dist_on_predefined_bins(series: pd.Series, bins: list):
     """get the distribution of categorical values in pre-defined bins"""
+    print(bins)
+    print(series)
     distribution = series.value_counts().reindex(bins, fill_value=0)
     return distribution / len(series)
 

@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 import numpy as np
 import pandas as pd
 from .deterministic import sample_rng
@@ -28,11 +28,10 @@ def sample_from_distribution(distribution: List[float], values: list, num_sample
     sampled_indices = sample_rng.choice(
         len(distribution), size=num_samples, p=distribution
     )
-    
 
     # Get the corresponding values for the sampled indices
     sampled_values = [values[i] for i in sampled_indices]
-    
+
     for i in range(len(sampled_values)):
         v = sampled_values[i]
         if issubclass(v.__class__, pd.Interval):
@@ -53,7 +52,7 @@ if __name__ == "__main__":
     values = ["a", "b", "c", "d"]
     num_samples = 1000
     sampled_values, sampled_indices = sample_from_distribution(
-        distribution, values, num_samples, True
+        distribution, values, num_samples
     )
 
     # print(sampled_values)
