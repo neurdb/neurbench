@@ -53,29 +53,7 @@ type=tables
 python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
 ```
 
-# Helper funcs
+# Benchmark Learned Query Optimziers
 
-#### Generate base queries
-
-```bash
-DSS_QUERY=./queries ./qgen -v -d -s 1 -r 42 > tpch-stream.sql
-```
-
-#### Preprocess
-
-```bash
-python qpre.py -i tpch-kit/dbgen/tpch-stream.sql
-```
-
-#### Convert tbl to csv
-
-```bash
-python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
-```
-
-#### Process
-
-```bash
-python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
-```
+Check the doc at [Benchmark](./benchmarks/lqos/README.md)
 
