@@ -1,0 +1,802 @@
+[
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_21",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(mi.info) as release_date, min(t.title) as modern_american_internet_movie from aka_title as at, company_name as cn, company_type as ct, info_type as it1, keyword as k, movie_companies as mc, movie_info as mi, movie_keyword as mk, title as t where cn.country_code = '[us]' and it1.info = 'release dates' and mi.note like '%internet%' and mi.info is not null and (mi.info like 'usa:% 199%' or mi.info like 'usa:% 200%') and t.production_year > 1990 and t.id = at.movie_id and t.id = mi.movie_id and t.id = mk.movie_id and t.id = mc.movie_id and mk.movie_id = mi.movie_id and mk.movie_id = mc.movie_id and mk.movie_id = at.movie_id and mi.movie_id = mc.movie_id and mi.movie_id = at.movie_id and mc.movie_id = at.movie_id and k.id = mk.keyword_id and it1.id = mi.info_type_id and cn.id = mc.company_id and ct.id = mc.company_type_id",
+    "train_35",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_34",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like 'z%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_20",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_36",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like '%champion%' or t.title like '%loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_22",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_23",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_37",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like 'champion%' or t.title like 'loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_33",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_27",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like '%champion%' or t.title like '%loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_26",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as alternative_name, min(chn.name) as voiced_character_name, min(n.name) as voicing_actress, min(t.title) as american_movie from aka_name as an, char_name as chn, cast_info as ci, company_name as cn, movie_companies as mc, name as n, role_type as rt, title as t where ci.note in ('(voice)', '(voice: japanese version)', '(voice) (uncredited)', '(voice: english version)') and cn.country_code ='[us]' and n.gender ='f' and n.name like '%an%' and rt.role ='actress' and ci.movie_id = t.id and t.id = mc.movie_id and ci.movie_id = mc.movie_id and mc.company_id = cn.id and ci.role_id = rt.id and n.id = ci.person_id and chn.id = ci.person_role_id and an.person_id = n.id and an.person_id = ci.person_id",
+    "train_32",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_18",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_24",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 50 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_30",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_31",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_25",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_19",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_81",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_95",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(t.title) as movie_title from company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, title as t where cn.country_code ='[sm]' and k.keyword ='character-name-in-title' and cn.id = mc.company_id and mc.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and mc.movie_id = mk.movie_id",
+    "train_42",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_56",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_4",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_57",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like 'z%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_5",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as of_person, min(t.title) as biography_movie from aka_name as an, cast_info as ci, info_type as it, link_type as lt, movie_link as ml, name as n, person_info as pi, title as t where an.name like '%a%' and it.info ='mini biography' and lt.link ='features' and n.name_pcode_cf like 'd%' and n.gender='m' and pi.note ='volker boehm' and t.production_year between 1980 and 1984 and n.id = an.person_id and n.id = pi.person_id and ci.person_id = n.id and t.id = ci.movie_id and ml.linked_movie_id = t.id and lt.id = ml.link_type_id and it.id = pi.info_type_id and pi.person_id = an.person_id and pi.person_id = ci.person_id and an.person_id = ci.person_id and ci.movie_id = ml.linked_movie_id",
+    "train_43",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like 'x%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_94",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(t.title) as movie_title from keyword as k, movie_info as mi, movie_keyword as mk, title as t where k.keyword like '%sequel%' and mi.info in ('sweden', 'norway', 'germany', 'denmark', 'swedish', 'denish', 'norwegian', 'german', 'usa', 'american') and t.production_year > 1990 and t.id = mi.movie_id and t.id = mk.movie_id and mk.movie_id = mi.movie_id and k.id = mk.keyword_id",
+    "train_80",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(a1.name) as writer_pseudo_name, min(t.title) as movie_title from aka_name as a1, cast_info as ci, company_name as cn, movie_companies as mc, name as n1, role_type as rt, title as t where cn.country_code ='[us]' and rt.role ='writer' and a1.person_id = n1.id and n1.id = ci.person_id and ci.movie_id = t.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.role_id = rt.id and a1.person_id = ci.person_id and ci.movie_id = mc.movie_id",
+    "train_96",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_82",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%bert%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_7",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_55",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_41",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_69",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_68",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(mi.info) as movie_budget, min(mi_idx.info) as movie_votes, min(n.name) as writer, min(t.title) as complete_violent_movie from complete_cast as cc, comp_cast_type as cct1, comp_cast_type as cct2, cast_info as ci, info_type as it1, info_type as it2, keyword as k, movie_info as mi, movie_info_idx as mi_idx, movie_keyword as mk, name as n, title as t where cct1.kind = 'cast' and cct2.kind ='complete+verified' and ci.note in ('(writer)', '(head writer)', '(written by)', '(story)', '(story editor)') and it1.info = 'genres' and it2.info = 'votes' and k.keyword in ('murder', 'violence', 'blood', 'gore', 'death', 'female-nudity', 'hospital') and mi.info in ('horror', 'action', 'sci-fi', 'thriller', 'crime', 'war') and n.gender = 'm' and t.id = mi.movie_id and t.id = mi_idx.movie_id and t.id = ci.movie_id and t.id = mk.movie_id and t.id = cc.movie_id and ci.movie_id = mi.movie_id and ci.movie_id = mi_idx.movie_id and ci.movie_id = mk.movie_id and ci.movie_id = cc.movie_id and mi.movie_id = mi_idx.movie_id and mi.movie_id = mk.movie_id and mi.movie_id = cc.movie_id and mi_idx.movie_id = mk.movie_id and mi_idx.movie_id = cc.movie_id and mk.movie_id = cc.movie_id and n.id = ci.person_id and it1.id = mi.info_type_id and it2.id = mi_idx.info_type_id and k.id = mk.keyword_id and cct1.id = cc.subject_id and cct2.id = cc.status_id",
+    "train_40",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_6",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_54",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_83",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_97",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_93",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_87",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 50 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_78",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_50",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(chn.name) as character_name, min(mi_idx.info) as rating, min(t.title) as complete_hero_movie from complete_cast as cc, comp_cast_type as cct1, comp_cast_type as cct2, char_name as chn, cast_info as ci, info_type as it2, keyword as k, kind_type as kt, movie_info_idx as mi_idx, movie_keyword as mk, name as n, title as t where cct1.kind = 'cast' and cct2.kind like '%complete%' and chn.name is not null and (chn.name like '%man%' or chn.name like '%man%') and it2.info = 'rating' and k.keyword in ('superhero', 'marvel-comics', 'based-on-comic', 'fight') and kt.kind = 'movie' and mi_idx.info > '8.0' and t.production_year > 2005 and kt.id = t.kind_id and t.id = mk.movie_id and t.id = ci.movie_id and t.id = cc.movie_id and t.id = mi_idx.movie_id and mk.movie_id = ci.movie_id and mk.movie_id = cc.movie_id and mk.movie_id = mi_idx.movie_id and ci.movie_id = cc.movie_id and ci.movie_id = mi_idx.movie_id and cc.movie_id = mi_idx.movie_id and chn.id = ci.person_role_id and n.id = ci.person_id and k.id = mk.keyword_id and cct1.id = cc.subject_id and cct2.id = cc.status_id and it2.id = mi_idx.info_type_id",
+    "train_2",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_44",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 5 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_45",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like 'z%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_51",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 50 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_3",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_79",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_86",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_american_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.name like 'b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_92",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_84",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_90",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn1.name) as first_company, min(cn2.name) as second_company, min(mi_idx1.info) as first_rating, min(mi_idx2.info) as second_rating, min(t1.title) as first_movie, min(t2.title) as second_movie from company_name as cn1, company_name as cn2, info_type as it1, info_type as it2, kind_type as kt1, kind_type as kt2, link_type as lt, movie_companies as mc1, movie_companies as mc2, movie_info_idx as mi_idx1, movie_info_idx as mi_idx2, movie_link as ml, title as t1, title as t2 where cn1.country_code = '[nl]' and it1.info = 'rating' and it2.info = 'rating' and kt1.kind in ('tv series') and kt2.kind in ('tv series') and lt.link like '%follow%' and mi_idx2.info < '3.0' and t2.production_year = 2007 and lt.id = ml.link_type_id and t1.id = ml.movie_id and t2.id = ml.linked_movie_id and it1.id = mi_idx1.info_type_id and t1.id = mi_idx1.movie_id and kt1.id = t1.kind_id and cn1.id = mc1.company_id and t1.id = mc1.movie_id and ml.movie_id = mi_idx1.movie_id and ml.movie_id = mc1.movie_id and mi_idx1.movie_id = mc1.movie_id and it2.id = mi_idx2.info_type_id and t2.id = mi_idx2.movie_id and kt2.id = t2.kind_id and cn2.id = mc2.company_id and t2.id = mc2.movie_id and ml.linked_movie_id = mi_idx2.movie_id and ml.linked_movie_id = mc2.movie_id and mi_idx2.movie_id = mc2.movie_id",
+    "train_47",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like 'champion%' or t.title like 'loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_1",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_53",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_0",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_52",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_american_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.name like 'b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_46",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_91",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_85",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%bert%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_88",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_american_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.name like 'b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_63",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(t.title) as movie_title from company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, title as t where cn.country_code ='[nl]' and k.keyword ='character-name-in-title' and cn.id = mc.company_id and mc.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and mc.movie_id = mk.movie_id",
+    "train_77",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as alternative_name, min(chn.name) as voiced_char_name, min(n.name) as voicing_actress, min(t.title) as american_movie from aka_name as an, char_name as chn, cast_info as ci, company_name as cn, movie_companies as mc, name as n, role_type as rt, title as t where ci.note in ('(voice)', '(voice: japanese version)', '(voice) (uncredited)', '(voice: english version)') and cn.country_code ='[us]' and n.gender ='f' and rt.role ='actress' and ci.movie_id = t.id and t.id = mc.movie_id and ci.movie_id = mc.movie_id and mc.company_id = cn.id and ci.role_id = rt.id and n.id = ci.person_id and chn.id = ci.person_role_id and an.person_id = n.id and an.person_id = ci.person_id",
+    "train_76",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_62",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2010 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_89",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(mi.info) as movie_budget, min(mi_idx.info) as movie_votes, min(t.title) as movie_title from cast_info as ci, info_type as it1, info_type as it2, movie_info as mi, movie_info_idx as mi_idx, name as n, title as t where ci.note in ('(writer)', '(head writer)', '(written by)', '(story)', '(story editor)') and it1.info = 'genres' and it2.info = 'rating' and mi.info in ('horror', 'thriller') and mi.note is null and mi_idx.info > '8.0' and n.gender is not null and n.gender = 'f' and t.production_year between 2008 and 2014 and t.id = mi.movie_id and t.id = mi_idx.movie_id and t.id = ci.movie_id and ci.movie_id = mi.movie_id and ci.movie_id = mi_idx.movie_id and mi.movie_id = mi_idx.movie_id and n.id = ci.person_id and it1.id = mi.info_type_id and it2.id = mi_idx.info_type_id",
+    "train_74",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like '%champion%' or t.title like '%loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_60",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_48",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_49",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like 'champion%' or t.title like 'loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_61",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_75",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%bert%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_59",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_71",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_65",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_64",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_70",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_58",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_american_movie, min(n.name) as a1 from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and n.name like 'b%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_99",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_8",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_66",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as marvel_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword = 'marvel-cinematic-universe' and n.name like '%downey%robert%' and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_72",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and t.production_year > 2000 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_73",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(mi_idx.info) as rating, min(t.title) as movie_title from info_type as it, keyword as k, movie_info_idx as mi_idx, movie_keyword as mk, title as t where it.info ='rating' and k.keyword like '%sequel%' and mi_idx.info > '2.0' and t.production_year > 1990 and t.id = mi_idx.movie_id and t.id = mk.movie_id and mk.movie_id = mi_idx.movie_id and k.id = mk.keyword_id and it.id = mi_idx.info_type_id",
+    "train_67",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(mi.info) as movie_budget, min(mi_idx.info) as movie_votes, min(t.title) as movie_title from cast_info as ci, info_type as it1, info_type as it2, movie_info as mi, movie_info_idx as mi_idx, name as n, title as t where ci.note in ('(writer)', '(head writer)', '(written by)', '(story)', '(story editor)') and it1.info = 'genres' and it2.info = 'votes' and mi.info in ('horror', 'action', 'sci-fi', 'thriller', 'crime', 'war') and n.gender = 'm' and t.id = mi.movie_id and t.id = mi_idx.movie_id and t.id = ci.movie_id and ci.movie_id = mi.movie_id and ci.movie_id = mi_idx.movie_id and mi.movie_id = mi_idx.movie_id and n.id = ci.person_id and it1.id = mi.info_type_id and it2.id = mi_idx.info_type_id",
+    "train_9",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 50 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_98",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as movie_company, min(mi_idx.info) as rating, min(t.title) as mainstream_movie from company_name as cn, company_type as ct, info_type as it1, info_type as it2, movie_companies as mc, movie_info as mi, movie_info_idx as mi_idx, title as t where cn.country_code = '[us]' and ct.kind = 'production companies' and it1.info = 'genres' and it2.info = 'rating' and mi.info in ('drama', 'horror', 'western', 'family') and mi_idx.info > '7.0' and t.production_year between 2000 and 2010 and t.id = mi.movie_id and t.id = mi_idx.movie_id and mi.info_type_id = it1.id and mi_idx.info_type_id = it2.id and t.id = mc.movie_id and ct.id = mc.company_type_id and cn.id = mc.company_id and mc.movie_id = mi.movie_id and mc.movie_id = mi_idx.movie_id and mi.movie_id = mi_idx.movie_id",
+    "train_14",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as movie_company, min(mi_idx.info) as rating, min(t.title) as drama_horror_movie from company_name as cn, company_type as ct, info_type as it1, info_type as it2, movie_companies as mc, movie_info as mi, movie_info_idx as mi_idx, title as t where cn.country_code = '[us]' and ct.kind = 'production companies' and it1.info = 'genres' and it2.info = 'rating' and mi.info in ('drama', 'horror') and mi_idx.info > '8.0' and t.production_year between 2005 and 2008 and t.id = mi.movie_id and t.id = mi_idx.movie_id and mi.info_type_id = it1.id and mi_idx.info_type_id = it2.id and t.id = mc.movie_id and ct.id = mc.company_type_id and cn.id = mc.company_id and mc.movie_id = mi.movie_id and mc.movie_id = mi_idx.movie_id and mi.movie_id = mi_idx.movie_id",
+    "train_28",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(k.keyword) as movie_keyword, min(n.name) as actor_name, min(t.title) as hero_movie from cast_info as ci, keyword as k, movie_keyword as mk, name as n, title as t where k.keyword in ('superhero', 'sequel', 'second-part', 'marvel-comics', 'based-on-comic', 'tv-special', 'fight', 'violence') and n.name like '%downey%robert%' and t.production_year > 2014 and k.id = mk.keyword_id and t.id = mk.movie_id and t.id = ci.movie_id and ci.movie_id = mk.movie_id and n.id = ci.person_id",
+    "train_29",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 50 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_15",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as movie_company, min(mi_idx.info) as rating, min(t.title) as drama_horror_movie from company_name as cn, company_type as ct, info_type as it1, info_type as it2, movie_companies as mc, movie_info as mi, movie_info_idx as mi_idx, title as t where cn.country_code = '[us]' and ct.kind = 'production companies' and it1.info = 'genres' and it2.info = 'rating' and mi.info in ('drama', 'horror') and mi_idx.info > '8.0' and t.production_year between 2005 and 2008 and t.id = mi.movie_id and t.id = mi_idx.movie_id and mi.info_type_id = it1.id and mi_idx.info_type_id = it2.id and t.id = mc.movie_id and ct.id = mc.company_type_id and cn.id = mc.company_id and mc.movie_id = mi.movie_id and mc.movie_id = mi_idx.movie_id and mi.movie_id = mi_idx.movie_id",
+    "train_17",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(cn.name) as producing_company, min(miidx.info) as rating, min(t.title) as movie_about_winning from company_name as cn, company_type as ct, info_type as it, info_type as it2, kind_type as kt, movie_companies as mc, movie_info as mi, movie_info_idx as miidx, title as t where cn.country_code ='[us]' and ct.kind ='production companies' and it.info ='rating' and it2.info ='release dates' and kt.kind ='movie' and t.title != '' and (t.title like 'champion%' or t.title like 'loser%') and mi.movie_id = t.id and it2.id = mi.info_type_id and kt.id = t.kind_id and mc.movie_id = t.id and cn.id = mc.company_id and ct.id = mc.company_type_id and miidx.movie_id = t.id and it.id = miidx.info_type_id and mi.movie_id = miidx.movie_id and mi.movie_id = mc.movie_id and miidx.movie_id = mc.movie_id",
+    "train_16",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_12",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_13",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(an.name) as cool_actor_pseudonym, min(t.title) as series_named_after_char from aka_name as an, cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where cn.country_code ='[us]' and k.keyword ='character-name-in-title' and t.episode_nr >= 5 and t.episode_nr < 100 and an.person_id = n.id and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and an.person_id = ci.person_id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_39",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(chn.name) as voiced_char, min(n.name) as voicing_actress, min(t.title) as voiced_animation from aka_name as an, complete_cast as cc, comp_cast_type as cct1, comp_cast_type as cct2, char_name as chn, cast_info as ci, company_name as cn, info_type as it, info_type as it3, keyword as k, movie_companies as mc, movie_info as mi, movie_keyword as mk, name as n, person_info as pi, role_type as rt, title as t where cct1.kind ='cast' and cct2.kind ='complete+verified' and chn.name = 'queen' and ci.note in ('(voice)', '(voice) (uncredited)', '(voice: english version)') and cn.country_code ='[us]' and it.info = 'release dates' and it3.info = 'trivia' and k.keyword = 'computer-animation' and mi.info is not null and (mi.info like 'japan:%200%' or mi.info like 'usa:%200%') and n.gender ='f' and n.name like '%an%' and rt.role ='actress' and t.title = 'shrek 2' and t.production_year between 2000 and 2010 and t.id = mi.movie_id and t.id = mc.movie_id and t.id = ci.movie_id and t.id = mk.movie_id and t.id = cc.movie_id and mc.movie_id = ci.movie_id and mc.movie_id = mi.movie_id and mc.movie_id = mk.movie_id and mc.movie_id = cc.movie_id and mi.movie_id = ci.movie_id and mi.movie_id = mk.movie_id and mi.movie_id = cc.movie_id and ci.movie_id = mk.movie_id and ci.movie_id = cc.movie_id and mk.movie_id = cc.movie_id and cn.id = mc.company_id and it.id = mi.info_type_id and n.id = ci.person_id and rt.id = ci.role_id and n.id = an.person_id and ci.person_id = an.person_id and chn.id = ci.person_role_id and n.id = pi.person_id and ci.person_id = pi.person_id and it3.id = pi.info_type_id and k.id = mk.keyword_id and cct1.id = cc.subject_id and cct2.id = cc.status_id",
+    "train_11",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(chn.name) as character, min(t.title) as russian_mov_with_actor_producer from char_name as chn, cast_info as ci, company_name as cn, company_type as ct, movie_companies as mc, role_type as rt, title as t where ci.note like '%(producer)%' and cn.country_code = '[ru]' and rt.role = 'actor' and t.production_year > 2010 and t.id = mc.movie_id and t.id = ci.movie_id and ci.movie_id = mc.movie_id and chn.id = ci.person_role_id and rt.id = ci.role_id and cn.id = mc.company_id and ct.id = mc.company_type_id",
+    "train_10",
+    [
+      -1,
+      false
+    ]
+  ],
+  [
+    "select min(n.name) as member_in_charnamed_movie from cast_info as ci, company_name as cn, keyword as k, movie_companies as mc, movie_keyword as mk, name as n, title as t where k.keyword ='character-name-in-title' and n.name like '%bert%' and n.id = ci.person_id and ci.movie_id = t.id and t.id = mk.movie_id and mk.keyword_id = k.id and t.id = mc.movie_id and mc.company_id = cn.id and ci.movie_id = mc.movie_id and ci.movie_id = mk.movie_id and mc.movie_id = mk.movie_id",
+    "train_38",
+    [
+      -1,
+      false
+    ]
+  ]
+]
