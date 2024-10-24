@@ -18,7 +18,7 @@ Please check the documentation [here](./benchmarks/lqos/README.md).
 
 ### Learn Concurrency Control
 
-The benchmarks are conducted for Polyjuice. Please check the document at
+The benchmarks are conducted for Polyjuice. Please check the documentation at
 
 <https://github.com/derFischer/Polyjuice/tree/master/ae-tpcc-polyjuice>
 
