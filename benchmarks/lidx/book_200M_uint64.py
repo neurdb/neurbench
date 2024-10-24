@@ -16,7 +16,7 @@ from neuralbench.drift import find_q
 
 # %%
 # load book_fb_200M key set
-keyset_file_path = "/users/lingze/neurbench/data/keys/books_200M_unique_uint64"
+keyset_file_path = "/users/lingze/neuralbench/data/keys/books_200M_unique_uint64"
 data = load_key_set(keyset_file_path)
 
 # %%
@@ -90,7 +90,7 @@ print(rounded_max_value)
 ax.set_ylim(0, 0.02)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neurbench/data/keys/books_200M_uint64_distribution.pdf"
+filepath = "/users/lingze/neuralbench/data/keys/books_200M_uint64_distribution.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
@@ -160,13 +160,13 @@ print(rounded_max_value)
 ax.set_ylim(0, 0.02)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neurbench/data/keys/books_200M_uint64_distribution_drift_01.pdf"
+filepath = "/users/lingze/neuralbench/data/keys/books_200M_uint64_distribution_drift_01.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
 
 # %%
-workload_dir_path = "/users/lingze/neurbench/data/workload/books_200M_uint64_drift_01"
+workload_dir_path = "/users/lingze/neuralbench/data/workload/books_200M_uint64_drift_01"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -242,13 +242,13 @@ print(rounded_max_value)
 ax.set_ylim(0, 0.02)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neurbench/data/keys/books_200M_uint64_distribution_drift_03.pdf"
+filepath = "/users/lingze/neuralbench/data/keys/books_200M_uint64_distribution_drift_03.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
 
 # %%
-workload_dir_path = "/users/lingze/neurbench/data/workload/books_200M_uint64_drift_03"
+workload_dir_path = "/users/lingze/neuralbench/data/workload/books_200M_uint64_drift_03"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -324,13 +324,13 @@ print(rounded_max_value)
 ax.set_ylim(0, 0.02)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neurbench/data/keys/books_200M_uint64_distribution_drift_05.pdf"
+filepath = "/users/lingze/neuralbench/data/keys/books_200M_uint64_distribution_drift_05.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
 
 # %%
-workload_dir_path = "/users/lingze/neurbench/data/workload/books_200M_uint64_drift_05"
+workload_dir_path = "/users/lingze/neuralbench/data/workload/books_200M_uint64_drift_05"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -406,13 +406,13 @@ print(rounded_max_value)
 ax.set_ylim(0, 0.02)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neurbench/data/keys/books_200M_uint64_distribution_drift_07.pdf"
+filepath = "/users/lingze/neuralbench/data/keys/books_200M_uint64_distribution_drift_07.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
 
 # %%
-workload_dir_path = "/users/lingze/neurbench/data/workload/books_200M_uint64_drift_07"
+workload_dir_path = "/users/lingze/neuralbench/data/workload/books_200M_uint64_drift_07"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
