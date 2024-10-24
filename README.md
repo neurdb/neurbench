@@ -1,4 +1,4 @@
-# NeurBench
+# NeuralBench
 
 > Benchmarking Learned Databases with Data and Workload Drift Modeling
 
@@ -37,3 +37,45 @@ python dbproc.py -t customer -i 1.tbl -o 2.tbl -b $nbins -D $d -s $skewed
 python dbproc.py -t customer -i 2.tbl -o 3.tbl -b $nbins -D $d -s $skewed
 # ...
 ```
+
+### Run Query Processor (qpre, qproc)
+
+```bash
+# drift factor
+d=0.4
+# whether to skew the data distribution 
+# 0 means use uniform distribution to flatten the distribution
+skewed=1 
+# number of samples
+n=1000
+# type of metadata to drift. for available types, see `python qproc.py -h`
+type=tables
+python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
+```
+
+# Helper funcs
+
+#### Generate base queries
+
+```bash
+DSS_QUERY=./queries ./qgen -v -d -s 1 -r 42 > tpch-stream.sql
+```
+
+#### Preprocess
+
+```bash
+python qpre.py -i tpch-kit/dbgen/tpch-stream.sql
+```
+
+#### Convert tbl to csv
+
+```bash
+python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
+```
+
+#### Process
+
+```bash
+python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
+```
+

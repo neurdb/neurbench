@@ -1,27 +1,38 @@
 import argparse
 from functools import cached_property
-import json
-import os
 from typing import List, Optional
 
 import pandas as pd
-from neurbench import config, dist, deterministic, sample, fileop
-from neurbench.drift import find_q, jensenshannon
-from neurbench.util import formatted_list
+import neuralbench
+from neuralbench import config, dist, sample, fileop
+from neuralbench.drift import find_q, jensenshannon
+from neuralbench.util import formatted_list
 
-deterministic.seed_everything(42)
 
+def is_numerical_column(series: pd.Series, threshold: int = 20):
+    # if there is float, => numerical
+    for x in series:
+        if isinstance(x, float):
+            return True
 
-def is_numerical_column(series: pd.Series):
-    return all(isinstance(x, int) or isinstance(x, float) for x in series)
+    # if all int + (unique values < thresholw) => cate
+    if all(isinstance(x, int) for x in series):
+        unique_count = series.nunique()
+        if unique_count < threshold:
+            return False
+        else:
+            return True
+
+    # If the series contains non-integer/non-float types, return False by default
+    return False
 
 
 class NumericalDistributionHelpers:
     def __init__(
-            self,
-            series: pd.Series,
-            n_bins: Optional[int] = None,
-            config: Optional[dict] = None,
+        self,
+        series: pd.Series,
+        n_bins: Optional[int] = None,
+        config: Optional[dict] = None,
     ):
         self._series = series
         self._n_bins = n_bins
@@ -29,6 +40,7 @@ class NumericalDistributionHelpers:
 
     @cached_property
     def dist(self):
+        print("called dist on numerical_dist_on_predefined_bins")
         if self._config:
             d = dist.numerical_dist_on_predefined_bins(
                 self._series, bins=self._config["values"]
@@ -76,10 +88,10 @@ class CategoricalDistributionHelpers:
 
 class SeriesDistribution:
     def __init__(
-            self,
-            series: pd.Series,
-            n_bins: Optional[int] = None,
-            config: Optional[dict] = None,
+        self,
+        series: pd.Series,
+        n_bins: Optional[int] = None,
+        config: Optional[dict] = None,
     ):
         self._series = series
         self._n_bins = n_bins
@@ -105,53 +117,88 @@ class SeriesDistribution:
 """
 
 
-class TableProcessor:
+class TableProcessor(neuralbench.Processor):
     def __init__(
-            self,
-            dbname: str,
-            table: str,
-            input_path: str,
-            output_path: str,
-            config_path: str,
-            n_bins: int,
-            skewed: int,
+        self,
+        dbname: str,
+        table: str,
+        config_path: str,
+        n_bins: int,
+        skewed: int,
     ):
-        # TODO: Support other databases than TPC-H
         self.dbname = dbname
         self.table = table
-        self.input_path = input_path
-        self.output_path = output_path
         self.config_path = config_path
         self.n_bins = n_bins
         self.skewed = skewed
 
-        self.applicable_columns_list = config.TPCH_DB_APPLICABLE_COLUMNS[table]
+        self.applicable_columns_list = config.DB_MAP[dbname][
+            "drift_applicable_columns"
+        ][table]
         self.predefined_bins = None
-        self.config = {}
         self.dists = {}
         self.new_data = {}
 
-        self.load_bin_values()
-        self.df = self.load_data()
-        self.compute_dists()
+        self._config, err = neuralbench.load_config(self.config_path)
+        if err is not None:
+            print("WARN  loading config: ", err)
 
-    def load_bin_values(self):
-        if not os.path.exists(self.config_path):
-            return
+    @property
+    def config(self):
+        return self._config
 
-        try:
-            with open(self.config_path, "r") as f:
-                self.config = json.loads(f.read())
-        except:
-            print("WARN  Invalid config. ignoring.")
+    def load(self, input_path: str):
+        if input_path.endswith(".csv"):
+            sep = ","
+        elif input_path.endswith(".tbl"):
+            sep = "|"
+        else:
+            raise ValueError(f"Unknown file type: {input_path}")
 
-        print("config loaded from: ", self.config_path)
-
-    def load_data(self):
-        df = pd.read_csv(self.input_path, sep="|", header=None)
+        df = pd.read_csv(
+            input_path,
+            sep=sep,
+            header=None,
+            doublequote=False,
+            escapechar="\\",
+            low_memory=False,
+        )
+        
+        def test_and_convert_column_dtypes(series):
+            """Convert series to correct dtype based on the first 10 values.
+            
+            If all values in the series are integers, convert the series to integers.
+            If all values in the series are floats, convert the series to floats.
+            If all values in the series are strings, convert the series to strings.
+            If some values in the series are integers and some are floats, convert the series to floats.
+            """
+            # print(series.head())
+            
+            if all(isinstance(x, float) for x in series.head()):
+                if any(series.head().isna()):
+                    return series                
+                elif all(abs(x - int(x)) < 1e-5 for x in series.head()):
+                    return series.fillna(value=0).apply(int)
+                else:
+                    return series
+            
+            if all(isinstance(x, str) for x in series.head()):
+                return series.apply(str)
+            else:
+                return series
+            
+        # for column, dtype in df.dtypes.items():
+        #     print(f"{column}: {dtype}")
+            
+        df = df.apply(test_and_convert_column_dtypes, axis=0)
+        
+        # for column, dtype in df.dtypes.items():
+        #     print(f"{column}: {dtype}")
+        
         df.columns = df.columns.astype(str)
+        self.df = df
 
-        return df
+        self.compute_dists()
 
     def compute_dists(self):
         for i in range(len(self.applicable_columns_list)):
@@ -160,13 +207,13 @@ class TableProcessor:
 
             i = str(i)
 
-            d = self._get_dist(self.df[i])
+            series = self.df[i]
+            d = self._get_dist(series)
             print(d)
 
-            self.dists[str(self.df[i].name)] = d
+            self._update_config(series.name, d.bin_values)
 
-    def dump_config(self):
-        fileop.dump_json(self.config, self.config_path)
+            self.dists[str(series.name)] = d
 
     def _get_dist(self, series):
         if self.config:
@@ -174,12 +221,15 @@ class TableProcessor:
         else:
             c = None
 
-        d = SeriesDistribution(series, n_bins=self.n_bins, config=c)
-        self.config[str(series.name)] = d.bin_values
+        return SeriesDistribution(series, n_bins=self.n_bins, config=c)
 
-        return d
+    def _update_config(self, series_name, bin_values):
+        self.config[str(series_name)] = bin_values
 
-    def apply_drift(self, drift: float):
+    def apply_drift(self, drift: float, n_samples: Optional[int]):
+        if n_samples is not None:
+            raise NotImplementedError("n_samples is not supported")
+
         for k in self.dists.keys():
             dist = self.dists[k].get()
             # dist.values: frequence of bin/value
@@ -197,13 +247,16 @@ class TableProcessor:
     def _sample_data(self, dist: List[float], index: list, size: int):
         return sample.sample_from_distribution(dist, index, size)[0]
 
-    def save_data(self):
+    def save(self, output_path: str):
         df = self.df.copy()
 
         for k in self.new_data.keys():
             df[k] = self.new_data[k]
 
-        fileop.dump_tbl(df, self.output_path)
+        if output_path.endswith(".tbl"):
+            fileop.dump_tbl(df, output_path)
+        else:
+            fileop.dump_csv(df, output_path)
 
 
 def main():
@@ -238,8 +291,8 @@ def main():
     parser.add_argument(
         "-c",
         "--config",
-        default="./{table}-config.json",
-        help="Path to table config file, including bin values (default: ./{table}-config.json)",
+        default="./{dbname}-table-{table}-config.json",
+        help="Path to table config file, including bin values (default: ./{dbname}-table-{table}-config.json)",
     )
     parser.add_argument(
         "-s",
@@ -252,8 +305,8 @@ def main():
     args = parser.parse_args()
 
     for k, v in args.__dict__.items():
-        if isinstance(v, str) and "{table}" in v:
-            args.__dict__[k] = v.format(table=args.table)
+        if isinstance(v, str) and ("{dbname}" in v or "{table}" in v):
+            args.__dict__[k] = v.format(dbname=args.dbname, table=args.table)
 
     print(args)
 
@@ -261,24 +314,15 @@ def main():
     if not 0.0 <= args.drift <= 1.0:
         parser.error("Drift factor must be between 0.0 and 1.0")
 
-    tp = TableProcessor(
+    tp: neuralbench.Processor = TableProcessor(
         args.dbname,
         args.table,
-        args.input,
-        args.output,
         args.config,
         args.n_bins,
         args.skewed,
     )
 
-    tp.dump_config()
-    print(f"Table config dumped to {args.config}")
-
-    tp.apply_drift(args.drift)
-    print(f"Processed data with drift factor {args.drift}")
-
-    tp.save_data()
-    print(f"Data saved to {args.output}")
+    neuralbench.make_drift(tp, "", args.input, args.output, args.config, args.drift)
 
 
 if __name__ == "__main__":

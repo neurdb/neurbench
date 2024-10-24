@@ -4,9 +4,7 @@ import numpy as np
 import os
 from pathlib import Path
 
-from typing import List
-
-from neurbench.index.util import load_key_set
+from neuralbench.index.util import load_key_set
 
 
 key_set_load_test_input = [
@@ -50,7 +48,7 @@ real_file_paths = [
     "/users/lingze/TLI/data/lognormal_200M_uint32",
 ]
 
-@pytest.mark.skip(reason="To test the real data file, we need to download the data file from the neurbench website.")
+@pytest.mark.skip(reason="To test the real data file, we need to download the data file from the website.")
 @pytest.mark.parametrize("filepath", real_file_paths)
 @pytest.mark.index
 def test_real_key_set_load(filepath: str):
