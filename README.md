@@ -38,7 +38,7 @@ pickup_policy=./training/input-RL-ic3-new-tpcc.txt
 
 ### Learned Index
 
-Please check the notebooks and scripts in `benchmarks/lidx` for the procedure.
+Please check the documentation [here](./benchmarks/lidx/README.md).
 
 The main code for the benchmarks is in `benchmarks/lidx` and `neuralbench/index`.
 

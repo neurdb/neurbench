@@ -5,3 +5,5 @@ The testbed for benchmarking learned indexes is modified from [TLI](https://gith
 To isolated the GPL-licensed code, we create a separated repository to place all testing code derived from TLI. Please use the following link to download and place it in `/users/lingze/TLI`:
 
 <https://anonymous.4open.science/r/indexBench-CEC1>
+
+The notebooks and scripts in `benchmarks/lidx` are provided for generating drifts.
