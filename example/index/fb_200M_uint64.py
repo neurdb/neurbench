@@ -1,7 +1,5 @@
 # %%
 # -*- coding: utf-8 -*-
-# @ Time    : 2024/10/06
-# @ Author : zlz.bit.pro@gmail.com
 # @ Desc: Example to determine the insert operations in different drfit setting in 
 
 # set workspace to the root of the project

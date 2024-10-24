@@ -1,7 +1,5 @@
 # %%
 # -*- coding: utf-8 -*-
-# @ Time    : 2024/10/06
-# @ Author : zlz.bit.pro@gmail.com
 # @ Desc: Example to process wiki_ts dataset
 
 import os
