@@ -18,7 +18,21 @@ Please check the documentation [here](./benchmarks/lqos/README.md).
 
 ### Learn Concurrency Control
 
-To be updated
+The benchmarks are conducted for Polyjuice. Please check the document at
+
+<https://github.com/derFischer/Polyjuice/tree/master/ae-tpcc-polyjuice>
+
+to set up the testbed.
+
+The experiments are done with the default config, i.e.,
+
+```ini
+selection=truncation
+psize=8
+random_branch=4
+mutate_rate=0.05
+pickup_policy=./training/input-RL-ic3-new-tpcc.txt
+```
 
 ### Learned Index
 
