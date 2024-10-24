@@ -44,6 +44,7 @@ def sample_bulkloading_keyset(
 
     return bulk_loading_keys
 
+
 class KeySetBinEncoder(object):
     UINT32_DEFAULT_OFFSET = 20
     UINT64_DEFAULT_OFFSET = 40
@@ -94,15 +95,15 @@ class KeySetBinEncoder(object):
         return bin_idxs, probability_distribution, bin_idx_to_key
 
     @staticmethod
-    def plot_probability_distribution(probability_distribution: np.ndarray) -> None:
+    def plot_probability_distribution(probability_distribution: np.ndarray, x:Optional[List] = None) -> None:
         """
         Plot the probability distribution.
         :param probability_distribution: The probability distribution to plot
         """
         import matplotlib.pyplot as plt
-        labels = range(len(probability_distribution))
+        labels = x if x else range(len(probability_distribution))
         max_value = max(probability_distribution)
-        rounded_max_value = np.ceil(max_value * 10) / 10
+        rounded_max_value = np.ceil(max_value * 20) / 20
 
         plt.bar(labels, probability_distribution, color='blue', alpha=0.7)
         plt.xlabel('Categories')
@@ -113,6 +114,36 @@ class KeySetBinEncoder(object):
 
         # Show the plot
         plt.show()
+
+    @staticmethod
+    def plot_cdf(data: np.ndarray,
+                 title: Optional[str] = "Cumulative Distribution Function (CDF)",
+                 min_value: Optional[int] = None,
+                 max_value: Optional[int] = None,
+                 figsize: Optional[Tuple] = (4, 3),
+                 offset: Optional[int] = 1e18) -> None:
+        """
+        Plot the cumulative distribution function.
+        :param data: The data to plot
+        :param title: The title of the plot
+        :param min_value: The minimum value to plot
+        :param max_value: The maximum value to plot
+        """
+        import matplotlib.pyplot as plt
+        sorted_key = np.sort(data)
+        cdf = np.arange(1, len(sorted_key) + 1) / len(sorted_key)
+        max_value = max_value if not max_value else np.max(data)
+        min_value = min_value if not min_value else np.min(data)
+
+        plt.figure(figsize=figsize)
+        plt.plot(sorted_key, cdf)
+        plt.xlabel('Data values')
+        plt.ylabel('CDF')
+        plt.xlim(min_value - offset, max_value + offset)
+        plt.title(title)
+        plt.grid(True)
+        plt.show()
+
     ''' ---------------------- Abnormal Value Filter ----------------------'''
     @staticmethod
     def filter_abnormal_values(
