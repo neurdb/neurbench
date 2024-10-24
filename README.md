@@ -16,6 +16,8 @@ This repository contains the code of NeuralBench, which is used to evaluate lear
 
 Please check the documentation [here](./benchmarks/lqos/README.md).
 
+The main code for the benchmarks is in `benchmarks/lqos`.
+
 ### Learn Concurrency Control
 
 The benchmarks are conducted for Polyjuice. Please check the documentation at
@@ -36,7 +38,9 @@ pickup_policy=./training/input-RL-ic3-new-tpcc.txt
 
 ### Learned Index
 
-To be updated
+Please check the notebooks and scripts in `benchmarks/lidx` for the procedure.
+
+The main code for the benchmarks is in `benchmarks/lidx` and `neuralbench/index`.
 
 ## Tools & Utilities
 
