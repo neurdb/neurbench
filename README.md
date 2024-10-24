@@ -16,7 +16,7 @@ This repository contains the code of NeuralBench, which is used to evaluate lear
 
 Please check the documentation [here](./benchmarks/lqos/README.md).
 
-The main code for the benchmarks is in `benchmarks/lqos`.
+The main code for the benchmarks is in `benchmarks/lqos` and `neuralbench/query`.
 
 ### Learn Concurrency Control
 

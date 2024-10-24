@@ -11,9 +11,9 @@
 ## Set the env
 
 ```bash
-conda env remove --name neurbench
+conda env remove --name neuralbench
 conda env create -f environment.yml
-conda activate neurbench
+conda activate neuralbench
 ```
 
 ## Set the config
@@ -33,11 +33,11 @@ skewed=1
 1. customer
 
    ```bash
-   python dbproc.py -t customer -i neurbench/tpch-kit/dbgen/data_0/customer.tbl -o neurbench/tpch-kit/dbgen/data_1/customer.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t customer -i neuralbench/tpch-kit/dbgen/data_0/customer.tbl -o neuralbench/tpch-kit/dbgen/data_1/customer.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t customer -i neurbench/tpch-kit/dbgen/data_1/customer.tbl -o neurbench/tpch-kit/dbgen/data_2/customer.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t customer -i neuralbench/tpch-kit/dbgen/data_1/customer.tbl -o neuralbench/tpch-kit/dbgen/data_2/customer.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t customer -i neurbench/tpch-kit/dbgen/data_2/customer.tbl -o neurbench/tpch-kit/dbgen/data_3/customer.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t customer -i neuralbench/tpch-kit/dbgen/data_2/customer.tbl -o neuralbench/tpch-kit/dbgen/data_3/customer.tbl -b 20 -D 0.05 -s 1
    ```
 
 2. lineitem
@@ -45,17 +45,17 @@ skewed=1
    Here we run with script
 
    ```bash
-   cd neurbench
+   cd neuralbench
    chmod +x ../../experiments/benchmark/gen_data.sh
    nohup   ../../experiments/benchmark/gen_data.sh   > output.log 2>&1 &
    ```
 
    ```bash
-   python dbproc.py -t lineitem -i neurbench/tpch-kit/dbgen/data_0/lineitem.tbl -o neurbench/tpch-kit/dbgen/data_1/lineitem.tbl -b 5 -D 0.05 -s 1
+   python dbproc.py -t lineitem -i neuralbench/tpch-kit/dbgen/data_0/lineitem.tbl -o neuralbench/tpch-kit/dbgen/data_1/lineitem.tbl -b 5 -D 0.05 -s 1
    
-   python dbproc.py -t lineitem -i neurbench/tpch-kit/dbgen/data_1/lineitem.tbl -o neurbench/tpch-kit/dbgen/data_2/lineitem.tbl -b 5 -D 0.05 -s 1
+   python dbproc.py -t lineitem -i neuralbench/tpch-kit/dbgen/data_1/lineitem.tbl -o neuralbench/tpch-kit/dbgen/data_2/lineitem.tbl -b 5 -D 0.05 -s 1
    
-   python dbproc.py -t lineitem -i neurbench/tpch-kit/dbgen/data_2/lineitem.tbl -o neurbench/tpch-kit/dbgen/data_3/lineitem.tbl -b 5 -D 0.05 -s 1
+   python dbproc.py -t lineitem -i neuralbench/tpch-kit/dbgen/data_2/lineitem.tbl -o neuralbench/tpch-kit/dbgen/data_3/lineitem.tbl -b 5 -D 0.05 -s 1
    ```
 
 
@@ -63,61 +63,61 @@ skewed=1
 3. nation
 
    ```bash
-   python dbproc.py -t nation -i neurbench/tpch-kit/dbgen/data_0/nation.tbl -o neurbench/tpch-kit/dbgen/data_1/nation.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t nation -i neuralbench/tpch-kit/dbgen/data_0/nation.tbl -o neuralbench/tpch-kit/dbgen/data_1/nation.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t nation -i neurbench/tpch-kit/dbgen/data_1/nation.tbl -o neurbench/tpch-kit/dbgen/data_2/nation.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t nation -i neuralbench/tpch-kit/dbgen/data_1/nation.tbl -o neuralbench/tpch-kit/dbgen/data_2/nation.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t nation -i neurbench/tpch-kit/dbgen/data_2/nation.tbl -o neurbench/tpch-kit/dbgen/data_3/nation.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t nation -i neuralbench/tpch-kit/dbgen/data_2/nation.tbl -o neuralbench/tpch-kit/dbgen/data_3/nation.tbl -b 20 -D 0.05 -s 1
    ```
 
 4. ordersw
 
    ```bash
-   python dbproc.py -t orders -i neurbench/tpch-kit/dbgen/data_0/orders.tbl -o neurbench/tpch-kit/dbgen/data_1/orders.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t orders -i neuralbench/tpch-kit/dbgen/data_0/orders.tbl -o neuralbench/tpch-kit/dbgen/data_1/orders.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t orders -i neurbench/tpch-kit/dbgen/data_1/orders.tbl -o neurbench/tpch-kit/dbgen/data_2/orders.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t orders -i neuralbench/tpch-kit/dbgen/data_1/orders.tbl -o neuralbench/tpch-kit/dbgen/data_2/orders.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t orders -i neurbench/tpch-kit/dbgen/data_2/orders.tbl -o neurbench/tpch-kit/dbgen/data_3/orders.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t orders -i neuralbench/tpch-kit/dbgen/data_2/orders.tbl -o neuralbench/tpch-kit/dbgen/data_3/orders.tbl -b 20 -D 0.05 -s 1
    ```
 
 5. part
 
    ```bash
-   python dbproc.py -t part -i neurbench/tpch-kit/dbgen/data_0/part.tbl -o neurbench/tpch-kit/dbgen/data_1/part.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t part -i neuralbench/tpch-kit/dbgen/data_0/part.tbl -o neuralbench/tpch-kit/dbgen/data_1/part.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t part -i neurbench/tpch-kit/dbgen/data_1/part.tbl -o neurbench/tpch-kit/dbgen/data_2/part.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t part -i neuralbench/tpch-kit/dbgen/data_1/part.tbl -o neuralbench/tpch-kit/dbgen/data_2/part.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t part -i neurbench/tpch-kit/dbgen/data_2/part.tbl -o neurbench/tpch-kit/dbgen/data_3/part.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t part -i neuralbench/tpch-kit/dbgen/data_2/part.tbl -o neuralbench/tpch-kit/dbgen/data_3/part.tbl -b 20 -D 0.05 -s 1
    ```
 
 6. partsupp
 
    ```bash
-   python dbproc.py -t partsupp -i neurbench/tpch-kit/dbgen/data_0/partsupp.tbl -o neurbench/tpch-kit/dbgen/data_1/partsupp.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t partsupp -i neuralbench/tpch-kit/dbgen/data_0/partsupp.tbl -o neuralbench/tpch-kit/dbgen/data_1/partsupp.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t partsupp -i neurbench/tpch-kit/dbgen/data_1/partsupp.tbl -o neurbench/tpch-kit/dbgen/data_2/partsupp.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t partsupp -i neuralbench/tpch-kit/dbgen/data_1/partsupp.tbl -o neuralbench/tpch-kit/dbgen/data_2/partsupp.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t partsupp -i neurbench/tpch-kit/dbgen/data_2/partsupp.tbl -o neurbench/tpch-kit/dbgen/data_3/partsupp.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t partsupp -i neuralbench/tpch-kit/dbgen/data_2/partsupp.tbl -o neuralbench/tpch-kit/dbgen/data_3/partsupp.tbl -b 20 -D 0.05 -s 1
    ```
 
 7. region
 
    ```bash
-   python dbproc.py -t region -i neurbench/tpch-kit/dbgen/data_0/region.tbl -o neurbench/tpch-kit/dbgen/data_1/region.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t region -i neuralbench/tpch-kit/dbgen/data_0/region.tbl -o neuralbench/tpch-kit/dbgen/data_1/region.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t region -i neurbench/tpch-kit/dbgen/data_1/region.tbl -o neurbench/tpch-kit/dbgen/data_2/region.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t region -i neuralbench/tpch-kit/dbgen/data_1/region.tbl -o neuralbench/tpch-kit/dbgen/data_2/region.tbl -b 20 -D 0.05 -s 1
 
-   python dbproc.py -t region -i neurbench/tpch-kit/dbgen/data_2/region.tbl -o neurbench/tpch-kit/dbgen/data_3/region.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t region -i neuralbench/tpch-kit/dbgen/data_2/region.tbl -o neuralbench/tpch-kit/dbgen/data_3/region.tbl -b 20 -D 0.05 -s 1
    ```
 
 8. supplier
 
    ````bash
-   python dbproc.py -t supplier -i neurbench/tpch-kit/dbgen/data_0/supplier.tbl -o neurbench/tpch-kit/dbgen/data_1/supplier.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t supplier -i neuralbench/tpch-kit/dbgen/data_0/supplier.tbl -o neuralbench/tpch-kit/dbgen/data_1/supplier.tbl -b 20 -D 0.05 -s 1
    
-   python dbproc.py -t supplier -i neurbench/tpch-kit/dbgen/data_1/supplier.tbl -o neurbench/tpch-kit/dbgen/data_2/supplier.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t supplier -i neuralbench/tpch-kit/dbgen/data_1/supplier.tbl -o neuralbench/tpch-kit/dbgen/data_2/supplier.tbl -b 20 -D 0.05 -s 1
    
-   python dbproc.py -t supplier -i neurbench/tpch-kit/dbgen/data_2/supplier.tbl -o neurbench/tpch-kit/dbgen/data_3/supplier.tbl -b 20 -D 0.05 -s 1
+   python dbproc.py -t supplier -i neuralbench/tpch-kit/dbgen/data_2/supplier.tbl -o neuralbench/tpch-kit/dbgen/data_3/supplier.tbl -b 20 -D 0.05 -s 1
    ````
 
 ## Query Shift
@@ -785,7 +785,7 @@ done
 Transfer query format for benchmarking
 
 ```
-cd baseline/neurbench
+cd baseline/neuralbench
 ```
 
 For data shifts
@@ -1037,7 +1037,7 @@ Clear
 Remove the trained model
 
 ```bash
-cd ~/neurbench/benchmarks/lqos/BaoForPostgreSQL/bao_server
+cd ~/neuralbench/benchmarks/lqos/BaoForPostgreSQL/bao_server
 rm -rf bao_default_model
 ```
 
@@ -1222,7 +1222,7 @@ docker run --gpus all -d \
   --net postgresbalsa_network \
   --ip 10.6.0.4 \
   -v ~/AI4QueryOptimizer/datasets:/data/datasets \
-  -v ~/neurbench/benchmarks/lqos/:/app/baseline \
+  -v ~/neuralbench/benchmarks/lqos/:/app/baseline \
   -e POSTGRES_DB=imdbload \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
@@ -1236,7 +1236,7 @@ docker run --gpus all -d \
   --net postgresbalsa_network \
   --ip 10.6.0.4 \
   -v ~/AI4QueryOptimizer/datasets:/data/datasets \
-  -v ~/neurbench/benchmarks/lqos/:/app/baseline \
+  -v ~/neuralbench/benchmarks/lqos/:/app/baseline \
   -e POSTGRES_DB=imdbload \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
@@ -1321,7 +1321,7 @@ wget https://ftp.postgresql.org/pub/source/v13.1/postgresql-13.1.tar.bz2
 tar -xvf postgresql-13.1.tar.bz2
 
 cd ~
-cp ~/neurbench/benchmarks/lqos/Lero/0001-init-lero.patch .
+cp ~/neuralbench/benchmarks/lqos/Lero/0001-init-lero.patch .
 cd ~/postgresql-13.1
 # 2. update code
 git apply ../0001-init-lero.patch
@@ -1330,7 +1330,7 @@ git apply ../0001-init-lero.patch
 ### Config running env
 
 ```bash
-cd ~/neurbench/benchmarks/lqos/Lero
+cd ~/neuralbench/benchmarks/lqos/Lero
 # build and run the containers
 docker build -t lero_img:latest .
 
@@ -1383,8 +1383,8 @@ su - postgres
 /usr/local/pgsql/bin/initdb -D /usr/local/pgsql/data
 
 # 4. modify the configuration of PostgreSQL in postgresql.conf
-cp /code/neurbench/benchmarks/lqos/Lero/postgresql.conf /usr/local/pgsql/data/postgresql.conf
-cp /code/neurbench/benchmarks/lqos/Lero/pg_hba.conf /usr/local/pgsql/data/pg_hba.conf
+cp /code/neuralbench/benchmarks/lqos/Lero/postgresql.conf /usr/local/pgsql/data/postgresql.conf
+cp /code/neuralbench/benchmarks/lqos/Lero/pg_hba.conf /usr/local/pgsql/data/pg_hba.conf
 
 
 # 5. start db
@@ -1404,14 +1404,14 @@ ALTER USER postgres PASSWORD '123';
 ### Run the server
 
 ```bash
-cd /code/neurbench/benchmarks/lqos/Lero/lero
+cd /code/neuralbench/benchmarks/lqos/Lero/lero
 nohup python -u server.py > ./run_backend_log.txt 2>&1 &
 ```
 
 ### Train (data shifts)
 
 ```bash
-cd /code/neurbench/benchmarks/lqos/Lero/lero
+cd /code/neuralbench/benchmarks/lqos/Lero/lero
 
 # output_query_latency_file: the final executed plan will be output to this file
 # model_prefix: prefix of model name
@@ -1593,20 +1593,20 @@ pip install psqlparse
 Run
 
 ```bash
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/joins --output_json query_join__train.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/joins --output_json query_join__train.json
 
 
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/predicates --output_json query_predicates__train.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/predicates --output_json query_predicates__train.json
 
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/tables --output_json query_tables__train.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_train_1/tables --output_json query_tables__train.json
 
 
 # test
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_join__test.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_join__test.json
 
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_predicates__test.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_predicates__test.json
 
-python3 neurbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_tables__test.json
+python3 neuralbench_workload_gene.py --input_folder ~//datasets/dynamic_datasets/imdb/q_test_0 --output_json query_tables__test.json
 ```
 
 
@@ -1653,9 +1653,9 @@ python run.py --run Neo_JOB_TABLE --local
 Test
 
 ```bash
-python3 test_model.py --run Neo_JOB_DEBUG --model_checkpoint  ~/neurbench/benchmarks/lqos/lqo_ml_perspective/balsa/checkpoints/2024_10_16__192557/checkpoint__iter0.pt
+python3 test_model.py --run Neo_JOB_DEBUG --model_checkpoint  ~/neuralbench/benchmarks/lqos/lqo_ml_perspective/balsa/checkpoints/2024_10_16__192557/checkpoint__iter0.pt
 
-python3 test_model.py --run Neo_JOB_JOIN --model_checkpoint  ~/neurbench/benchmarks/lqos/lqo_ml_perspective/balsa/wandb/offline-run-20241016_203421-8fo30r6c/files/checkpoint.pt
+python3 test_model.py --run Neo_JOB_JOIN --model_checkpoint  ~/neuralbench/benchmarks/lqos/lqo_ml_perspective/balsa/wandb/offline-run-20241016_203421-8fo30r6c/files/checkpoint.pt
 ```
 
 Clean up
