@@ -10,9 +10,9 @@ os.chdir(workspace_path)
 print("Current workspace:", os.getcwd())
 
 import numpy as np
-from neurbench.index.util import load_key_set, KeyType, save_file
-from neurbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
-from neurbench.drift import find_q
+from neuralbench.index.util import load_key_set, KeyType, save_file
+from neuralbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
+from neuralbench.drift import find_q
 
 # %%
 # load wiki_ts_200M key set
