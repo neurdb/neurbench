@@ -51,14 +51,14 @@ def sample_from_distribution(distribution: List[float], values: list, num_sample
     Sample data from a given distribution and pair it with corresponding values.
 
     Args:
-    distribution (array-like): The probability distribution to sample from.
-    values (array-like): The corresponding values for each probability in the distribution.
-    num_samples (int): The number of samples to generate.
+        distribution (array-like): The probability distribution to sample from.
+        values (array-like): The corresponding values for each probability in the distribution.
+        num_samples (int): The number of samples to generate.
 
     Returns:
-    tuple: (sampled_values, sampled_indices)
-        sampled_values: The sampled corresponding values.
-        sampled_indices: The indices of the sampled items (for reference).
+        tuple: (sampled_values, sampled_indices)
+            sampled_values: The sampled corresponding values.
+            sampled_indices: The indices of the sampled items (for reference).
     """
     if len(distribution) != len(values):
         raise ValueError("The length of distribution and values must be the same.")
@@ -76,7 +76,7 @@ def sample_from_distribution(distribution: List[float], values: list, num_sample
     # Get the corresponding values for the sampled indices
     start_time = time.time()
     
-    if len(values) < 32768:
+    if num_samples < 32768:
         """Sequential Sampling"""
         result = para_sample((values[i] for i in sampled_indices), 1)
     
