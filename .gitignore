@@ -172,3 +172,9 @@ cython_debug/
 # Customied by Lingze
 /data/keys
 /data/workload
+
+# Datasets
+datasets/
+
+# Sample results
+sample-*.csv

@@ -3,10 +3,11 @@ from functools import cached_property
 from typing import List, Optional
 
 import pandas as pd
-import neuralbench
-from neuralbench import config, dist, sample, fileop
 from neuralbench.drift import find_q, jensenshannon
 from neuralbench.util import formatted_list
+
+import neuralbench
+from neuralbench import config, dist, fileop, sample
 
 
 def is_numerical_column(series: pd.Series, threshold: int = 20):
@@ -158,56 +159,60 @@ class TableProcessor(neuralbench.Processor):
         df = pd.read_csv(
             input_path,
             sep=sep,
-            header=None,
+            header=None if self.dbname == "job" else "infer",
             doublequote=False,
             escapechar="\\",
             low_memory=False,
         )
-        
+
         def test_and_convert_column_dtypes(series):
             """Convert series to correct dtype based on the first 10 values.
-            
+
             If all values in the series are integers, convert the series to integers.
             If all values in the series are floats, convert the series to floats.
             If all values in the series are strings, convert the series to strings.
             If some values in the series are integers and some are floats, convert the series to floats.
             """
             # print(series.head())
-            
+
             if all(isinstance(x, float) for x in series.head()):
                 if any(series.head().isna()):
-                    return series                
+                    return series
                 elif all(abs(x - int(x)) < 1e-5 for x in series.head()):
                     return series.fillna(value=0).apply(int)
                 else:
                     return series
-            
+
             if all(isinstance(x, str) for x in series.head()):
                 return series.apply(str)
             else:
                 return series
-            
-        # for column, dtype in df.dtypes.items():
-        #     print(f"{column}: {dtype}")
-            
+
+        for column, dtype in df.dtypes.items():
+            print(f"{column}: {dtype}")
+        print()
+
         df = df.apply(test_and_convert_column_dtypes, axis=0)
-        
-        # for column, dtype in df.dtypes.items():
-        #     print(f"{column}: {dtype}")
-        
+
+        for column, dtype in df.dtypes.items():
+            print(f"{column}: {dtype}")
+        print()
+
         df.columns = df.columns.astype(str)
         self.df = df
-
-        self.compute_dists()
 
     def compute_dists(self):
         for i in range(len(self.applicable_columns_list)):
             if not self.applicable_columns_list[i]:
                 continue
 
-            i = str(i)
-
-            series = self.df[i]
+            ### Ver 1
+            # i = str(i)
+            # series = self.df[i]
+            
+            ### Ver 2
+            series = self.df.iloc[:, i]
+            
             d = self._get_dist(series)
             print(d)
 
