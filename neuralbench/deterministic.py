@@ -10,4 +10,3 @@ def seed_everything(seed: int):
 seed_everything(42)
 
 sample_rng = np.random.default_rng(np.random.MT19937(seed=np.random.randint(0, 2**32)))
-in_bin_sample_rng = np.random.default_rng(np.random.MT19937(seed=np.random.randint(0, 2**32)))

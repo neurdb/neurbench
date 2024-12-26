@@ -1,5 +1,6 @@
 import argparse
 from functools import cached_property
+import time
 from typing import List, Optional
 
 import pandas as pd
@@ -239,7 +240,10 @@ class TableProcessor(neuralbench.Processor):
             dist = self.dists[k].get()
             # dist.values: frequence of bin/value
             p = dist.values
+            
+            start_time = time.time()
             q = find_q(p, drift, self.skewed == 1)
+            print(f"find_q time: {time.time() - start_time}")
 
             print(formatted_list(p))
             print(formatted_list(q))

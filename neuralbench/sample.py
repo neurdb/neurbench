@@ -1,7 +1,49 @@
-from typing import List
+import itertools
+import time
+from typing import Generator, List, Sequence
+import typing
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
 from .deterministic import sample_rng
+
+
+def split_into_batches(lst, batch_size):
+    """
+    Splits a list into batches of a given size.
+
+    Parameters:
+        lst (list): The list to be split.
+        batch_size (int): The size of each batch.
+
+    Returns:
+        list: A list of batches.
+    """
+    return [lst[i : i + batch_size] for i in range(0, len(lst), batch_size)]
+
+
+def para_sample(values: Generator, random_state: int):
+    rng = np.random.default_rng(np.random.MT19937(seed=random_state))
+
+    result = []
+
+    for v in values:
+        if not issubclass(v.__class__, pd.Interval):
+            result.append(v)
+            continue
+
+        if isinstance(v.left, float):
+            result.append(rng.uniform(v.left, v.right))
+        elif isinstance(v.left, int):
+            result.append(rng.integers(v.left, v.right))
+        elif isinstance(v.left, np.integer):
+            result.append(rng.integers(int(v.left), int(v.right)))
+        else:
+            raise ValueError(f"Unsupported value type: {type(v.left)}")
+
+    return result
 
 
 def sample_from_distribution(distribution: List[float], values: list, num_samples: int):
@@ -25,26 +67,36 @@ def sample_from_distribution(distribution: List[float], values: list, num_sample
     distribution = np.array(distribution) / np.sum(distribution)
 
     # Sample indices based on the distribution
+    start_time = time.time()
     sampled_indices = sample_rng.choice(
         len(distribution), size=num_samples, p=distribution
     )
+    print(f"Sampling time: {time.time() - start_time}")
 
     # Get the corresponding values for the sampled indices
-    sampled_values = [values[i] for i in sampled_indices]
+    start_time = time.time()
+    
+    if len(values) < 32768:
+        """Sequential Sampling"""
+        result = para_sample((values[i] for i in sampled_indices), 1)
+    
+    else:
+        """Parallel Sampling"""
+        result = list(
+            itertools.chain.from_iterable(
+                typing.cast(
+                    List,
+                    Parallel(n_jobs=-1, batch_size=8192, verbose=10)(
+                        delayed(para_sample)(b, i+1)
+                        for i, b in enumerate(split_into_batches(sampled_indices, 8192))
+                    ),
+                )
+            )
+        )
 
-    for i in range(len(sampled_values)):
-        v = sampled_values[i]
-        if issubclass(v.__class__, pd.Interval):
-            if isinstance(v.left, float):
-                sampled_values[i] = sample_rng.uniform(v.left, v.right)
-            elif isinstance(v.left, int):
-                sampled_values[i] = sample_rng.integers(v.left, v.right)
-            elif isinstance(v.left, np.integer):
-                sampled_values[i] = sample_rng.integers(int(v.left), int(v.right))
-            else:
-                raise ValueError(f"Unsupported value type: {type(v.left)}")
+    print(f"Reassigning time: {time.time() - start_time}")
 
-    return sampled_values, sampled_indices
+    return result, sampled_indices
 
 
 if __name__ == "__main__":
