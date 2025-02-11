@@ -107,7 +107,7 @@ class QueryProcessor(neuralbench.Processor):
         with open(input_file, "r") as f:
             sqls = f.readlines()
             for s in sqls:
-                node = pglast.parse_sql(s)
+                node = pglast.parse_sql(s.split("#####")[1])
                 extractor = SQLInfoExtractor()
                 extractor(node)
 
@@ -130,7 +130,8 @@ class QueryProcessor(neuralbench.Processor):
                             self.config["map"][k][info_k_values_str] = []
 
                         self.config["map"][k][info_k_values_str].append(s)
-        self.compute_dist()
+
+        # self.compute_dists()
 
     def load(self, input_path: str):
         sql_files = glob.glob(os.path.join(input_path, "*.sql"))
@@ -166,9 +167,9 @@ class QueryProcessor(neuralbench.Processor):
 
                         self.config["map"][k][info_k_values_str].append(s)
 
-        self.compute_dist()
+        # self.compute_dists()
 
-    def compute_dist(self):
+    def compute_dists(self):
         for t in TYPES:
             d = self._get_dist(t, self.data[t])
             print(d)
@@ -211,7 +212,7 @@ class QueryProcessor(neuralbench.Processor):
         sampled_infos = sample.sample_from_distribution(dist, index, size)[0]
         for info in sampled_infos:
             selections = self.config["map"][self.type][str(info)]
-            result.append(deterministic.in_bin_sample_rng.choice(selections))
+            result.append(deterministic.sample_rng.choice(selections))
 
         return result
 
