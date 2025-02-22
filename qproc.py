@@ -231,7 +231,7 @@ def main():
     parser = argparse.ArgumentParser(description="Drift data")
 
     parser.add_argument(
-        "-d", "--dbname", default="tpch", help="Database name (default: tpch)"
+        "-d", "--dbname", help="Database name (default: tpch)", required=True
     )
 
     parser.add_argument(
@@ -253,14 +253,14 @@ def main():
     parser.add_argument(
         "-o",
         "--output",
-        default="./{dbname}-query-drifted.sql",
         help="Path to the output CSV file (default: ./{dbname}-query-drifted.sql)",
+        required = True
     )
     parser.add_argument(
         "-t",
         "--type",
-        default="tables",
         help='Metadata type (available: "tables", "predicates", "joins", "aliasname_fullname". default: "tables")',
+        required=True
     )
     parser.add_argument(
         "-c",
