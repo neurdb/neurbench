@@ -68,11 +68,12 @@ class QueryProcessor(neuralbench.Processor):
             type: str,
             config_path: str,
             skewed: int,
+            dump_feature_table: bool = False,
     ):
-        # TODO: Support other databases than TPC-H
         self.dbname = dbname
         self.config_path = config_path
         self.skewed = skewed
+        self.dump_feature_table = dump_feature_table
 
         self.type = type
 
@@ -168,6 +169,14 @@ class QueryProcessor(neuralbench.Processor):
                         self.config["map"][k][info_k_values_str].append(s)
 
         # self.compute_dists()
+        
+        if self.dump_feature_table:
+            self._dump_feature_table()
+            
+    def _dump_feature_table(self):
+        df = pd.DataFrame(self.data)
+        df = df.applymap(lambda x: str(x).replace("'", "").replace(", ", " AND "))
+        df.to_csv(f"{self.dbname}_feature_table.csv", index=False)
 
     def compute_dists(self):
         for t in TYPES:
@@ -282,6 +291,12 @@ def main():
         default=1,
         help="Whether to distribution shifts towards more skewed. 1 = yes, 0 = no (default: 1)",
     )
+    parser.add_argument(
+        "-F",
+        "--dump_feature_table",
+        action="store_true",
+        help="Dump feature table",
+    )
 
     args = parser.parse_args()
 
@@ -298,7 +313,7 @@ def main():
     if not 0.0 <= args.drift <= 1.0:
         parser.error("Drift factor must be between 0.0 and 1.0")
 
-    p = QueryProcessor(args.dbname, args.type, args.config, args.skewed)
+    p = QueryProcessor(args.dbname, args.type, args.config, args.skewed, args.dump_feature_table)
 
     neuralbench.make_drift(
         p, args.input_file, args.input_dir, args.output, args.config, args.drift, args.n_samples
