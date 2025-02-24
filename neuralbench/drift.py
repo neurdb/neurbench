@@ -38,7 +38,7 @@ def find_q(p: List[float], d: float, skewed: bool = True) -> List[float]:
         tol=1e-6,
     )
 
-    return result.x / sum(result.x)
+    return result.x/sum(result.x)
 
 
 if __name__ == "__main__":
