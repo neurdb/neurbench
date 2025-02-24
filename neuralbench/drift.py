@@ -32,7 +32,7 @@ def find_q(p: List[float], d: float, skewed: bool = True) -> List[float]:
         _objective, q0, args=(p, d), method="TNC", constraints=cons, bounds=bounds, tol=1e-6
     )
 
-    return result.x
+    return result.x/sum(result.x)
 
 
 if __name__ == "__main__":
