@@ -29,10 +29,16 @@ def find_q(p: List[float], d: float, skewed: bool = True) -> List[float]:
     bounds = [(0, 1) for _ in range(n)]
 
     result = minimize(
-        _objective, q0, args=(p, d), method="TNC", constraints=cons, bounds=bounds, tol=1e-6
+        _objective,
+        q0,
+        args=(p, d),
+        method="L-BFGS-B",
+        constraints=cons,
+        bounds=bounds,
+        tol=1e-6,
     )
 
-    return result.x
+    return result.x / sum(result.x)
 
 
 if __name__ == "__main__":
