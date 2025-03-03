@@ -1,0 +1,102 @@
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:42:06.408047, /data/datasets/imdb_v2/query/q_test_sample_20%/10c.sql, 1047.169, 37887.551, Bao
+SET enable_mergejoin TO off; , 1, 2025-02-15 09:42:06.423323, /data/datasets/imdb_v2/query/q_test_sample_20%/10c.sql, 118.26, 2332.751, Bao
+SET enable_mergejoin TO off; , 2, 2025-02-15 09:42:06.428389, /data/datasets/imdb_v2/query/q_test_sample_20%/10c.sql, 109.24, 2175.094, Bao
+SET enable_nestloop TO off; , 0, 2025-02-15 09:42:08.697900, /data/datasets/imdb_v2/query/q_test_sample_20%/11d.sql, 483.568, 662.812, Bao
+SET enable_nestloop TO off; , 1, 2025-02-15 09:42:08.712693, /data/datasets/imdb_v2/query/q_test_sample_20%/11d.sql, 126.415, 117.814, Bao
+SET enable_nestloop TO off; , 2, 2025-02-15 09:42:08.717712, /data/datasets/imdb_v2/query/q_test_sample_20%/11d.sql, 108.259, 118.263, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:43:45.702026, /data/datasets/imdb_v2/query/q_test_sample_20%/12c.sql, 563.307, 94703.629, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:43:45.716739, /data/datasets/imdb_v2/query/q_test_sample_20%/12c.sql, 146.274, 386.679, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:43:45.721722, /data/datasets/imdb_v2/query/q_test_sample_20%/12c.sql, 125.554, 366.248, Bao
+(no hint), 0, 2025-02-15 09:44:35.236586, /data/datasets/imdb_v2/query/q_test_sample_20%/13d.sql, 530.376, 44437.43, Bao
+(no hint), 1, 2025-02-15 09:44:35.264508, /data/datasets/imdb_v2/query/q_test_sample_20%/13d.sql, 146.017, 1701.306, Bao
+(no hint), 2, 2025-02-15 09:44:35.295169, /data/datasets/imdb_v2/query/q_test_sample_20%/13d.sql, 149.825, 1691.462, Bao
+(no hint), 0, 2025-02-15 09:44:44.416172, /data/datasets/imdb_v2/query/q_test_sample_20%/14c.sql, 218.692, 7784.361, Bao
+(no hint), 1, 2025-02-15 09:44:44.430990, /data/datasets/imdb_v2/query/q_test_sample_20%/14c.sql, 133.453, 23.87, Bao
+(no hint), 2, 2025-02-15 09:44:44.436193, /data/datasets/imdb_v2/query/q_test_sample_20%/14c.sql, 123.632, 25.569, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:44:52.798467, /data/datasets/imdb_v2/query/q_test_sample_20%/15d.sql, 466.021, 5563.727, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:44:52.813940, /data/datasets/imdb_v2/query/q_test_sample_20%/15d.sql, 165.711, 578.067, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:44:52.819239, /data/datasets/imdb_v2/query/q_test_sample_20%/15d.sql, 148.388, 577.015, Bao
+SET enable_nestloop TO off; , 0, 2025-02-15 09:45:03.446786, /data/datasets/imdb_v2/query/q_test_sample_20%/16d.sql, 512.965, 4471.189, Bao
+SET enable_nestloop TO off; , 1, 2025-02-15 09:45:03.461154, /data/datasets/imdb_v2/query/q_test_sample_20%/16d.sql, 145.113, 2293.858, Bao
+SET enable_nestloop TO off; , 2, 2025-02-15 09:45:03.466148, /data/datasets/imdb_v2/query/q_test_sample_20%/16d.sql, 150.511, 2253.514, Bao
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:47:05.005819, /data/datasets/imdb_v2/query/q_test_sample_20%/17f.sql, 193.834, 120080.402, Bao
+(no hint), 1, 2025-02-15 09:47:05.020417, /data/datasets/imdb_v2/query/q_test_sample_20%/17f.sql, 172.932, 67.661, Bao
+(no hint), 2, 2025-02-15 09:47:05.026294, /data/datasets/imdb_v2/query/q_test_sample_20%/17f.sql, 123.584, 67.523, Bao
+x, 0, 2025-02-15 09:50:05.267069, /data/datasets/imdb_v2/query/q_test_sample_20%/18c.sql, 360000.0, 360000.0, Bao
+x, 1, 2025-02-15 09:50:05.282253, /data/datasets/imdb_v2/query/q_test_sample_20%/18c.sql, 360000.0, 360000.0, Bao
+x, 2, 2025-02-15 09:50:05.287512, /data/datasets/imdb_v2/query/q_test_sample_20%/18c.sql, 360000.0, 360000.0, Bao
+x, 0, 2025-02-15 09:53:05.610844, /data/datasets/imdb_v2/query/q_test_sample_20%/19d.sql, 360000.0, 360000.0, Bao
+x, 1, 2025-02-15 09:53:05.616671, /data/datasets/imdb_v2/query/q_test_sample_20%/19d.sql, 360000.0, 360000.0, Bao
+x, 2, 2025-02-15 09:53:05.621461, /data/datasets/imdb_v2/query/q_test_sample_20%/19d.sql, 360000.0, 360000.0, Bao
+(no hint), 0, 2025-02-15 09:53:07.707400, /data/datasets/imdb_v2/query/q_test_sample_20%/1d.sql, 181.134, 577.736, Bao
+(no hint), 1, 2025-02-15 09:53:07.722500, /data/datasets/imdb_v2/query/q_test_sample_20%/1d.sql, 140.827, 84.116, Bao
+(no hint), 2, 2025-02-15 09:53:07.727713, /data/datasets/imdb_v2/query/q_test_sample_20%/1d.sql, 150.255, 68.317, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:53:11.155906, /data/datasets/imdb_v2/query/q_test_sample_20%/20c.sql, 436.852, 1191.524, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:53:11.162306, /data/datasets/imdb_v2/query/q_test_sample_20%/20c.sql, 174.621, 250.976, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:53:11.189816, /data/datasets/imdb_v2/query/q_test_sample_20%/20c.sql, 172.986, 230.26, Bao
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:53:12.924957, /data/datasets/imdb_v2/query/q_test_sample_20%/21c.sql, 241.19, 55.974, Bao
+SET enable_mergejoin TO off; , 1, 2025-02-15 09:53:12.939713, /data/datasets/imdb_v2/query/q_test_sample_20%/21c.sql, 166.751, 21.531, Bao
+SET enable_mergejoin TO off; , 2, 2025-02-15 09:53:12.944759, /data/datasets/imdb_v2/query/q_test_sample_20%/21c.sql, 167.576, 21.835, Bao
+SET enable_nestloop TO off; , 0, 2025-02-15 09:53:21.450573, /data/datasets/imdb_v2/query/q_test_sample_20%/22d.sql, 291.102, 3120.236, Bao
+SET enable_nestloop TO off; , 1, 2025-02-15 09:53:21.464674, /data/datasets/imdb_v2/query/q_test_sample_20%/22d.sql, 225.771, 1757.995, Bao
+SET enable_nestloop TO off; , 2, 2025-02-15 09:53:21.469647, /data/datasets/imdb_v2/query/q_test_sample_20%/22d.sql, 233.464, 1703.019, Bao
+(no hint), 0, 2025-02-15 09:53:24.670609, /data/datasets/imdb_v2/query/q_test_sample_20%/23c.sql, 310.052, 430.062, Bao
+(no hint), 1, 2025-02-15 09:53:24.685045, /data/datasets/imdb_v2/query/q_test_sample_20%/23c.sql, 240.164, 389.113, Bao
+(no hint), 2, 2025-02-15 09:53:24.690306, /data/datasets/imdb_v2/query/q_test_sample_20%/23c.sql, 272.019, 369.984, Bao
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:53:27.525030, /data/datasets/imdb_v2/query/q_test_sample_20%/24b.sql, 440.967, 62.324, Bao
+SET enable_mergejoin TO off; , 1, 2025-02-15 09:53:27.540114, /data/datasets/imdb_v2/query/q_test_sample_20%/24b.sql, 379.23, 29.327, Bao
+SET enable_mergejoin TO off; , 2, 2025-02-15 09:53:27.545149, /data/datasets/imdb_v2/query/q_test_sample_20%/24b.sql, 361.473, 26.739, Bao
+(no hint), 0, 2025-02-15 09:53:33.195309, /data/datasets/imdb_v2/query/q_test_sample_20%/25c.sql, 232.635, 4015.926, Bao
+(no hint), 1, 2025-02-15 09:53:33.210352, /data/datasets/imdb_v2/query/q_test_sample_20%/25c.sql, 162.817, 43.656, Bao
+(no hint), 2, 2025-02-15 09:53:33.215630, /data/datasets/imdb_v2/query/q_test_sample_20%/25c.sql, 162.22, 43.104, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:53:43.398237, /data/datasets/imdb_v2/query/q_test_sample_20%/26c.sql, 415.145, 6847.72, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:53:43.413606, /data/datasets/imdb_v2/query/q_test_sample_20%/26c.sql, 357.255, 363.538, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:53:43.418863, /data/datasets/imdb_v2/query/q_test_sample_20%/26c.sql, 352.809, 356.214, Bao
+(no hint), 0, 2025-02-15 09:53:46.285126, /data/datasets/imdb_v2/query/q_test_sample_20%/27c.sql, 430.545, 56.151, Bao
+(no hint), 1, 2025-02-15 09:53:46.299831, /data/datasets/imdb_v2/query/q_test_sample_20%/27c.sql, 463.407, 18.062, Bao
+(no hint), 2, 2025-02-15 09:53:46.304842, /data/datasets/imdb_v2/query/q_test_sample_20%/27c.sql, 347.13, 15.909, Bao
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:53:49.461828, /data/datasets/imdb_v2/query/q_test_sample_20%/28c.sql, 477.624, 124.419, Bao
+SET enable_mergejoin TO off; , 1, 2025-02-15 09:53:49.476052, /data/datasets/imdb_v2/query/q_test_sample_20%/28c.sql, 405.059, 22.828, Bao
+SET enable_mergejoin TO off; , 2, 2025-02-15 09:53:49.481163, /data/datasets/imdb_v2/query/q_test_sample_20%/28c.sql, 405.211, 23.97, Bao
+(no hint), 0, 2025-02-15 09:53:53.310745, /data/datasets/imdb_v2/query/q_test_sample_20%/29c.sql, 813.374, 57.597, Bao
+(no hint), 1, 2025-02-15 09:53:53.325680, /data/datasets/imdb_v2/query/q_test_sample_20%/29c.sql, 497.001, 12.978, Bao
+(no hint), 2, 2025-02-15 09:53:53.330459, /data/datasets/imdb_v2/query/q_test_sample_20%/29c.sql, 493.492, 14.137, Bao
+SET enable_nestloop TO off; , 0, 2025-02-15 09:54:01.098317, /data/datasets/imdb_v2/query/q_test_sample_20%/2d.sql, 180.694, 3586.596, Bao
+SET enable_nestloop TO off; , 1, 2025-02-15 09:54:01.112841, /data/datasets/imdb_v2/query/q_test_sample_20%/2d.sql, 134.792, 1446.328, Bao
+SET enable_nestloop TO off; , 2, 2025-02-15 09:54:01.117836, /data/datasets/imdb_v2/query/q_test_sample_20%/2d.sql, 133.249, 1425.186, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:54:22.149415, /data/datasets/imdb_v2/query/q_test_sample_20%/30c.sql, 436.234, 16712.095, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:54:22.165166, /data/datasets/imdb_v2/query/q_test_sample_20%/30c.sql, 371.09, 827.446, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:54:22.170079, /data/datasets/imdb_v2/query/q_test_sample_20%/30c.sql, 365.256, 811.634, Bao
+(no hint), 0, 2025-02-15 09:54:24.493719, /data/datasets/imdb_v2/query/q_test_sample_20%/31c.sql, 359.29, 156.288, Bao
+(no hint), 1, 2025-02-15 09:54:24.540975, /data/datasets/imdb_v2/query/q_test_sample_20%/31c.sql, 268.838, 31.424, Bao
+(no hint), 2, 2025-02-15 09:54:24.546425, /data/datasets/imdb_v2/query/q_test_sample_20%/31c.sql, 253.509, 25.368, Bao
+(no hint), 0, 2025-02-15 09:54:26.035799, /data/datasets/imdb_v2/query/q_test_sample_20%/32b.sql, 236.896, 31.891, Bao
+(no hint), 1, 2025-02-15 09:54:26.050050, /data/datasets/imdb_v2/query/q_test_sample_20%/32b.sql, 134.895, 16.814, Bao
+(no hint), 2, 2025-02-15 09:54:26.054677, /data/datasets/imdb_v2/query/q_test_sample_20%/32b.sql, 134.267, 15.52, Bao
+(no hint), 0, 2025-02-15 09:54:30.576773, /data/datasets/imdb_v2/query/q_test_sample_20%/33b.sql, 483.575, 1385.906, Bao
+(no hint), 1, 2025-02-15 09:54:30.591206, /data/datasets/imdb_v2/query/q_test_sample_20%/33b.sql, 413.318, 21.416, Bao
+(no hint), 2, 2025-02-15 09:54:30.596235, /data/datasets/imdb_v2/query/q_test_sample_20%/33b.sql, 392.253, 21.56, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:54:32.652058, /data/datasets/imdb_v2/query/q_test_sample_20%/3c.sql, 184.421, 268.669, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:54:32.666759, /data/datasets/imdb_v2/query/q_test_sample_20%/3c.sql, 141.437, 215.664, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:54:32.671956, /data/datasets/imdb_v2/query/q_test_sample_20%/3c.sql, 145.213, 215.369, Bao
+(no hint), 0, 2025-02-15 09:54:35.582564, /data/datasets/imdb_v2/query/q_test_sample_20%/4c.sql, 178.298, 1544.824, Bao
+(no hint), 1, 2025-02-15 09:54:35.597622, /data/datasets/imdb_v2/query/q_test_sample_20%/4c.sql, 138.1, 21.454, Bao
+(no hint), 2, 2025-02-15 09:54:35.603089, /data/datasets/imdb_v2/query/q_test_sample_20%/4c.sql, 133.524, 19.048, Bao
+(no hint), 0, 2025-02-15 09:54:37.435393, /data/datasets/imdb_v2/query/q_test_sample_20%/5c.sql, 188.772, 173.069, Bao
+(no hint), 1, 2025-02-15 09:54:37.450316, /data/datasets/imdb_v2/query/q_test_sample_20%/5c.sql, 137.236, 169.62, Bao
+(no hint), 2, 2025-02-15 09:54:37.455103, /data/datasets/imdb_v2/query/q_test_sample_20%/5c.sql, 145.921, 142.78, Bao
+SET enable_mergejoin TO off; , 0, 2025-02-15 09:54:40.663606, /data/datasets/imdb_v2/query/q_test_sample_20%/6e.sql, 187.522, 1856.07, Bao
+(no hint), 1, 2025-02-15 09:54:40.678291, /data/datasets/imdb_v2/query/q_test_sample_20%/6e.sql, 137.388, 13.45, Bao
+(no hint), 2, 2025-02-15 09:54:40.683887, /data/datasets/imdb_v2/query/q_test_sample_20%/6e.sql, 134.81, 11.685, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:55:02.761464, /data/datasets/imdb_v2/query/q_test_sample_20%/6f.sql, 184.506, 20124.252, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:55:02.775202, /data/datasets/imdb_v2/query/q_test_sample_20%/6f.sql, 155.346, 270.791, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:55:02.780372, /data/datasets/imdb_v2/query/q_test_sample_20%/6f.sql, 147.806, 262.737, Bao
+(no hint), 0, 2025-02-15 09:55:14.010351, /data/datasets/imdb_v2/query/q_test_sample_20%/7c.sql, 246.684, 9638.126, Bao
+(no hint), 1, 2025-02-15 09:55:14.025308, /data/datasets/imdb_v2/query/q_test_sample_20%/7c.sql, 167.577, 18.252, Bao
+(no hint), 2, 2025-02-15 09:55:14.030381, /data/datasets/imdb_v2/query/q_test_sample_20%/7c.sql, 158.407, 17.302, Bao
+(no hint), 0, 2025-02-15 09:55:25.768545, /data/datasets/imdb_v2/query/q_test_sample_20%/8d.sql, 189.684, 7499.792, Bao
+(no hint), 1, 2025-02-15 09:55:25.783062, /data/datasets/imdb_v2/query/q_test_sample_20%/8d.sql, 148.139, 1443.481, Bao
+(no hint), 2, 2025-02-15 09:55:25.788032, /data/datasets/imdb_v2/query/q_test_sample_20%/8d.sql, 147.181, 1407.779, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-02-15 09:55:43.612915, /data/datasets/imdb_v2/query/q_test_sample_20%/9d.sql, 200.279, 11801.239, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-02-15 09:55:43.627185, /data/datasets/imdb_v2/query/q_test_sample_20%/9d.sql, 171.766, 2288.191, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-02-15 09:55:43.632640, /data/datasets/imdb_v2/query/q_test_sample_20%/9d.sql, 164.957, 2226.934, Bao

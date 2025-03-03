@@ -31,6 +31,7 @@ class PGGRunner:
         :param latencyRecord:-1:loadFromFile
         :param latencyRecordFile:
         """
+        self.dbname = dbname
         self.con = psycopg2.connect(database=dbname, user=user,
                                     password=password, host=host, port=port)
         self.cur = self.con.cursor()
@@ -40,6 +41,7 @@ class PGGRunner:
         self.cur.execute("load 'pg_hint_plan';")
         global latency_record_file
         self.cost_plan_json = {}
+        print(f"connecting to the database {dbname}")
         if need_latency_record:
             latency_record_file = self.generateLatencyPool(latency_file)
 
@@ -72,6 +74,7 @@ class PGGRunner:
         latency_record_file.flush()
 
     def getAnalysePlanJson(self, sql, timeout=TIMEOUT_MS):
+        print(f"Executing query on {self.dbname} ..... ")
         if config.cost_test_for_debug:
             raise
 
@@ -220,5 +223,8 @@ class PGGRunner:
 from itertools import count
 from pathlib import Path
 
-pgrunner = PGGRunner(config.database, config.user, config.password, config.ip, config.port, need_latency_record=True,
+pgrunner_train = PGGRunner(Config.train_database, config.user, config.password, config.ip, config.port, need_latency_record=True,
+                     latency_file=config.latency_file)
+
+pgrunner_test = PGGRunner(Config.test_database, config.user, config.password, config.ip, config.port, need_latency_record=True,
                      latency_file=config.latency_file)

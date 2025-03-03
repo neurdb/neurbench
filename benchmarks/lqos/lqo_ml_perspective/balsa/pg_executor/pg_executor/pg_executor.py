@@ -33,7 +33,12 @@ import ray
 # REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdbload"
 
 # STACK
+# everytime we execute, we need to change this
 LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_ori"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_01v2"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_05v2"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_07v2"
+
 # LOCAL_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
 REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
 
@@ -99,7 +104,8 @@ def Cursor(dsn=LOCAL_DSN):
         except psycopg2.OperationalError:
             time.sleep(10)
             return get_connection(dsn)
-
+    print("\n --------------- Debugging --------------- \n")
+    print(f"\n --------------- Connect via {dsn} --------------- \n")
     conn = get_connection(dsn)
     conn.set_session(autocommit=True)
     try:
@@ -144,17 +150,19 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
         print(sql)
     timeout_ms= None
     _SetGeneticOptimizer('off' if geqo_off else 'on', cursor)
-    if timeout_ms is not None:
-        cursor.execute('SET statement_timeout to {}'.format(int(timeout_ms)))
-    else:
-        # Specifically setting a higher than default timeout so that
-        # Neo does not time out for very long running STACK queries
-        #
-        if LOCAL_DSN.endswith('so'):
-            cursor.execute(f'SET statement_timeout to {5 * 60 * 1000}')
-        else:
-            # Passing None / setting to 0 means disabling timeout.
-            cursor.execute('SET statement_timeout to 0')
+    cursor.execute('SET statement_timeout to {}'.format(180000))
+
+    # if timeout_ms is not None:
+    #     cursor.execute('SET statement_timeout to {}'.format(int(timeout_ms)))
+    # else:
+    #     # Specifically setting a higher than default timeout so that
+    #     # Neo does not time out for very long running STACK queries
+    #     #
+    #     if LOCAL_DSN.endswith('so'):
+    #         cursor.execute(f'SET statement_timeout to {5 * 60 * 1000}')
+    #     else:
+    #         # Passing None / setting to 0 means disabling timeout.
+    #         cursor.execute('SET statement_timeout to 0')
 
     try:
         for iteration in range(NUM_EXECUTIONS):

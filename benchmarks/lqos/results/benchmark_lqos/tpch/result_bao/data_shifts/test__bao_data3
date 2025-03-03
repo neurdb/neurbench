@@ -1,0 +1,66 @@
+(no hint), 0, 2024-10-08 11:20:17.553470, /data/datasets/q_test_0/1.sql, 120.208, 2018.97, Bao
+(no hint), 1, 2024-10-08 11:20:17.568286, /data/datasets/q_test_0/1.sql, 69.571, 1177.941, Bao
+(no hint), 2, 2024-10-08 11:20:17.573720, /data/datasets/q_test_0/1.sql, 61.207, 1147.888, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-08 11:20:22.156471, /data/datasets/q_test_0/10.sql, 90.83, 1516.693, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-08 11:20:22.170716, /data/datasets/q_test_0/10.sql, 59.356, 1249.707, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-08 11:20:22.176475, /data/datasets/q_test_0/10.sql, 65.204, 1217.232, Bao
+(no hint), 0, 2024-10-08 11:20:23.102251, /data/datasets/q_test_0/11.sql, 94.987, 142.428, Bao
+(no hint), 1, 2024-10-08 11:20:23.115317, /data/datasets/q_test_0/11.sql, 59.761, 79.036, Bao
+(no hint), 2, 2024-10-08 11:20:23.130474, /data/datasets/q_test_0/11.sql, 66.994, 88.016, Bao
+(no hint), 0, 2024-10-08 11:20:25.095364, /data/datasets/q_test_0/12.sql, 95.927, 481.918, Bao
+(no hint), 1, 2024-10-08 11:20:25.109975, /data/datasets/q_test_0/12.sql, 81.062, 409.194, Bao
+(no hint), 2, 2024-10-08 11:20:25.115653, /data/datasets/q_test_0/12.sql, 64.722, 395.669, Bao
+(no hint), 0, 2024-10-08 11:20:27.806021, /data/datasets/q_test_0/13.sql, 5.119, 812.755, Bao
+(no hint), 1, 2024-10-08 11:20:27.812297, /data/datasets/q_test_0/13.sql, 0.125, 736.583, Bao
+(no hint), 2, 2024-10-08 11:20:27.817801, /data/datasets/q_test_0/13.sql, 0.131, 732.615, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-08 11:20:30.149828, /data/datasets/q_test_0/14.sql, 95.518, 621.979, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-08 11:20:30.165229, /data/datasets/q_test_0/14.sql, 67.347, 555.499, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-08 11:20:30.170708, /data/datasets/q_test_0/14.sql, 72.193, 503.894, Bao
+(no hint), 0, 2024-10-08 11:20:33.579532, /data/datasets/q_test_0/15.sql, 93.702, 1007.686, Bao
+(no hint), 1, 2024-10-08 11:20:33.594371, /data/datasets/q_test_0/15.sql, 60.503, 919.422, Bao
+(no hint), 2, 2024-10-08 11:20:33.599897, /data/datasets/q_test_0/15.sql, 60.686, 869.693, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-08 11:20:36.050315, /data/datasets/q_test_0/16.sql, 96.826, 720.307, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-08 11:20:36.064610, /data/datasets/q_test_0/16.sql, 59.662, 549.39, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-08 11:20:36.070230, /data/datasets/q_test_0/16.sql, 59.273, 547.915, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-08 11:20:37.492538, /data/datasets/q_test_0/17.sql, 82.69, 366.759, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-08 11:20:37.507178, /data/datasets/q_test_0/17.sql, 56.916, 235.957, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-08 11:20:37.512842, /data/datasets/q_test_0/17.sql, 57.055, 235.523, Bao
+(no hint), 0, 2024-10-08 11:21:00.503359, /data/datasets/q_test_0/18.sql, 96.121, 7562.945, Bao
+(no hint), 1, 2024-10-08 11:21:00.518886, /data/datasets/q_test_0/18.sql, 78.651, 7371.964, Bao
+(no hint), 2, 2024-10-08 11:21:00.524654, /data/datasets/q_test_0/18.sql, 67.736, 7398.046, Bao
+(no hint), 0, 2024-10-08 11:21:01.394595, /data/datasets/q_test_0/19.sql, 95.015, 83.484, Bao
+(no hint), 1, 2024-10-08 11:21:01.409243, /data/datasets/q_test_0/19.sql, 59.906, 72.497, Bao
+(no hint), 2, 2024-10-08 11:21:01.414892, /data/datasets/q_test_0/19.sql, 76.576, 68.745, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-08 11:21:04.757942, /data/datasets/q_test_0/2.sql, 100.496, 1026.965, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-08 11:21:04.765170, /data/datasets/q_test_0/2.sql, 60.168, 821.292, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-08 11:21:04.797614, /data/datasets/q_test_0/2.sql, 62.513, 847.919, Bao
+(no hint), 0, 2024-10-08 11:21:09.713916, /data/datasets/q_test_0/20.sql, 103.628, 1452.771, Bao
+(no hint), 1, 2024-10-08 11:21:09.728303, /data/datasets/q_test_0/20.sql, 61.741, 1368.94, Bao
+(no hint), 2, 2024-10-08 11:21:09.734255, /data/datasets/q_test_0/20.sql, 60.967, 1431.464, Bao
+(no hint), 0, 2024-10-08 11:21:15.608309, /data/datasets/q_test_0/21.sql, 99.997, 1809.067, Bao
+(no hint), 1, 2024-10-08 11:21:15.614995, /data/datasets/q_test_0/21.sql, 62.434, 1694.383, Bao
+(no hint), 2, 2024-10-08 11:21:15.620855, /data/datasets/q_test_0/21.sql, 66.057, 1717.899, Bao
+x, 0, 2024-10-08 11:21:15.795539, /data/datasets/q_test_0/22.sql, 360000, 360000, Bao
+x, 1, 2024-10-08 11:21:15.809452, /data/datasets/q_test_0/22.sql, 360000, 360000, Bao
+x, 2, 2024-10-08 11:21:15.814894, /data/datasets/q_test_0/22.sql, 360000, 360000, Bao
+(no hint), 0, 2024-10-08 11:21:21.310365, /data/datasets/q_test_0/3.sql, 93.012, 1657.171, Bao
+(no hint), 1, 2024-10-08 11:21:21.334810, /data/datasets/q_test_0/3.sql, 67.022, 1612.384, Bao
+(no hint), 2, 2024-10-08 11:21:21.356765, /data/datasets/q_test_0/3.sql, 58.048, 1618.568, Bao
+(no hint), 0, 2024-10-08 11:21:22.619781, /data/datasets/q_test_0/4.sql, 94.766, 214.714, Bao
+(no hint), 1, 2024-10-08 11:21:22.634208, /data/datasets/q_test_0/4.sql, 69.283, 211.122, Bao
+(no hint), 2, 2024-10-08 11:21:22.640108, /data/datasets/q_test_0/4.sql, 67.019, 196.783, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-08 11:25:32.675538, /data/datasets/q_test_0/5.sql, 107.175, 83134.685, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-08 11:25:32.690568, /data/datasets/q_test_0/5.sql, 99.119, 83056.869, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-08 11:25:32.696265, /data/datasets/q_test_0/5.sql, 82.858, 83125.077, Bao
+(no hint), 0, 2024-10-08 11:25:34.421687, /data/datasets/q_test_0/6.sql, 94.949, 406.274, Bao
+(no hint), 1, 2024-10-08 11:25:34.436218, /data/datasets/q_test_0/6.sql, 63.439, 347.137, Bao
+(no hint), 2, 2024-10-08 11:25:34.441672, /data/datasets/q_test_0/6.sql, 64.339, 334.841, Bao
+x, 0, 2024-10-08 11:25:34.618847, /data/datasets/q_test_0/7.sql, 360000, 360000, Bao
+x, 1, 2024-10-08 11:25:34.632836, /data/datasets/q_test_0/7.sql, 360000, 360000, Bao
+x, 2, 2024-10-08 11:25:34.638300, /data/datasets/q_test_0/7.sql, 360000, 360000, Bao
+x, 0, 2024-10-08 11:25:34.819955, /data/datasets/q_test_0/8.sql, 360000, 360000, Bao
+x, 1, 2024-10-08 11:25:34.826103, /data/datasets/q_test_0/8.sql, 360000, 360000, Bao
+x, 2, 2024-10-08 11:25:34.831654, /data/datasets/q_test_0/8.sql, 360000, 360000, Bao
+x, 0, 2024-10-08 11:25:35.007289, /data/datasets/q_test_0/9.sql, 360000, 360000, Bao
+x, 1, 2024-10-08 11:25:35.013757, /data/datasets/q_test_0/9.sql, 360000, 360000, Bao
+x, 2, 2024-10-08 11:25:35.019800, /data/datasets/q_test_0/9.sql, 360000, 360000, Bao

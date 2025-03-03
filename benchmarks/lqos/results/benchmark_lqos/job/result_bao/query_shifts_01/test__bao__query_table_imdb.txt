@@ -1,0 +1,342 @@
+(no hint), 0, 2024-10-17 13:09:40.479687, /data/datasets/imdb/q/10a.sql, 181.3, 392.98, Bao
+(no hint), 1, 2024-10-17 13:09:40.494066, /data/datasets/imdb/q/10a.sql, 141.515, 261.062, Bao
+(no hint), 2, 2024-10-17 13:09:40.497921, /data/datasets/imdb/q/10a.sql, 123.339, 257.204, Bao
+(no hint), 0, 2024-10-17 13:09:42.521981, /data/datasets/imdb/q/10b.sql, 183.216, 245.58, Bao
+(no hint), 1, 2024-10-17 13:09:42.535704, /data/datasets/imdb/q/10b.sql, 141.083, 347.721, Bao
+(no hint), 2, 2024-10-17 13:09:42.547999, /data/datasets/imdb/q/10b.sql, 129.543, 184.697, Bao
+(no hint), 0, 2024-10-17 13:10:03.406567, /data/datasets/imdb/q/10c.sql, 174.497, 10777.553, Bao
+(no hint), 1, 2024-10-17 13:10:03.882534, /data/datasets/imdb/q/10c.sql, 150.378, 5134.878, Bao
+(no hint), 2, 2024-10-17 13:10:03.904385, /data/datasets/imdb/q/10c.sql, 135.56, 3674.339, Bao
+(no hint), 0, 2024-10-17 13:10:06.282496, /data/datasets/imdb/q/11a.sql, 220.414, 77.757, Bao
+(no hint), 1, 2024-10-17 13:10:06.304693, /data/datasets/imdb/q/11a.sql, 141.714, 57.278, Bao
+(no hint), 2, 2024-10-17 13:10:06.317084, /data/datasets/imdb/q/11a.sql, 129.647, 67.349, Bao
+(no hint), 0, 2024-10-17 13:10:07.664416, /data/datasets/imdb/q/11b.sql, 184.985, 39.098, Bao
+(no hint), 1, 2024-10-17 13:10:07.686653, /data/datasets/imdb/q/11b.sql, 130.317, 28.764, Bao
+(no hint), 2, 2024-10-17 13:10:07.698821, /data/datasets/imdb/q/11b.sql, 129.741, 30.55, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:10:09.898748, /data/datasets/imdb/q/11c.sql, 187.604, 312.914, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:10:09.920566, /data/datasets/imdb/q/11c.sql, 124.841, 322.63, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:10:09.932603, /data/datasets/imdb/q/11c.sql, 129.359, 336.21, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:10:12.204832, /data/datasets/imdb/q/11d.sql, 197.303, 524.102, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:10:12.227133, /data/datasets/imdb/q/11d.sql, 133.654, 163.636, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:10:12.239370, /data/datasets/imdb/q/11d.sql, 129.756, 304.155, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:14.111763, /data/datasets/imdb/q/12a.sql, 190.076, 179.278, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:14.125653, /data/datasets/imdb/q/12a.sql, 140.622, 172.948, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:14.129564, /data/datasets/imdb/q/12a.sql, 136.75, 175.333, Bao
+(no hint), 0, 2024-10-17 13:10:15.644300, /data/datasets/imdb/q/12b.sql, 194.921, 89.29, Bao
+(no hint), 1, 2024-10-17 13:10:15.658026, /data/datasets/imdb/q/12b.sql, 133.14, 82.225, Bao
+(no hint), 2, 2024-10-17 13:10:15.669835, /data/datasets/imdb/q/12b.sql, 135.839, 80.658, Bao
+(no hint), 0, 2024-10-17 13:10:20.039101, /data/datasets/imdb/q/12c.sql, 211.707, 581.302, Bao
+(no hint), 1, 2024-10-17 13:10:20.053100, /data/datasets/imdb/q/12c.sql, 148.716, 959.221, Bao
+(no hint), 2, 2024-10-17 13:10:20.065308, /data/datasets/imdb/q/12c.sql, 155.551, 1471.059, Bao
+(no hint), 0, 2024-10-17 13:10:24.697940, /data/datasets/imdb/q/13a.sql, 208.829, 1094.692, Bao
+(no hint), 1, 2024-10-17 13:10:24.711780, /data/datasets/imdb/q/13a.sql, 153.006, 1062.572, Bao
+(no hint), 2, 2024-10-17 13:10:24.723809, /data/datasets/imdb/q/13a.sql, 158.06, 1101.39, Bao
+(no hint), 0, 2024-10-17 13:10:27.850063, /data/datasets/imdb/q/13b.sql, 210.842, 495.886, Bao
+(no hint), 1, 2024-10-17 13:10:27.864240, /data/datasets/imdb/q/13b.sql, 143.005, 480.404, Bao
+(no hint), 2, 2024-10-17 13:10:27.876491, /data/datasets/imdb/q/13b.sql, 143.782, 764.347, Bao
+(no hint), 0, 2024-10-17 13:10:30.719583, /data/datasets/imdb/q/13c.sql, 193.628, 487.717, Bao
+(no hint), 1, 2024-10-17 13:10:30.733290, /data/datasets/imdb/q/13c.sql, 139.546, 557.777, Bao
+(no hint), 2, 2024-10-17 13:10:30.745651, /data/datasets/imdb/q/13c.sql, 155.178, 461.191, Bao
+(no hint), 0, 2024-10-17 13:10:37.903440, /data/datasets/imdb/q/13d.sql, 199.631, 1676.429, Bao
+(no hint), 1, 2024-10-17 13:10:37.917875, /data/datasets/imdb/q/13d.sql, 152.451, 1748.003, Bao
+(no hint), 2, 2024-10-17 13:10:37.930628, /data/datasets/imdb/q/13d.sql, 153.62, 2394.506, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:10:39.818454, /data/datasets/imdb/q/14a.sql, 182.742, 242.592, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:10:39.918239, /data/datasets/imdb/q/14a.sql, 147.936, 193.037, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:10:39.940330, /data/datasets/imdb/q/14a.sql, 131.432, 178.885, Bao
+(no hint), 0, 2024-10-17 13:10:41.450735, /data/datasets/imdb/q/14b.sql, 199.924, 104.256, Bao
+(no hint), 1, 2024-10-17 13:10:41.464145, /data/datasets/imdb/q/14b.sql, 129.139, 71.948, Bao
+(no hint), 2, 2024-10-17 13:10:41.476085, /data/datasets/imdb/q/14b.sql, 129.589, 79.762, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:44.626623, /data/datasets/imdb/q/14c.sql, 323.986, 640.262, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:44.651541, /data/datasets/imdb/q/14c.sql, 128.828, 538.137, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:44.664960, /data/datasets/imdb/q/14c.sql, 128.463, 576.529, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:47.151798, /data/datasets/imdb/q/15a.sql, 225.459, 361.576, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:47.165948, /data/datasets/imdb/q/15a.sql, 165.889, 354.221, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:47.170360, /data/datasets/imdb/q/15a.sql, 166.671, 346.229, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:48.666570, /data/datasets/imdb/q/15b.sql, 209.346, 41.994, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:48.680519, /data/datasets/imdb/q/15b.sql, 150.291, 33.916, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:48.692371, /data/datasets/imdb/q/15b.sql, 151.969, 34.033, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:51.794827, /data/datasets/imdb/q/15c.sql, 229.039, 686.926, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:51.808697, /data/datasets/imdb/q/15c.sql, 150.445, 503.798, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:51.821120, /data/datasets/imdb/q/15c.sql, 151.043, 502.798, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:54.978611, /data/datasets/imdb/q/15d.sql, 208.904, 755.988, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:54.992535, /data/datasets/imdb/q/15d.sql, 151.435, 488.402, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:55.004764, /data/datasets/imdb/q/15d.sql, 150.13, 535.771, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:10:56.798802, /data/datasets/imdb/q/16a.sql, 187.857, 204.793, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:10:58.983667, /data/datasets/imdb/q/16a.sql, 126.509, 167.874, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:10:58.998376, /data/datasets/imdb/q/16a.sql, 156.727, 159.091, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:11:10.414823, /data/datasets/imdb/q/16b.sql, 191.575, 3399.267, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:11:10.429587, /data/datasets/imdb/q/16b.sql, 129.547, 3386.683, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:11:10.467192, /data/datasets/imdb/q/16b.sql, 134.281, 3383.149, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:11:17.580905, /data/datasets/imdb/q/16c.sql, 184.478, 2056.514, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:11:17.602894, /data/datasets/imdb/q/16c.sql, 129.664, 1915.21, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:11:17.615372, /data/datasets/imdb/q/16c.sql, 135.838, 1871.013, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:11:23.487345, /data/datasets/imdb/q/16d.sql, 199.626, 1637.037, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:11:24.234195, /data/datasets/imdb/q/16d.sql, 131.468, 1469.103, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:11:24.246640, /data/datasets/imdb/q/16d.sql, 130.499, 1468.224, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:11:34.520171, /data/datasets/imdb/q/17a.sql, 2841.963, 2206.925, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:11:34.541001, /data/datasets/imdb/q/17a.sql, 121.741, 2102.839, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:11:34.552931, /data/datasets/imdb/q/17a.sql, 125.658, 2089.516, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:11:44.707864, /data/datasets/imdb/q/17b.sql, 204.028, 2741.036, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:11:44.760881, /data/datasets/imdb/q/17b.sql, 127.986, 2746.002, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:11:45.024271, /data/datasets/imdb/q/17b.sql, 136.01, 3384.613, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:11:52.085880, /data/datasets/imdb/q/17c.sql, 181.412, 1951.142, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:11:52.100023, /data/datasets/imdb/q/17c.sql, 140.696, 1892.395, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:11:52.104011, /data/datasets/imdb/q/17c.sql, 140.192, 1940.3, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:12:01.591412, /data/datasets/imdb/q/17d.sql, 178.214, 2607.766, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:12:01.605531, /data/datasets/imdb/q/17d.sql, 143.142, 3577.313, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:12:01.617463, /data/datasets/imdb/q/17d.sql, 139.403, 2042.36, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:12:14.187888, /data/datasets/imdb/q/17e.sql, 194.14, 2675.169, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:12:14.209801, /data/datasets/imdb/q/17e.sql, 154.883, 6032.162, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:12:14.213807, /data/datasets/imdb/q/17e.sql, 122.964, 2570.826, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:12:24.843175, /data/datasets/imdb/q/17f.sql, 192.631, 2889.573, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:12:24.865409, /data/datasets/imdb/q/17f.sql, 140.25, 2738.699, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:12:24.877996, /data/datasets/imdb/q/17f.sql, 143.476, 3703.424, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:12:34.068724, /data/datasets/imdb/q/18a.sql, 626.839, 2099.772, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:12:34.082936, /data/datasets/imdb/q/18a.sql, 138.276, 3385.824, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:12:34.095357, /data/datasets/imdb/q/18a.sql, 141.788, 1987.948, Bao
+(no hint), 0, 2024-10-17 13:12:35.834904, /data/datasets/imdb/q/18b.sql, 175.536, 188.542, Bao
+(no hint), 1, 2024-10-17 13:12:35.849089, /data/datasets/imdb/q/18b.sql, 131.385, 162.039, Bao
+(no hint), 2, 2024-10-17 13:12:35.861293, /data/datasets/imdb/q/18b.sql, 131.275, 159.633, Bao
+(no hint), 0, 2024-10-17 13:12:45.579989, /data/datasets/imdb/q/18c.sql, 185.824, 2845.066, Bao
+(no hint), 1, 2024-10-17 13:12:45.594411, /data/datasets/imdb/q/18c.sql, 141.358, 2705.893, Bao
+(no hint), 2, 2024-10-17 13:12:45.598592, /data/datasets/imdb/q/18c.sql, 138.741, 2902.986, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:12:49.071939, /data/datasets/imdb/q/19a.sql, 261.539, 1335.549, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:12:49.094351, /data/datasets/imdb/q/19a.sql, 230.972, 310.025, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:12:49.106662, /data/datasets/imdb/q/19a.sql, 178.349, 176.872, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:12:51.229880, /data/datasets/imdb/q/19b.sql, 253.087, 112.899, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:12:51.639974, /data/datasets/imdb/q/19b.sql, 172.318, 317.015, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:12:51.814056, /data/datasets/imdb/q/19b.sql, 188.705, 109.049, Bao
+(no hint), 0, 2024-10-17 13:12:57.972876, /data/datasets/imdb/q/19c.sql, 387.991, 1810.84, Bao
+(no hint), 1, 2024-10-17 13:12:57.986711, /data/datasets/imdb/q/19c.sql, 194.09, 430.412, Bao
+(no hint), 2, 2024-10-17 13:12:57.998594, /data/datasets/imdb/q/19c.sql, 183.069, 407.884, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:13:10.413031, /data/datasets/imdb/q/19d.sql, 260.345, 3696.075, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:13:10.435021, /data/datasets/imdb/q/19d.sql, 175.181, 3629.714, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:13:10.438793, /data/datasets/imdb/q/19d.sql, 199.711, 3479.379, Bao
+(no hint), 0, 2024-10-17 13:13:11.877224, /data/datasets/imdb/q/1a.sql, 165.995, 89.563, Bao
+(no hint), 1, 2024-10-17 13:13:11.899406, /data/datasets/imdb/q/1a.sql, 122.087, 87.318, Bao
+(no hint), 2, 2024-10-17 13:13:11.911331, /data/datasets/imdb/q/1a.sql, 126.472, 87.291, Bao
+(no hint), 0, 2024-10-17 13:13:15.716308, /data/datasets/imdb/q/1b.sql, 168.73, 364.514, Bao
+(no hint), 1, 2024-10-17 13:13:15.731370, /data/datasets/imdb/q/1b.sql, 137.962, 1230.477, Bao
+(no hint), 2, 2024-10-17 13:13:15.746127, /data/datasets/imdb/q/1b.sql, 135.912, 993.025, Bao
+(no hint), 0, 2024-10-17 13:13:17.173513, /data/datasets/imdb/q/1c.sql, 170.46, 81.982, Bao
+(no hint), 1, 2024-10-17 13:13:17.187812, /data/datasets/imdb/q/1c.sql, 118.406, 85.711, Bao
+(no hint), 2, 2024-10-17 13:13:17.192201, /data/datasets/imdb/q/1c.sql, 121.665, 87.368, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:13:18.663306, /data/datasets/imdb/q/1d.sql, 166.04, 82.192, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:13:18.677528, /data/datasets/imdb/q/1d.sql, 118.753, 84.887, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:13:18.681791, /data/datasets/imdb/q/1d.sql, 133.067, 83.859, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:13:29.044891, /data/datasets/imdb/q/20a.sql, 199.955, 4380.893, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:13:29.114349, /data/datasets/imdb/q/20a.sql, 211.323, 2251.737, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:13:29.126857, /data/datasets/imdb/q/20a.sql, 147.259, 2280.642, Bao
+(no hint), 0, 2024-10-17 13:13:34.216438, /data/datasets/imdb/q/20b.sql, 231.887, 1358.882, Bao
+(no hint), 1, 2024-10-17 13:13:34.230723, /data/datasets/imdb/q/20b.sql, 175.119, 1149.993, Bao
+(no hint), 2, 2024-10-17 13:13:34.243288, /data/datasets/imdb/q/20b.sql, 149.361, 1155.268, Bao
+(no hint), 0, 2024-10-17 13:13:37.809569, /data/datasets/imdb/q/20c.sql, 249.835, 835.084, Bao
+(no hint), 1, 2024-10-17 13:13:38.057124, /data/datasets/imdb/q/20c.sql, 151.564, 645.823, Bao
+(no hint), 2, 2024-10-17 13:13:38.551485, /data/datasets/imdb/q/20c.sql, 151.468, 635.274, Bao
+(no hint), 0, 2024-10-17 13:13:40.406055, /data/datasets/imdb/q/21a.sql, 235.628, 83.261, Bao
+(no hint), 1, 2024-10-17 13:13:40.427887, /data/datasets/imdb/q/21a.sql, 143.981, 61.662, Bao
+(no hint), 2, 2024-10-17 13:13:40.440222, /data/datasets/imdb/q/21a.sql, 145.683, 61.261, Bao
+(no hint), 0, 2024-10-17 13:13:42.049948, /data/datasets/imdb/q/21b.sql, 217.382, 69.159, Bao
+(no hint), 1, 2024-10-17 13:13:42.064556, /data/datasets/imdb/q/21b.sql, 144.298, 60.882, Bao
+(no hint), 2, 2024-10-17 13:13:42.076860, /data/datasets/imdb/q/21b.sql, 178.682, 60.656, Bao
+(no hint), 0, 2024-10-17 13:13:43.645852, /data/datasets/imdb/q/21c.sql, 206.488, 76.257, Bao
+(no hint), 1, 2024-10-17 13:13:43.659888, /data/datasets/imdb/q/21c.sql, 149.18, 66.094, Bao
+(no hint), 2, 2024-10-17 13:13:43.672050, /data/datasets/imdb/q/21c.sql, 149.92, 62.243, Bao
+(no hint), 0, 2024-10-17 13:13:47.193942, /data/datasets/imdb/q/22a.sql, 1135.143, 359.14, Bao
+(no hint), 1, 2024-10-17 13:13:47.208362, /data/datasets/imdb/q/22a.sql, 201.427, 302.301, Bao
+(no hint), 2, 2024-10-17 13:13:47.220991, /data/datasets/imdb/q/22a.sql, 205.098, 287.599, Bao
+(no hint), 0, 2024-10-17 13:13:50.721309, /data/datasets/imdb/q/22b.sql, 1404.088, 214.325, Bao
+(no hint), 1, 2024-10-17 13:13:50.736847, /data/datasets/imdb/q/22b.sql, 241.633, 168.805, Bao
+(no hint), 2, 2024-10-17 13:13:50.750068, /data/datasets/imdb/q/22b.sql, 207.233, 157.647, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:13:58.884465, /data/datasets/imdb/q/22c.sql, 713.032, 1981.992, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:13:58.898627, /data/datasets/imdb/q/22c.sql, 200.803, 1871.398, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:13:58.902789, /data/datasets/imdb/q/22c.sql, 205.676, 1883.042, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:03.418550, /data/datasets/imdb/q/22d.sql, 293.109, 1017.493, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:03.432401, /data/datasets/imdb/q/22d.sql, 208.926, 861.799, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:03.436280, /data/datasets/imdb/q/22d.sql, 226.724, 847.674, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:09.479484, /data/datasets/imdb/q/23a.sql, 305.388, 1827.896, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:09.501973, /data/datasets/imdb/q/23a.sql, 230.486, 1446.725, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:09.514145, /data/datasets/imdb/q/23a.sql, 217.243, 935.235, Bao
+(no hint), 0, 2024-10-17 13:14:11.511498, /data/datasets/imdb/q/23b.sql, 300.853, 73.439, Bao
+(no hint), 1, 2024-10-17 13:14:11.536946, /data/datasets/imdb/q/23b.sql, 208.793, 43.009, Bao
+(no hint), 2, 2024-10-17 13:14:11.549198, /data/datasets/imdb/q/23b.sql, 208.814, 42.503, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:18.617019, /data/datasets/imdb/q/23c.sql, 279.098, 2862.432, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:18.639450, /data/datasets/imdb/q/23c.sql, 223.394, 908.816, Bao
+SET enable_nestloop TO off; SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:18.651864, /data/datasets/imdb/q/23c.sql, 221.621, 1479.634, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:21.746294, /data/datasets/imdb/q/24a.sql, 435.614, 200.785, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:21.759761, /data/datasets/imdb/q/24a.sql, 370.154, 124.446, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:21.772257, /data/datasets/imdb/q/24a.sql, 345.475, 123.546, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:24.589179, /data/datasets/imdb/q/24b.sql, 403.027, 61.531, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:24.610727, /data/datasets/imdb/q/24b.sql, 343.843, 119.897, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:24.614549, /data/datasets/imdb/q/24b.sql, 358.203, 65.635, Bao
+(no hint), 0, 2024-10-17 13:14:31.791022, /data/datasets/imdb/q/25a.sql, 641.868, 1970.5, Bao
+(no hint), 1, 2024-10-17 13:14:31.839133, /data/datasets/imdb/q/25a.sql, 145.637, 1675.077, Bao
+(no hint), 2, 2024-10-17 13:14:32.206068, /data/datasets/imdb/q/25a.sql, 145.209, 1741.531, Bao
+(no hint), 0, 2024-10-17 13:14:34.800531, /data/datasets/imdb/q/25b.sql, 471.612, 237.255, Bao
+(no hint), 1, 2024-10-17 13:14:35.393813, /data/datasets/imdb/q/25b.sql, 149.008, 197.149, Bao
+(no hint), 2, 2024-10-17 13:14:35.406546, /data/datasets/imdb/q/25b.sql, 163.689, 197.316, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:14:50.718491, /data/datasets/imdb/q/25c.sql, 231.821, 4930.583, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:14:50.782955, /data/datasets/imdb/q/25c.sql, 141.955, 4516.107, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:14:50.795536, /data/datasets/imdb/q/25c.sql, 140.436, 4505.358, Bao
+(no hint), 0, 2024-10-17 13:14:55.694430, /data/datasets/imdb/q/26a.sql, 537.783, 884.534, Bao
+(no hint), 1, 2024-10-17 13:14:55.708229, /data/datasets/imdb/q/26a.sql, 325.182, 710.962, Bao
+(no hint), 2, 2024-10-17 13:14:55.720624, /data/datasets/imdb/q/26a.sql, 324.989, 713.982, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:14:58.617653, /data/datasets/imdb/q/26b.sql, 392.009, 168.89, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:14:58.731213, /data/datasets/imdb/q/26b.sql, 326.769, 134.302, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:14:58.745136, /data/datasets/imdb/q/26b.sql, 336.278, 136.169, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:11.149212, /data/datasets/imdb/q/26c.sql, 402.306, 3528.232, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:11.171978, /data/datasets/imdb/q/26c.sql, 323.399, 3234.924, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:11.184747, /data/datasets/imdb/q/26c.sql, 326.74, 3216.174, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:13.937009, /data/datasets/imdb/q/27a.sql, 395.556, 91.089, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:13.951201, /data/datasets/imdb/q/27a.sql, 340.985, 83.735, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:13.955484, /data/datasets/imdb/q/27a.sql, 328.665, 81.4, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:16.671397, /data/datasets/imdb/q/27b.sql, 402.316, 90.18, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:16.693105, /data/datasets/imdb/q/27b.sql, 329.52, 82.168, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:16.705227, /data/datasets/imdb/q/27b.sql, 331.662, 80.929, Bao
+(no hint), 0, 2024-10-17 13:15:19.351570, /data/datasets/imdb/q/27c.sql, 393.815, 76.621, Bao
+(no hint), 1, 2024-10-17 13:15:19.365524, /data/datasets/imdb/q/27c.sql, 325.927, 70.814, Bao
+(no hint), 2, 2024-10-17 13:15:19.369566, /data/datasets/imdb/q/27c.sql, 326.39, 71.64, Bao
+(no hint), 0, 2024-10-17 13:15:24.777062, /data/datasets/imdb/q/28a.sql, 448.85, 924.522, Bao
+(no hint), 1, 2024-10-17 13:15:24.799000, /data/datasets/imdb/q/28a.sql, 386.566, 824.308, Bao
+(no hint), 2, 2024-10-17 13:15:24.803017, /data/datasets/imdb/q/28a.sql, 388.454, 816.152, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:31.505702, /data/datasets/imdb/q/28b.sql, 382.22, 729.482, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:29.899152, /data/datasets/imdb/q/28b.sql, 455.304, 852.183, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:31.518326, /data/datasets/imdb/q/28b.sql, 383.047, 727.954, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:41.512914, /data/datasets/imdb/q/28c.sql, 466.588, 2533.784, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:41.535164, /data/datasets/imdb/q/28c.sql, 390.871, 2286.175, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:41.547728, /data/datasets/imdb/q/28c.sql, 386.156, 2290.821, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:46.172589, /data/datasets/imdb/q/29a.sql, 622.2, 391.364, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:46.195087, /data/datasets/imdb/q/29a.sql, 473.285, 369.614, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:46.207472, /data/datasets/imdb/q/29a.sql, 475.24, 369.283, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:49.745796, /data/datasets/imdb/q/29b.sql, 547.817, 86.372, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:49.759557, /data/datasets/imdb/q/29b.sql, 475.038, 48.112, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:49.763565, /data/datasets/imdb/q/29b.sql, 473.592, 47.285, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:15:53.990170, /data/datasets/imdb/q/29c.sql, 539.549, 314.425, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:15:54.004624, /data/datasets/imdb/q/29c.sql, 472.413, 270.314, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:15:54.017044, /data/datasets/imdb/q/29c.sql, 519.921, 256.907, Bao
+(no hint), 0, 2024-10-17 13:15:56.439797, /data/datasets/imdb/q/2a.sql, 171.646, 460.354, Bao
+(no hint), 1, 2024-10-17 13:15:56.475011, /data/datasets/imdb/q/2a.sql, 116.124, 396.827, Bao
+(no hint), 2, 2024-10-17 13:15:56.487401, /data/datasets/imdb/q/2a.sql, 116.607, 382.022, Bao
+(no hint), 0, 2024-10-17 13:15:58.830399, /data/datasets/imdb/q/2b.sql, 166.265, 444.243, Bao
+(no hint), 1, 2024-10-17 13:15:58.844532, /data/datasets/imdb/q/2b.sql, 116.349, 374.59, Bao
+(no hint), 2, 2024-10-17 13:15:58.857585, /data/datasets/imdb/q/2b.sql, 116.402, 373.492, Bao
+(no hint), 0, 2024-10-17 13:16:01.155484, /data/datasets/imdb/q/2c.sql, 169.995, 412.514, Bao
+(no hint), 1, 2024-10-17 13:16:01.383924, /data/datasets/imdb/q/2c.sql, 116.308, 359.667, Bao
+(no hint), 2, 2024-10-17 13:16:01.455830, /data/datasets/imdb/q/2c.sql, 116.295, 358.632, Bao
+(no hint), 0, 2024-10-17 13:16:04.143042, /data/datasets/imdb/q/2d.sql, 169.638, 551.627, Bao
+(no hint), 1, 2024-10-17 13:16:04.172074, /data/datasets/imdb/q/2d.sql, 119.453, 502.962, Bao
+(no hint), 2, 2024-10-17 13:16:04.176368, /data/datasets/imdb/q/2d.sql, 117.237, 462.168, Bao
+(no hint), 0, 2024-10-17 13:16:13.005472, /data/datasets/imdb/q/30a.sql, 406.938, 2265.342, Bao
+(no hint), 1, 2024-10-17 13:16:13.925987, /data/datasets/imdb/q/30a.sql, 342.185, 2018.727, Bao
+(no hint), 2, 2024-10-17 13:16:15.042980, /data/datasets/imdb/q/30a.sql, 338.989, 2022.133, Bao
+(no hint), 0, 2024-10-17 13:16:19.607649, /data/datasets/imdb/q/30b.sql, 1574.358, 316.009, Bao
+(no hint), 1, 2024-10-17 13:16:19.689182, /data/datasets/imdb/q/30b.sql, 334.977, 289.942, Bao
+(no hint), 2, 2024-10-17 13:16:19.693658, /data/datasets/imdb/q/30b.sql, 335.43, 267.173, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:16:32.957586, /data/datasets/imdb/q/30c.sql, 412.472, 3816.735, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:16:32.980066, /data/datasets/imdb/q/30c.sql, 377.351, 3424.269, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:16:32.992677, /data/datasets/imdb/q/30c.sql, 353.699, 3454.816, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:16:49.991022, /data/datasets/imdb/q/31a.sql, 331.894, 5238.334, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:16:50.024314, /data/datasets/imdb/q/31a.sql, 242.0, 4900.102, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:16:50.037531, /data/datasets/imdb/q/31a.sql, 243.22, 4858.041, Bao
+(no hint), 0, 2024-10-17 13:16:52.939339, /data/datasets/imdb/q/31b.sql, 338.692, 115.807, Bao
+(no hint), 1, 2024-10-17 13:16:52.953558, /data/datasets/imdb/q/31b.sql, 241.334, 108.144, Bao
+(no hint), 2, 2024-10-17 13:16:52.957711, /data/datasets/imdb/q/31b.sql, 240.38, 636.35, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:17:18.306482, /data/datasets/imdb/q/31c.sql, 341.79, 8043.989, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:17:18.356916, /data/datasets/imdb/q/31c.sql, 241.337, 7658.252, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:17:18.369572, /data/datasets/imdb/q/31c.sql, 236.892, 7655.031, Bao
+(no hint), 0, 2024-10-17 13:17:19.610220, /data/datasets/imdb/q/32a.sql, 179.267, 14.328, Bao
+(no hint), 1, 2024-10-17 13:17:19.898444, /data/datasets/imdb/q/32a.sql, 118.795, 12.785, Bao
+(no hint), 2, 2024-10-17 13:17:19.925763, /data/datasets/imdb/q/32a.sql, 122.137, 13.754, Bao
+(no hint), 0, 2024-10-17 13:17:22.048301, /data/datasets/imdb/q/32b.sql, 173.74, 124.117, Bao
+(no hint), 1, 2024-10-17 13:17:22.061926, /data/datasets/imdb/q/32b.sql, 116.399, 84.339, Bao
+(no hint), 2, 2024-10-17 13:17:22.066031, /data/datasets/imdb/q/32b.sql, 116.0, 85.813, Bao
+(no hint), 0, 2024-10-17 13:17:24.930209, /data/datasets/imdb/q/33a.sql, 468.341, 36.845, Bao
+(no hint), 1, 2024-10-17 13:17:24.944119, /data/datasets/imdb/q/33a.sql, 373.097, 24.243, Bao
+(no hint), 2, 2024-10-17 13:17:24.956345, /data/datasets/imdb/q/33a.sql, 376.389, 26.815, Bao
+(no hint), 0, 2024-10-17 13:17:27.852921, /data/datasets/imdb/q/33b.sql, 480.147, 43.506, Bao
+(no hint), 1, 2024-10-17 13:17:28.731523, /data/datasets/imdb/q/33b.sql, 379.493, 35.299, Bao
+(no hint), 2, 2024-10-17 13:17:28.764089, /data/datasets/imdb/q/33b.sql, 379.768, 37.934, Bao
+(no hint), 0, 2024-10-17 13:17:32.231816, /data/datasets/imdb/q/33c.sql, 444.591, 134.876, Bao
+(no hint), 1, 2024-10-17 13:17:32.253398, /data/datasets/imdb/q/33c.sql, 370.551, 128.06, Bao
+(no hint), 2, 2024-10-17 13:17:32.257348, /data/datasets/imdb/q/33c.sql, 386.905, 127.22, Bao
+(no hint), 0, 2024-10-17 13:17:33.787932, /data/datasets/imdb/q/3a.sql, 163.858, 148.662, Bao
+(no hint), 1, 2024-10-17 13:17:33.830611, /data/datasets/imdb/q/3a.sql, 115.2, 99.96, Bao
+(no hint), 2, 2024-10-17 13:17:33.843487, /data/datasets/imdb/q/3a.sql, 132.154, 98.766, Bao
+(no hint), 0, 2024-10-17 13:17:35.235727, /data/datasets/imdb/q/3b.sql, 167.02, 98.469, Bao
+(no hint), 1, 2024-10-17 13:17:35.250003, /data/datasets/imdb/q/3b.sql, 116.328, 76.55, Bao
+(no hint), 2, 2024-10-17 13:17:35.262460, /data/datasets/imdb/q/3b.sql, 115.997, 63.934, Bao
+(no hint), 0, 2024-10-17 13:17:37.087339, /data/datasets/imdb/q/3c.sql, 180.247, 262.216, Bao
+(no hint), 1, 2024-10-17 13:17:37.169941, /data/datasets/imdb/q/3c.sql, 115.715, 189.499, Bao
+(no hint), 2, 2024-10-17 13:17:37.182297, /data/datasets/imdb/q/3c.sql, 115.107, 191.048, Bao
+(no hint), 0, 2024-10-17 13:17:38.800160, /data/datasets/imdb/q/4a.sql, 321.196, 103.703, Bao
+(no hint), 1, 2024-10-17 13:17:38.822206, /data/datasets/imdb/q/4a.sql, 117.3, 84.57, Bao
+(no hint), 2, 2024-10-17 13:17:38.826775, /data/datasets/imdb/q/4a.sql, 117.334, 69.204, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:17:40.331669, /data/datasets/imdb/q/4b.sql, 162.024, 176.493, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:17:40.353528, /data/datasets/imdb/q/4b.sql, 116.968, 87.092, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:17:40.357873, /data/datasets/imdb/q/4b.sql, 120.937, 83.752, Bao
+(no hint), 0, 2024-10-17 13:17:41.801116, /data/datasets/imdb/q/4c.sql, 172.189, 110.011, Bao
+(no hint), 1, 2024-10-17 13:17:41.815458, /data/datasets/imdb/q/4c.sql, 119.854, 79.706, Bao
+(no hint), 2, 2024-10-17 13:17:41.820422, /data/datasets/imdb/q/4c.sql, 116.336, 78.26, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:17:43.338960, /data/datasets/imdb/q/5a.sql, 170.021, 115.16, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:17:43.353293, /data/datasets/imdb/q/5a.sql, 122.525, 110.162, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:17:43.357316, /data/datasets/imdb/q/5a.sql, 122.525, 110.607, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:17:44.885900, /data/datasets/imdb/q/5b.sql, 193.347, 108.503, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:17:44.908611, /data/datasets/imdb/q/5b.sql, 122.892, 108.91, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:17:44.929929, /data/datasets/imdb/q/5b.sql, 121.223, 106.002, Bao
+(no hint), 0, 2024-10-17 13:17:46.563363, /data/datasets/imdb/q/5c.sql, 170.115, 147.514, Bao
+(no hint), 1, 2024-10-17 13:17:46.577034, /data/datasets/imdb/q/5c.sql, 131.154, 141.328, Bao
+(no hint), 2, 2024-10-17 13:17:46.590553, /data/datasets/imdb/q/5c.sql, 124.972, 139.595, Bao
+(no hint), 0, 2024-10-17 13:17:47.859040, /data/datasets/imdb/q/6a.sql, 171.419, 44.955, Bao
+(no hint), 1, 2024-10-17 13:17:47.872836, /data/datasets/imdb/q/6a.sql, 118.191, 14.898, Bao
+(no hint), 2, 2024-10-17 13:17:47.876710, /data/datasets/imdb/q/6a.sql, 114.612, 14.755, Bao
+(no hint), 0, 2024-10-17 13:17:49.544804, /data/datasets/imdb/q/6b.sql, 170.076, 185.09, Bao
+(no hint), 1, 2024-10-17 13:17:49.558575, /data/datasets/imdb/q/6b.sql, 136.196, 143.731, Bao
+(no hint), 2, 2024-10-17 13:17:49.562970, /data/datasets/imdb/q/6b.sql, 119.744, 133.747, Bao
+(no hint), 0, 2024-10-17 13:17:50.797546, /data/datasets/imdb/q/6c.sql, 174.932, 14.913, Bao
+(no hint), 1, 2024-10-17 13:17:50.819805, /data/datasets/imdb/q/6c.sql, 128.758, 14.136, Bao
+(no hint), 2, 2024-10-17 13:17:50.832708, /data/datasets/imdb/q/6c.sql, 116.908, 11.741, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:17:56.727354, /data/datasets/imdb/q/6d.sql, 169.533, 1598.318, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:17:56.749134, /data/datasets/imdb/q/6d.sql, 132.866, 1499.993, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:17:56.753249, /data/datasets/imdb/q/6d.sql, 123.697, 1559.63, Bao
+(no hint), 0, 2024-10-17 13:17:58.001063, /data/datasets/imdb/q/6e.sql, 178.058, 31.885, Bao
+(no hint), 1, 2024-10-17 13:17:58.014747, /data/datasets/imdb/q/6e.sql, 118.084, 16.433, Bao
+(no hint), 2, 2024-10-17 13:17:58.019136, /data/datasets/imdb/q/6e.sql, 118.488, 17.03, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:18:08.697396, /data/datasets/imdb/q/6f.sql, 160.767, 3369.959, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:18:08.719391, /data/datasets/imdb/q/6f.sql, 135.554, 3033.469, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:18:08.731633, /data/datasets/imdb/q/6f.sql, 118.107, 3101.431, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2024-10-17 13:18:12.773837, /data/datasets/imdb/q/7a.sql, 186.21, 1647.004, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2024-10-17 13:18:12.787906, /data/datasets/imdb/q/7a.sql, 144.604, 521.463, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2024-10-17 13:18:12.792233, /data/datasets/imdb/q/7a.sql, 147.179, 531.415, Bao
+(no hint), 0, 2024-10-17 13:18:14.612406, /data/datasets/imdb/q/7b.sql, 184.848, 249.43, Bao
+(no hint), 1, 2024-10-17 13:18:14.634458, /data/datasets/imdb/q/7b.sql, 130.719, 143.352, Bao
+(no hint), 2, 2024-10-17 13:18:14.638742, /data/datasets/imdb/q/7b.sql, 146.749, 142.339, Bao
+(no hint), 0, 2024-10-17 13:18:24.001653, /data/datasets/imdb/q/7c.sql, 201.234, 2837.541, Bao
+(no hint), 1, 2024-10-17 13:18:24.023913, /data/datasets/imdb/q/7c.sql, 139.822, 2605.008, Bao
+(no hint), 2, 2024-10-17 13:18:24.036679, /data/datasets/imdb/q/7c.sql, 141.339, 2609.578, Bao
+(no hint), 0, 2024-10-17 13:18:27.037901, /data/datasets/imdb/q/8a.sql, 190.207, 585.099, Bao
+(no hint), 1, 2024-10-17 13:18:27.051748, /data/datasets/imdb/q/8a.sql, 140.388, 553.202, Bao
+(no hint), 2, 2024-10-17 13:18:27.056180, /data/datasets/imdb/q/8a.sql, 143.739, 590.993, Bao
+(no hint), 0, 2024-10-17 13:18:28.675076, /data/datasets/imdb/q/8b.sql, 191.229, 128.551, Bao
+(no hint), 1, 2024-10-17 13:18:28.689436, /data/datasets/imdb/q/8b.sql, 128.787, 130.363, Bao
+(no hint), 2, 2024-10-17 13:18:28.701971, /data/datasets/imdb/q/8b.sql, 132.626, 124.224, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:18:37.410822, /data/datasets/imdb/q/8c.sql, 187.039, 2501.689, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:18:37.433672, /data/datasets/imdb/q/8c.sql, 133.004, 2436.523, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:18:37.438028, /data/datasets/imdb/q/8c.sql, 129.351, 2536.565, Bao
+SET enable_nestloop TO off; , 0, 2024-10-17 13:18:45.425153, /data/datasets/imdb/q/8d.sql, 195.186, 2292.962, Bao
+SET enable_nestloop TO off; , 1, 2024-10-17 13:18:45.446942, /data/datasets/imdb/q/8d.sql, 142.271, 2213.105, Bao
+SET enable_nestloop TO off; , 2, 2024-10-17 13:18:45.450985, /data/datasets/imdb/q/8d.sql, 134.867, 2194.729, Bao
+(no hint), 0, 2024-10-17 13:18:47.324174, /data/datasets/imdb/q/9a.sql, 206.261, 180.423, Bao
+(no hint), 1, 2024-10-17 13:18:47.493386, /data/datasets/imdb/q/9a.sql, 136.918, 170.1, Bao
+(no hint), 2, 2024-10-17 13:18:47.497752, /data/datasets/imdb/q/9a.sql, 137.906, 213.513, Bao
+(no hint), 0, 2024-10-17 13:18:49.343177, /data/datasets/imdb/q/9b.sql, 207.067, 170.811, Bao
+(no hint), 1, 2024-10-17 13:18:49.377803, /data/datasets/imdb/q/9b.sql, 138.092, 172.878, Bao
+(no hint), 2, 2024-10-17 13:18:49.390371, /data/datasets/imdb/q/9b.sql, 137.715, 169.172, Bao
+(no hint), 0, 2024-10-17 13:18:51.849229, /data/datasets/imdb/q/9c.sql, 189.25, 446.272, Bao
+(no hint), 1, 2024-10-17 13:18:51.966245, /data/datasets/imdb/q/9c.sql, 143.106, 356.085, Bao
+(no hint), 2, 2024-10-17 13:18:51.979079, /data/datasets/imdb/q/9c.sql, 144.319, 351.599, Bao
+SET enable_mergejoin TO off; , 0, 2024-10-17 13:19:00.638124, /data/datasets/imdb/q/9d.sql, 221.524, 2549.005, Bao
+SET enable_mergejoin TO off; , 1, 2024-10-17 13:19:00.659969, /data/datasets/imdb/q/9d.sql, 144.823, 2345.995, Bao
+SET enable_mergejoin TO off; , 2, 2024-10-17 13:19:00.664183, /data/datasets/imdb/q/9d.sql, 141.803, 2422.983, Bao
+x, 0, 2024-10-17 13:19:00.684754, /data/datasets/imdb/q/create_table/schema.sql, 360000, 360000, Bao
+x, 1, 2024-10-17 13:19:00.689130, /data/datasets/imdb/q/create_table/schema.sql, 360000, 360000, Bao
+x, 2, 2024-10-17 13:19:00.701705, /data/datasets/imdb/q/create_table/schema.sql, 360000, 360000, Bao

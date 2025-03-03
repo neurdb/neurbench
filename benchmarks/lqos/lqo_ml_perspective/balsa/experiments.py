@@ -158,6 +158,43 @@ JOB_JOIN_PRED_TABLE_TEST = [
     "33c.sql"
 ]
 
+JOB_SMALLSET_TEST = [
+    "1d.sql",
+    "2d.sql",
+    "3c.sql",
+    "4c.sql",
+    "5c.sql",
+    "6e.sql",
+    "6f.sql",
+    "7c.sql",
+    "8d.sql",
+    "9d.sql",
+    "10c.sql",
+    "11d.sql",
+    "12c.sql",
+    "13d.sql",
+    "14c.sql",
+    "15d.sql",
+    "16d.sql",
+    "17f.sql",
+    "18c.sql",
+    "19d.sql",
+    "20c.sql",
+    "21c.sql",
+    "22d.sql",
+    "23c.sql",
+    "24b.sql",
+    "25c.sql",
+    "26c.sql",
+    "27c.sql",
+    "28c.sql",
+    "29c.sql",
+    "30c.sql",
+    "31c.sql",
+    "32b.sql",
+    "33b.sql"
+]
+
 JOB_JOIN_PRED_TABLE_DEBUG_TEST = [
     "1a.sql",
     "1b.sql",
@@ -385,9 +422,9 @@ class BalsaParams(object):
 
         # Training.
         p.Define('inherit_optimizer_state', False, 'Experimental.  For Adam.')
-        p.Define('epochs', 1, 'Num epochs to train.')
+        p.Define('epochs', 6, 'Num epochs to train.')
         p.Define('bs', 1024, 'Batch size.')
-        p.Define('val_iters', 10, '# of value iterations.')
+        p.Define('val_iters', 2, '# of value iterations.')
         p.Define('increment_iter_despite_timeouts', False,
                  'Increment the iteration counter even if timeouts occurred?')
         p.Define('loss_type', None, 'Options: None (MSE), mean_qerror.')
@@ -1094,6 +1131,65 @@ class Neo_JOB_EvaluationBase(NeoImplRand52):
 
 # ===========================================================================
 # RANDOM SPLIT 1-3
+
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_JOIN_SHIFT_Train03(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_ori'
+        p.query_dir = 'queries/q_train_imdb_join_03'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_JOIN_SHIFT_Train05(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_ori'
+        p.query_dir = 'queries/q_train_imdb_join_05'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_Train(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_ori'
+        p.query_dir = 'queries/job_data_v2_small_set_query'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+# RANDOM SPLIT 1-3
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_01(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_01v2'
+        p.query_dir = 'queries/job_data_v2_small_set_query'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_05(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_05v2'
+        p.query_dir = 'queries/job_data_v2_small_set_query'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+
+@balsa.params_registry.Register
+class Neo_DB2_SMALL_SET_07(Neo_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_07v2'
+        p.query_dir = 'queries/job_data_v2_small_set_query'
+        p.test_query_glob = JOB_SMALLSET_TEST
+        return p
+
+
 @balsa.params_registry.Register
 class Neo_JOB_JOIN(Neo_JOB_EvaluationBase):
     def Params(self):
