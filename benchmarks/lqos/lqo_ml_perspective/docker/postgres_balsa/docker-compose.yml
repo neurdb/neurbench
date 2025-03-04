@@ -4,7 +4,7 @@ services:
     postgres:
         image: pg_balsa_img
         volumes: 
-            - ./../../../../datasets/:/data/datasets
+            - /hdd1/xingnaili/AI4QueryOptimizer/datasets/:/data/datasets
             - ./../../conf/balsa-postgresql.conf:/app/postgresql.conf
             - ./pgdata:/pgdata
         ports:

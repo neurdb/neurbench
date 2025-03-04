@@ -2,21 +2,16 @@ import random
 
 random.seed(113)
 
-import sys
-import wandb
 from datetime import datetime
 import json
 from tqdm.auto import tqdm
 
-from ImportantConfig import Config
 from sql2fea import TreeBuilder, value_extractor
 from NET import TreeNet
 from sql2fea import Sql2Vec
 from TreeLSTM import SPINN
 
-from Hinter import Hinter
-from mcts import MCTSHinterSearch
-import argparse  # Added to parse arguments
+
 
 
 def load_queries(queries_path):
@@ -90,7 +85,7 @@ def train_epoch(hinter, queries, epoch, query_log_file_path):
         pbar.set_description(f"Iterating over training query {query_ident}...")
 
         pg_plan_time, pg_latency, mcts_time, hinter_plan_time, MPHE_time, hinter_latency, actual_plans, actual_time = hinter.hinterRun(
-            sql)
+            sql, is_train=True)
         pg_latency /= 1000
         hinter_latency /= 1000
         pg_plan_time /= 1000
@@ -127,7 +122,7 @@ def test_epoch(hinter, queries, epoch, query_log_file_path):
         pbar.set_description(f"Iterating over test query {query_ident}...")
 
         pg_plan_time, pg_latency, mcts_time, hinter_plan_time, MPHE_time, hinter_latency, actual_plans, actual_time = hinter.hinterRun(
-            sql)
+            sql, is_train=False)
         pg_latency /= 1000
         hinter_latency /= 1000
         pg_plan_time /= 1000
@@ -156,10 +151,22 @@ def test_epoch(hinter, queries, epoch, query_log_file_path):
 
 
 if __name__ == '__main__':
+    from ImportantConfig import Config
+    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--query_file', type=str, required=True, help="Path to the queries file")
+    parser.add_argument('--train_database', type=str, required=True, help="DB anme")
+    parser.add_argument('--test_database', type=str, required=True, help="DB anme")
+
     args = parser.parse_args()
+    Config.train_database = args.train_database
+    Config.test_database = args.test_database
+    print("Updating config done")
+    from Hinter import Hinter
+    from mcts import MCTSHinterSearch
+
     config = Config()
     config.queries_file = args.query_file
     # Run the main function
+    print(config)
     main(config)
