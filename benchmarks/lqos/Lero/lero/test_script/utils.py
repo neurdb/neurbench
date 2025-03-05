@@ -6,6 +6,10 @@ from config import *
 import fcntl
 import psycopg2
 
+def time_sleep():
+    import time
+    time.sleep(1.5)
+
 def encode_str(s):
     md5 = hashlib.md5()
     md5.update(s.encode('utf-8'))
@@ -25,8 +29,12 @@ def run_query(q, run_args):
         cur.execute("SET statement_timeout TO " + str(TIMEOUT))
         # print(run_args)
         # print(q)
+        print(f"------------ Explaining the query {q} ------------")
+        time_sleep()
         cur.execute(q)
+        print(f"------------ Done Explaining the query {q} ------------")
         result = cur.fetchall()
+        print(f"------------ Done fetchall the query {q} ------------")
     finally:
         
         conn.close()
@@ -179,7 +187,7 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
                 fcntl.flock(f, fcntl.LOCK_UN)
 
         exec_time = latency_json[0]["Execution Time"]
-        print(time(), query_name, exec_time, flush=True)
+        print("after writting write_latency_file", time(), query_name, exec_time, flush=True)
     except Exception as e:
         with open(latency_file + "_error", "a+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)

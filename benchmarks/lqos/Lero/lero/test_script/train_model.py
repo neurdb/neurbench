@@ -27,6 +27,7 @@ class PgHelper():
 
     def start(self, pool_num):
         pool = Pool(pool_num)
+        print("---------------- starts PgHelper ----------------")
         for fp, q in self.queries:
             pool.apply_async(do_run_query, args=(q, fp, [], self.output_query_latency_file, True, None, None))
         print('Waiting for all subprocesses done...')
@@ -55,13 +56,11 @@ class LeroHelper():
         lero_chunks = list(self.chunks(self.queries, self.query_num_per_chunk))
 
         run_args = self.get_run_args()
+        print("---------------- starts LeroHelper (SEQUENTIAL MODE) ----------------")
         for c_idx, chunk in enumerate(lero_chunks):
-            pool = Pool(pool_num)
             for fp, q in chunk:
-                self.run_pairwise(q, fp, run_args, self.output_query_latency_file, self.output_query_latency_file + "_exploratory", pool)
-            print('Waiting for all subprocesses done...')
-            pool.close()
-            pool.join()
+                self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
+                                  self.output_query_latency_file + "_exploratory", None)  # ❌ No pool, run synchronously
 
             model_name = self.model_prefix + "_" + str(c_idx)
             self.retrain(model_name)
@@ -110,6 +109,7 @@ class LeroHelper():
         return run_args
 
     def run_pairwise(self, q, fp, run_args, output_query_latency_file, exploratory_query_latency_file, pool):
+        print("---------------- run_pairwise (SEQUENTIAL MODE) ----------------")
         explain_query(q, run_args)
         policy_entities = []
         with open(self.lero_card_file_path, 'r') as f:
@@ -132,7 +132,7 @@ class LeroHelper():
                     card_file.write(card_str)
 
                 output_file = output_query_latency_file if i == 0 else exploratory_query_latency_file
-                pool.apply_async(do_run_query, args=(q, fp, self.get_card_test_args(card_file_name), output_file, True, None, None))
+                do_run_query(q, fp, self.get_card_test_args(card_file_name), output_file, True, None, None)
                 i += 1
 
     def predict(self, plan):
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     output_query_latency_file = args.output_query_latency_file
     print("output_query_latency_file:", output_query_latency_file)
 
-    pool_num = 10
+    pool_num = 1
     if args.pool_num:
         pool_num = args.pool_num
     print("pool_num:", pool_num)

@@ -100,7 +100,7 @@ def training_pairwise(tuning_model_path, model_name, training_data_file, pretrai
         lero_model = LeroModelPairWise(feature_generator)
     lero_model.fit(X1, X2, Y1, Y2, tuning_model)
 
-    print("saving model...")
+    print(f"saving model... {model_name}")
     lero_model.save(model_name)
 
 
@@ -128,7 +128,7 @@ def training_with_rank_score(tuning_model_path, model_name, training_data_file, 
 
     lero_model.fit(local_features, Y, tuning_model)
 
-    print("saving model...")
+    print(f"saving model... {model_name}")
     lero_model.save(model_name)
 
 
@@ -155,7 +155,7 @@ def training_pointwise(tuning_model_path, model_name, training_data_file):
 
     lero_model.fit(local_features, y, tuning_model)
 
-    print("saving model...")
+    print(f"saving model... {model_name}")
     lero_model.save(model_name)
 
 

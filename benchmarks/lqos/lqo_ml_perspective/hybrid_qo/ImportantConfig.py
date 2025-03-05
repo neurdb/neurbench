@@ -3,12 +3,16 @@ from math import log
 
 
 class Config:
+    train_database = 'imdb_ori'
+    test_database = 'imdb_ori'
     def __init__(self, ):
         # self.datafile = 'JOBqueries.workload'
         self.schemaFile = "schema.sql"
         self.user = 'postgres'
         self.password = 'postgres'
-        self.dataset = 'imdb'
+        self.train_database = ""
+        self.test_database = ""
+
         self.userName = self.user
         self.usegpu = True
         self.head_num = 10
@@ -37,7 +41,7 @@ class Config:
 
         # JOB
         # -------------------------------------
-        self.database = 'imdb_ori'
+
         self.max_alias_num = 40
         self.id2aliasname = {0: 'start', 1: 'chn', 2: 'ci', 3: 'cn', 4: 'ct', 5: 'mc', 6: 'rt', 7: 't', 8: 'k', 9: 'lt',
                              10: 'mk', 11: 'ml', 12: 'it1', 13: 'it2', 14: 'mi', 15: 'mi_idx', 16: 'it', 17: 'kt',
@@ -51,7 +55,7 @@ class Config:
                              'cc': 22, 'cct2': 24, 'an': 20, 'mk': 10, 'cn': 3, 'it3': 25, 't1': 27, 'mc1': 33}
         self.max_column = 100  # Number of columns in the database (JOB=108, but not all are used in queries?)
 
-        self.n_epochs = 2
+        self.n_epochs = 10
         self.queries_file = 'workload/query_join__train.json'
 
         self.mcts_input_size = self.max_alias_num * self.max_alias_num + self.max_column
