@@ -1,10 +1,46 @@
-# NeuralBench
+# NeurBench
 
 > Benchmarking Learned Databases with Data and Workload Drift Modeling
 
-## Usage
+**NeurBench** is a benchmark framework designed with controllable data and workload drift. It creates a unified concept called *drift factor* to precisely quantify and generate drift. Based on this formulation, a benchmark suite is then developed to enable standardized performance evaluations of various learned database components under measurable and adjustable drift conditions.
 
-### Generate TPC-H data
+This repository contains the code of NeurBench, which is used to evaluate learned query optimizers, learned indexes, and learned concurrency control.
+
+## Benchmarks
+
+### Learned Query Optimziers
+
+Please check the documentation [here](./benchmarks/lqos/README.md).
+
+The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
+
+### Learn Concurrency Control
+
+The benchmarks are conducted for Polyjuice. Please check the documentation at
+
+<https://github.com/derFischer/Polyjuice/tree/master/ae-tpcc-polyjuice>
+
+to set up the testbed.
+
+The experiments are done with the default config, i.e.,
+
+```ini
+selection=truncation
+psize=8
+random_branch=4
+mutate_rate=0.05
+pickup_policy=./training/input-RL-ic3-new-tpcc.txt
+```
+
+### Learned Index
+
+Please check the documentation [here](./benchmarks/lidx/README.md).
+
+The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
+
+## Tools & Utilities
+
+### TPC-H Data Generator (Official)
 
 ```bash
 cd tpch-kit/dbgen
@@ -14,7 +50,13 @@ mkdir 1g
 mv *.tbl 1g/
 ```
 
-### Run DB Processor (dbproc)
+### TBL to CSV
+
+```bash
+python tbl2csv.py -d tpch -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
+```
+
+### DB Processor (dbproc)
 
 Use `customer` table as an example:
 
@@ -38,7 +80,7 @@ python dbproc.py -t customer -i 2.tbl -o 3.tbl -b $nbins -D $d -s $skewed
 # ...
 ```
 
-### Run Query Processor (qpre, qproc)
+### Query Processor (qpre, qproc)
 
 ```bash
 # drift factor
@@ -52,30 +94,3 @@ n=1000
 type=tables
 python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
 ```
-
-# Helper funcs
-
-#### Generate base queries
-
-```bash
-DSS_QUERY=./queries ./qgen -v -d -s 1 -r 42 > tpch-stream.sql
-```
-
-#### Preprocess
-
-```bash
-python qpre.py -i tpch-kit/dbgen/tpch-stream.sql
-```
-
-#### Convert tbl to csv
-
-```bash
-python tbl2csv.py -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
-```
-
-#### Process
-
-```bash
-python parse_sql_metadata.py -i ./testdata/tpch-pp.sql -o ./result
-```
-

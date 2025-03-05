@@ -1,0 +1,10 @@
+postgresql*
+pgsql
+.vscode
+data
+lero/*tpch*
+lero/*log*
+lero/dump_card_with_score.txt
+__pycache__
+.ipynb*
+lero/test_script/*log*

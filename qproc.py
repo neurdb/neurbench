@@ -1,18 +1,18 @@
 import argparse
-from functools import cached_property
 import glob
 import os
+from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
 import pglast
 from scipy.spatial.distance import jensenshannon
 
-import neuralbench
-from neuralbench import dist, sample, deterministic, fileop
-from neuralbench.drift import find_q
-from neuralbench.util import formatted_list, tuple_to_list
-from neuralbench.query import SQLInfoExtractor
+import neurbench
+from neurbench import deterministic, dist, fileop, sample
+from neurbench.drift import find_q
+from neurbench.query import SQLInfoExtractor
+from neurbench.util import formatted_list, tuple_to_list
 
 TYPES = ["tables", "predicates", "joins", "aliasname_fullname"]
 
@@ -61,18 +61,19 @@ class MetadataDistribution:
 """
 
 
-class QueryProcessor(neuralbench.Processor):
+class QueryProcessor(neurbench.Processor):
     def __init__(
             self,
             dbname: str,
             type: str,
             config_path: str,
             skewed: int,
+            dump_feature_table: bool = False,
     ):
-        # TODO: Support other databases than TPC-H
         self.dbname = dbname
         self.config_path = config_path
         self.skewed = skewed
+        self.dump_feature_table = dump_feature_table
 
         self.type = type
 
@@ -84,7 +85,7 @@ class QueryProcessor(neuralbench.Processor):
 
         self._create = False
 
-        self._config, err = neuralbench.load_config(
+        self._config, err = neurbench.load_config(
             self.config_path, {"bin_values": {}, "map": {}}
         )
         if err is not None:
@@ -107,7 +108,7 @@ class QueryProcessor(neuralbench.Processor):
         with open(input_file, "r") as f:
             sqls = f.readlines()
             for s in sqls:
-                node = pglast.parse_sql(s)
+                node = pglast.parse_sql(s.split("#####")[1])
                 extractor = SQLInfoExtractor()
                 extractor(node)
 
@@ -130,7 +131,8 @@ class QueryProcessor(neuralbench.Processor):
                             self.config["map"][k][info_k_values_str] = []
 
                         self.config["map"][k][info_k_values_str].append(s)
-        self.compute_dist()
+
+        # self.compute_dists()
 
     def load(self, input_path: str):
         sql_files = glob.glob(os.path.join(input_path, "*.sql"))
@@ -166,9 +168,17 @@ class QueryProcessor(neuralbench.Processor):
 
                         self.config["map"][k][info_k_values_str].append(s)
 
-        self.compute_dist()
+        # self.compute_dists()
+        
+        if self.dump_feature_table:
+            self._dump_feature_table()
+            
+    def _dump_feature_table(self):
+        df = pd.DataFrame(self.data)
+        df = df.applymap(lambda x: str(x).replace("'", "").replace(", ", " AND "))
+        df.to_csv(f"{self.dbname}_feature_table.csv", index=False)
 
-    def compute_dist(self):
+    def compute_dists(self):
         for t in TYPES:
             d = self._get_dist(t, self.data[t])
             print(d)
@@ -211,7 +221,7 @@ class QueryProcessor(neuralbench.Processor):
         sampled_infos = sample.sample_from_distribution(dist, index, size)[0]
         for info in sampled_infos:
             selections = self.config["map"][self.type][str(info)]
-            result.append(deterministic.in_bin_sample_rng.choice(selections))
+            result.append(deterministic.sample_rng.choice(selections))
 
         return result
 
@@ -230,7 +240,7 @@ def main():
     parser = argparse.ArgumentParser(description="Drift data")
 
     parser.add_argument(
-        "-d", "--dbname", default="tpch", help="Database name (default: tpch)"
+        "-d", "--dbname", help="Database name (default: tpch)", required=True
     )
 
     parser.add_argument(
@@ -252,14 +262,14 @@ def main():
     parser.add_argument(
         "-o",
         "--output",
-        default="./{dbname}-query-drifted.sql",
         help="Path to the output CSV file (default: ./{dbname}-query-drifted.sql)",
+        required = True
     )
     parser.add_argument(
         "-t",
         "--type",
-        default="tables",
         help='Metadata type (available: "tables", "predicates", "joins", "aliasname_fullname". default: "tables")',
+        required=True
     )
     parser.add_argument(
         "-c",
@@ -281,6 +291,12 @@ def main():
         default=1,
         help="Whether to distribution shifts towards more skewed. 1 = yes, 0 = no (default: 1)",
     )
+    parser.add_argument(
+        "-F",
+        "--dump_feature_table",
+        action="store_true",
+        help="Dump feature table",
+    )
 
     args = parser.parse_args()
 
@@ -297,9 +313,9 @@ def main():
     if not 0.0 <= args.drift <= 1.0:
         parser.error("Drift factor must be between 0.0 and 1.0")
 
-    p = QueryProcessor(args.dbname, args.type, args.config, args.skewed)
+    p = QueryProcessor(args.dbname, args.type, args.config, args.skewed, args.dump_feature_table)
 
-    neuralbench.make_drift(
+    neurbench.make_drift(
         p, args.input_file, args.input_dir, args.output, args.config, args.drift, args.n_samples
     )
 
