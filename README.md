@@ -1,4 +1,4 @@
-# NeuralBench
+# NeurBench
 
 > Benchmarking Learned Databases with Data and Workload Drift Modeling
 
@@ -6,9 +6,9 @@ Learned databases have been extensively studied in recent years. Given the dynam
 
 However, existing benchmarks for learned databases either overlook or oversimplify the treatment of data and workload drift, failing to evaluate learned database components across a broad range of drift conditions.
 
-**NeuralBench** is a new benchmark framework designed with controllable data and workload drift. It creates a unified concept called *drift factor* to precisely quantify and generate drift. Based on this formulation, a benchmark suite is then developed to enable standardized performance evaluations of various learned database components under measurable and adjustable drift conditions.
+**NeurBench** is a new benchmark framework designed with controllable data and workload drift. It creates a unified concept called *drift factor* to precisely quantify and generate drift. Based on this formulation, a benchmark suite is then developed to enable standardized performance evaluations of various learned database components under measurable and adjustable drift conditions.
 
-This repository contains the code of NeuralBench, which is used to evaluate learned query optimizers, concurrency control, and indexes.
+This repository contains the code of NeurBench, which is used to evaluate learned query optimizers, concurrency control, and indexes.
 
 ## Benchmarks
 
@@ -16,7 +16,7 @@ This repository contains the code of NeuralBench, which is used to evaluate lear
 
 Please check the documentation [here](./benchmarks/lqos/README.md).
 
-The main code for the benchmarks is in `benchmarks/lqos` and `neuralbench/query`.
+The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
 
 ### Learn Concurrency Control
 
@@ -40,7 +40,7 @@ pickup_policy=./training/input-RL-ic3-new-tpcc.txt
 
 Please check the documentation [here](./benchmarks/lidx/README.md).
 
-The main code for the benchmarks is in `benchmarks/lidx` and `neuralbench/index`.
+The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
 
 ## Tools & Utilities
 

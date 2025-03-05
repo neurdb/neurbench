@@ -3,7 +3,7 @@
 set -x
 set -e
 
-DATASETS_DIR=/home/haotian/r/neurdb/AI4QueryOptimizer/datasets
+DATASETS_DIR=$HOME/r/neurdb/AI4QueryOptimizer/datasets
 
 DBNAME=job
 TABLE_NAMES=(

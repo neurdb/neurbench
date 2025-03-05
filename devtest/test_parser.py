@@ -4,7 +4,8 @@ import os
 from pprint import pprint
 
 import pglast
-from neuralbench.query import SQLInfoExtractor
+
+from neurbench.query import SQLInfoExtractor
 
 
 def print_info(extractor: SQLInfoExtractor):

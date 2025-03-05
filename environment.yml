@@ -1,4 +1,4 @@
-name: neuralbench
+name: neurbench
 channels:
   - conda-forge
   - defaults
@@ -139,4 +139,4 @@ dependencies:
   - zipp=3.20.2=pyhd8ed1ab_0
   - zlib=1.2.13=h5eee18b_1
   - zstd=1.5.5=hc292b87_2
-prefix: /users/lingze/anaconda3/envs/neuralbench
+prefix: /users/lingze/anaconda3/envs/neurbench
