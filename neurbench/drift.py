@@ -32,7 +32,7 @@ def find_q(p: List[float], d: float, skewed: bool = True) -> List[float]:
         _objective,
         q0,
         args=(p, d),
-        method="L-BFGS-B",
+        # method="L-BFGS-B",
         constraints=cons,
         bounds=bounds,
         tol=1e-6,

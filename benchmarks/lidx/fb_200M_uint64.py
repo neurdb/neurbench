@@ -4,15 +4,17 @@
 
 # set workspace to the root of the project
 import os
+
 workspace_path = '../..'
 os.chdir(workspace_path)
 print("Current workspace:", os.getcwd())
 
 # %%
 import numpy as np
-from neuralbench.index.util import load_key_set, KeyType, save_file
-from neuralbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
-from neuralbench.drift import find_q
+
+from neurbench.drift import find_q
+from neurbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
+from neurbench.index.util import KeyType, load_key_set, save_file
 
 # %%
 # load fb_200M_uint64 key set
@@ -75,6 +77,7 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # %%
 # draw the estimated distribution and store the figure
 import matplotlib.pyplot as plt
+
 labels = x
 max_value = max(y)
 rounded_max_value = np.ceil(max_value * 50) / 50
@@ -90,7 +93,7 @@ print(rounded_max_value)
 ax.set_ylim(0, rounded_max_value)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neuralbench/data/keys/fb_200M_uint64_distribution.pdf"
+filepath = "/users/lingze/neurbench/data/keys/fb_200M_uint64_distribution.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
@@ -135,7 +138,7 @@ print("Insert ratio:", len(inserted_keys) / len(data))
 # print bulkloading key CDF
 
 # %%
-workload_dir_path = "/users/lingze/neuralbench/data/workload/fb_200M_uint64_drift_01"
+workload_dir_path = "/users/lingze/neurbench/data/workload/fb_200M_uint64_drift_01"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -158,6 +161,7 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # draw the estimated distribution and store the figure
 # draw the estimated distribution and store the figure
 import matplotlib.pyplot as plt
+
 labels = x
 max_value = max(y)
 rounded_max_value = np.ceil(max_value * 50) / 50
@@ -172,7 +176,7 @@ print(rounded_max_value)
 ax.set_ylim(0, rounded_max_value)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neuralbench/data/keys/fb_200M_uint64_distribution_drift_01.pdf"
+filepath = "/users/lingze/neurbench/data/keys/fb_200M_uint64_distribution_drift_01.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
@@ -225,7 +229,7 @@ bin_idxs, ini_prob, _ = KeySetBinEncoder.bin_keyset_to_distribution(
 KeySetBinEncoder.plot_probability_distribution(ini_prob)
 
 # %%
-workload_dir_path = "/users/lingze/neuralbench/data/workload/fb_200M_uint64_drift_03"
+workload_dir_path = "/users/lingze/neurbench/data/workload/fb_200M_uint64_drift_03"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -248,6 +252,7 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # draw the estimated distribution and store the figure
 # draw the estimated distribution and store the figure
 import matplotlib.pyplot as plt
+
 labels = x
 max_value = max(y)
 rounded_max_value = np.ceil(max_value * 50) / 50
@@ -261,7 +266,7 @@ ax.set_ylabel('Prob (%)', fontsize = 15)
 ax.set_ylim(0, rounded_max_value)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neuralbench/data/keys/fb_200M_uint64_distribution_drift_03.pdf"
+filepath = "/users/lingze/neurbench/data/keys/fb_200M_uint64_distribution_drift_03.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
@@ -302,7 +307,7 @@ bin_idxs, ini_prob, _ = KeySetBinEncoder.bin_keyset_to_distribution(
 KeySetBinEncoder.plot_probability_distribution(ini_prob)
 
 # %%
-workload_dir_path = "/users/lingze/neuralbench/data/workload/fb_200M_uint64_drift_05"
+workload_dir_path = "/users/lingze/neurbench/data/workload/fb_200M_uint64_drift_05"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -323,6 +328,7 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # %%
 # draw the estimated distribution and store the figure
 import matplotlib.pyplot as plt
+
 labels = x
 max_value = max(y)
 rounded_max_value = np.ceil(max_value * 50) / 50
@@ -337,7 +343,7 @@ print(rounded_max_value)
 ax.set_ylim(0, rounded_max_value)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neuralbench/data/keys/fb_200M_uint64_distribution_drift_05.pdf"
+filepath = "/users/lingze/neurbench/data/keys/fb_200M_uint64_distribution_drift_05.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()
@@ -378,7 +384,7 @@ bin_idxs, ini_prob, _ = KeySetBinEncoder.bin_keyset_to_distribution(
 KeySetBinEncoder.plot_probability_distribution(ini_prob)
 
 # %%
-workload_dir_path = "/users/lingze/neuralbench/data/workload/fb_200M_uint64_drift_07"
+workload_dir_path = "/users/lingze/neurbench/data/workload/fb_200M_uint64_drift_07"
 os.makedirs(workload_dir_path, exist_ok=True)
 
 inserted_keys = np.array(inserted_keys, dtype=data_type.to_numpy_type())
@@ -399,6 +405,7 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # %%
 # draw the estimated distribution and store the figure
 import matplotlib.pyplot as plt
+
 labels = x
 max_value = max(y)
 rounded_max_value = np.ceil(max_value * 50) / 50
@@ -412,7 +419,7 @@ ax.set_ylabel('Prob (%)', fontsize = 15)
 ax.set_ylim(0, rounded_max_value)  # Set y-axis limits from 0 to 1
 ax.grid(axis='y')
 fig.tight_layout()
-filepath = "/users/lingze/neuralbench/data/keys/fb_200M_uint64_distribution_drift_07.pdf"
+filepath = "/users/lingze/neurbench/data/keys/fb_200M_uint64_distribution_drift_07.pdf"
 fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # Show the plot
 fig.show()

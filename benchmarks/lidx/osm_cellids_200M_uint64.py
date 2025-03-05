@@ -4,19 +4,21 @@
 
 # set workspace to the root of the project
 import os
+
 workspace_path = '../..'
 os.chdir(workspace_path)
 print("Current workspace:", os.getcwd())
 
 # %%
-import numpy as np
-from neuralbench.index.util import load_key_set, KeyType, save_file
-from neuralbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
-from neuralbench.drift import find_q
+import matplotlib.font_manager as font_manager
 import matplotlib.pyplot as plt
 
 # %%
-import matplotlib.font_manager as font_manager
+import numpy as np
+
+from neurbench.drift import find_q
+from neurbench.index.bench import KeySetBinEncoder, sample_bulkloading_keyset
+from neurbench.index.util import KeyType, load_key_set, save_file
 
 font_path = "/users/lingze/times.ttf"
 font_manager.fontManager.addfont(font_path)
@@ -110,13 +112,13 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # ax.set_xlim(-10, 310)
 # ax.grid(axis='y')
 # fig.tight_layout()
-# filepath = "/users/lingze/neuralbench/data/keys/osm_cellids_200M_uint64_distribution.pdf"
+# filepath = "/users/lingze/neurbench/data/keys/osm_cellids_200M_uint64_distribution.pdf"
 # fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # # Show the plot
 # fig.show()
 
 # %%
-filepath = "/users/lingze/neuralbench/data/draw/osm_cellid_origin.npz"
+filepath = "/users/lingze/neurbench/data/draw/osm_cellid_origin.npz"
 x = np.array(x)
 y = np.array(y)
 np.savez(filepath, x=x, y=y)
@@ -185,13 +187,13 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # ax.set_xlim(-10, 310)
 # ax.grid(axis='y')
 # fig.tight_layout()
-# filepath = "/users/lingze/neuralbench/data/keys/osm_cellids_200M_uint64_distribution_drift_01.pdf"
+# filepath = "/users/lingze/neurbench/data/keys/osm_cellids_200M_uint64_distribution_drift_01.pdf"
 # fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # # Show the plot
 # fig.show()
 
 # %%
-filepath = "/users/lingze/neuralbench/data/draw/osm_cellid_drift_01.npz"
+filepath = "/users/lingze/neurbench/data/draw/osm_cellid_drift_01.npz"
 x = np.array(x)
 y = np.array(y)
 np.savez(filepath, x=x, y=y)
@@ -255,13 +257,13 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # ax.set_xlim(-10, 310)
 # ax.grid(axis='y')
 # fig.tight_layout()
-# filepath = "/users/lingze/neuralbench/data/keys/osm_cellids_200M_uint64_distribution_drift_03.pdf"
+# filepath = "/users/lingze/neurbench/data/keys/osm_cellids_200M_uint64_distribution_drift_03.pdf"
 # fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # # Show the plot
 # fig.show()
 
 # %%
-filepath = "/users/lingze/neuralbench/data/draw/osm_cellid_drift_03.npz"
+filepath = "/users/lingze/neurbench/data/draw/osm_cellid_drift_03.npz"
 x = np.array(x)
 y = np.array(y)
 np.savez(filepath, x=x, y=y)
@@ -325,13 +327,13 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # ax.set_xlim(-10, 310)
 # ax.grid(axis='y')
 # fig.tight_layout()
-# filepath = "/users/lingze/neuralbench/data/keys/osm_cellids_200M_uint64_distribution_drift_05.pdf"
+# filepath = "/users/lingze/neurbench/data/keys/osm_cellids_200M_uint64_distribution_drift_05.pdf"
 # fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # # Show the plot
 # fig.show()
 
 # %%
-filepath = "/users/lingze/neuralbench/data/draw/osm_cellid_drift_05.npz"
+filepath = "/users/lingze/neurbench/data/draw/osm_cellid_drift_05.npz"
 x = np.array(x)
 y = np.array(y)
 np.savez(filepath, x=x, y=y)
@@ -395,13 +397,13 @@ y = [ prob_dict[i] if i in prob_dict else 0.0 for i in range(min_bin_num, max_bi
 # ax.set_xlim(-10, 310)
 # ax.grid(axis='y')
 # fig.tight_layout()
-# filepath = "/users/lingze/neuralbench/data/keys/osm_cellids_200M_uint64_distribution_drift_07.pdf"
+# filepath = "/users/lingze/neurbench/data/keys/osm_cellids_200M_uint64_distribution_drift_07.pdf"
 # fig.savefig(filepath, dpi = 800, bbox_inches = 'tight', pad_inches=0)
 # # Show the plot
 # fig.show()
 
 # %%
-filepath = "/users/lingze/neuralbench/data/draw/osm_cellid_drift_07.npz"
+filepath = "/users/lingze/neurbench/data/draw/osm_cellid_drift_07.npz"
 x = np.array(x)
 y = np.array(y)
 np.savez(filepath, x=x, y=y)

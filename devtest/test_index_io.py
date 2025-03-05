@@ -1,11 +1,11 @@
-import pytest
-from unittest.mock import patch
-import numpy as np
 import os
 from pathlib import Path
+from unittest.mock import patch
 
-from neuralbench.index.util import load_key_set
+import numpy as np
+import pytest
 
+from neurbench.index.util import load_key_set
 
 key_set_load_test_input = [
     ("uint32_1.bin", np.array(range(10), dtype=np.uint32)),

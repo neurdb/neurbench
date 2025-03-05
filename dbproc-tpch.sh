@@ -3,7 +3,7 @@
 set -x
 set -e
 
-DATASETS_DIR=/home/haotian/r/neuralbench/neurbench/datasets/tpch/1g_csv
+DATASETS_DIR=$HOME/r/neurbench/neurbench/datasets/tpch/1g_csv
 DBNAME=tpch
 TABLE_NAMES=(
     customer

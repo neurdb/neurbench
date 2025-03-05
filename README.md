@@ -12,7 +12,7 @@ This repository contains the code of NeurBench, which is used to evaluate learne
 
 Please check the documentation [here](./benchmarks/lqos/README.md).
 
-The main code for the benchmarks is in `benchmarks/lqos` and `neuralbench/query`.
+The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
 
 ### Learn Concurrency Control
 
@@ -36,7 +36,7 @@ pickup_policy=./training/input-RL-ic3-new-tpcc.txt
 
 Please check the documentation [here](./benchmarks/lidx/README.md).
 
-The main code for the benchmarks is in `benchmarks/lidx` and `neuralbench/index`.
+The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
 
 ## Tools & Utilities
 
