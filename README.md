@@ -12,22 +12,28 @@ NeurBench provides a drift-aware data and workload generation tool that effectiv
 
 ### Data and Workload Generator
 
-Run the code to generate data and workloads according to a specified drift factor with the following command:
+Run the code to generate data according to a specified drift factor with the following command:
 
 ```
 python gen.py --dataset-name=[dataset] --table-name=[table] --drift=[drift factor]
 ```
 
-For example, to generate a drifted `Name` table for the default dataset (`IMDB`) with a drift factor of 0.1, we can run the following command:
+For example, to generate a drifted `Name` table for the default dataset (`IMDB`) with a drift factor of `0.1`, we can run the following command:
 
 ```
 python gen.py --dataset-name=imdb --table-name=name --drift=0.1
 ```
 
-To generate default workloads with  a drift factor of 0.1, we can can run this command:
+Run the code to generate workloads according to a specified drift factor with the following command:
 
 ```
-python gen.py --dataset-name=imdb --table-name=workload --drift=0.1
+python qproc.py --input-file=[original workload] --output=[drifted workload] --drift=[drift factor]
+```
+
+For example, to generate default workloads with a drift factor of 0.1, we can can run this command:
+
+```
+python qproc.py --input-file=complex.sql --output=complex_drift_01.sql --drift=0.1
 ```
 
 
@@ -42,14 +48,14 @@ Please check the documentation [here](./benchmarks/lqos/README.md).
 
 The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
 
-### Learned Index
+### Learned Indexes
 
 Please check the documentation [here](./benchmarks/lidx/README.md).
 
 The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
 
 
-### Learn Concurrency Control
+### Learned Concurrency Control
 
 The benchmarks are conducted for Polyjuice. Please check the documentation at
 
