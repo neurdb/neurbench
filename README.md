@@ -1,18 +1,53 @@
 # NeurBench
 
-> Benchmarking Learned Databases with Data and Workload Drift Modeling
+**NeurBench** is a benchmark suite designed to evaluate end-to-end learned DBMSs containing all learned components under controllable data and workload drift.
 
-**NeurBench** is a benchmark framework designed with controllable data and workload drift. It creates a unified concept called *drift factor* to precisely quantify and generate drift. Based on this formulation, a benchmark suite is then developed to enable standardized performance evaluations of various learned database components under measurable and adjustable drift conditions.
 
-This repository contains the code of NeurBench, which is used to evaluate learned query optimizers, learned indexes, and learned concurrency control.
+<!-- ## Dependencies -->
+
+
+## Tools & Utilities
+
+NeurBench provides a drift-aware data and workload generation tool that effectively simulates real-world drift while preserving inherent correlations.
+
+### Data and Workload Generator
+
+Run the code to generate data and workloads according to a specified drift factor with the following command:
+
+```
+python gen.py --dataset-name=[dataset] --table-name=[table] --drift=[drift factor]
+```
+
+For example, to generate a drifted `Name` table for the default dataset (`IMDB`) with a drift factor of 0.1, we can run the following command:
+
+```
+python gen.py --dataset-name=imdb --table-name=name --drift=0.1
+```
+
+To generate default workloads with  a drift factor of 0.1, we can can run this command:
+
+```
+python gen.py --dataset-name=imdb --table-name=workload --drift=0.1
+```
+
+
 
 ## Benchmarks
+
+We employ NeurBench to evaluate state-of-the-art learned query optimizers, learned indexes, and learned concurrency control within a consistent experimental process.
 
 ### Learned Query Optimziers
 
 Please check the documentation [here](./benchmarks/lqos/README.md).
 
 The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
+
+### Learned Index
+
+Please check the documentation [here](./benchmarks/lidx/README.md).
+
+The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
+
 
 ### Learn Concurrency Control
 
@@ -32,65 +67,3 @@ mutate_rate=0.05
 pickup_policy=./training/input-RL-ic3-new-tpcc.txt
 ```
 
-### Learned Index
-
-Please check the documentation [here](./benchmarks/lidx/README.md).
-
-The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
-
-## Tools & Utilities
-
-### TPC-H Data Generator (Official)
-
-```bash
-cd tpch-kit/dbgen
-make
-mkdir 1g
-./dbgen -s 1 -v # generate 1GB data
-mv *.tbl 1g/
-```
-
-### TBL to CSV
-
-```bash
-python tbl2csv.py -d tpch -i tpch-kit/dbgen/1g -o tpch-kit/dbgen/1g_csv
-```
-
-### DB Processor (dbproc)
-
-Use `customer` table as an example:
-
-```bash
-# drift factor
-d=0.4
-# number of bins
-nbins=20 
-# whether to skew the data distribution 
-# 0 means use uniform distribution to flatten the distribution
-skewed=1 
-python dbproc.py -t customer -i tpch-kit/dbgen/1g/customer.tbl -o 1.tbl -b $nbins -D $d -s $skewed
-```
-
-You can chain the processor to simulate the continous distribution drifts:
-
-```bash
-python dbproc.py -t customer -i tpch-kit/dbgen/1g/customer.tbl -o 1.tbl -b $nbins -D $d -s $skewed
-python dbproc.py -t customer -i 1.tbl -o 2.tbl -b $nbins -D $d -s $skewed
-python dbproc.py -t customer -i 2.tbl -o 3.tbl -b $nbins -D $d -s $skewed
-# ...
-```
-
-### Query Processor (qpre, qproc)
-
-```bash
-# drift factor
-d=0.4
-# whether to skew the data distribution 
-# 0 means use uniform distribution to flatten the distribution
-skewed=1 
-# number of samples
-n=1000
-# type of metadata to drift. for available types, see `python qproc.py -h`
-type=tables
-python qproc.py -t $type -I devtest/testdata/queries -o 1.sql -D $d -s $skewed -n $n
-```
