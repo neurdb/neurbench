@@ -180,3 +180,6 @@ expdir/
 
 # Sample results
 sample-*.csv
+
+benchmarks/lidx/*.out
+benchmarks/lidx/results

@@ -1,0 +1,761 @@
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-01 14:21:23.639422: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-01 14:21:23.667117: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-01 14:21:23.669853: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x562bd375b0a0 executing computations on platform Host. Devices:
+2025-03-01 14:21:23.669881: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-01 14:21:23.698256: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-01 16:22:13.274396: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-01 16:22:13.307109: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-01 16:22:13.310388: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5645d6a25ed0 executing computations on platform Host. Devices:
+2025-03-01 16:22:13.310416: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-01 16:22:13.337759: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-01 18:23:04.372315: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-01 18:23:04.399094: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-01 18:23:04.401725: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5561bd433390 executing computations on platform Host. Devices:
+2025-03-01 18:23:04.401751: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-01 18:23:04.430468: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-01 20:23:59.324124: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-01 20:23:59.347001: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-01 20:23:59.349050: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55f9ec30b070 executing computations on platform Host. Devices:
+2025-03-01 20:23:59.349104: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-01 20:23:59.373933: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-01 22:25:10.252109: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-01 22:25:10.283062: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-01 22:25:10.285167: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x564b46303d00 executing computations on platform Host. Devices:
+2025-03-01 22:25:10.285211: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-01 22:25:10.310756: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 00:26:01.127859: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 00:26:01.155095: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 00:26:01.158069: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x56081ad26d40 executing computations on platform Host. Devices:
+2025-03-02 00:26:01.158125: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 00:26:01.188290: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 02:26:55.662069: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 02:26:55.687056: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 02:26:55.690074: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x559d25a10fc0 executing computations on platform Host. Devices:
+2025-03-02 02:26:55.690103: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 02:26:55.718406: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:27.351531: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:27.379102: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:27.382255: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5557a2473f10 executing computations on platform Host. Devices:
+2025-03-02 04:10:27.382311: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:27.413750: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:31.239047: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:31.267045: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:31.270311: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5585206abd40 executing computations on platform Host. Devices:
+2025-03-02 04:10:31.270397: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:31.301059: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:35.111768: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:35.139090: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:35.142015: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x555da9f47e80 executing computations on platform Host. Devices:
+2025-03-02 04:10:35.142041: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:35.169802: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:38.929431: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:38.955048: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:38.958620: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x56400ebcae80 executing computations on platform Host. Devices:
+2025-03-02 04:10:38.958675: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:38.991729: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:42.749190: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:42.775077: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:42.777491: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x56025963b060 executing computations on platform Host. Devices:
+2025-03-02 04:10:42.777520: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:42.815764: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:46.595243: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:46.619096: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:46.622421: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55ce36537780 executing computations on platform Host. Devices:
+2025-03-02 04:10:46.622476: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:46.653133: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:50.478441: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:50.503070: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:50.506214: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5579b832d100 executing computations on platform Host. Devices:
+2025-03-02 04:10:50.506258: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:50.538983: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:54.383941: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:54.411097: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:54.414218: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x564a90a38f90 executing computations on platform Host. Devices:
+2025-03-02 04:10:54.414245: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:54.443607: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:10:58.271114: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:10:58.295079: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:10:58.297893: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x555fcd34ab90 executing computations on platform Host. Devices:
+2025-03-02 04:10:58.297929: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:10:58.328264: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:11:02.156536: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:11:02.183088: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:11:02.186295: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55884ed23090 executing computations on platform Host. Devices:
+2025-03-02 04:11:02.186321: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:11:02.222745: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:11:06.072659: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:11:06.099091: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:11:06.101962: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x55630b032130 executing computations on platform Host. Devices:
+2025-03-02 04:11:06.101988: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:11:06.130766: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:11:09.951472: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:11:09.979089: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:11:09.981798: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5578b017e440 executing computations on platform Host. Devices:
+2025-03-02 04:11:09.981824: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:11:10.009265: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:516: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint8 = np.dtype([("qint8", np.int8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:517: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint8 = np.dtype([("quint8", np.uint8, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:518: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint16 = np.dtype([("qint16", np.int16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:519: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_quint16 = np.dtype([("quint16", np.uint16, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:520: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  _np_qint32 = np.dtype([("qint32", np.int32, 1)])
+/opt/conda/envs/myenv/lib/python3.6/site-packages/tensorflow/python/framework/dtypes.py:525: FutureWarning: Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+  np_resource = np.dtype([("resource", np.ubyte, 1)])
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:204: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:221: The name tf.random_normal is deprecated. Please use tf.random.normal instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:239: The name tf.log is deprecated. Please use tf.math.log instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:269: The name tf.train.GradientDescentOptimizer is deprecated. Please use tf.compat.v1.train.GradientDescentOptimizer instead.
+
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:187: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+2025-03-02 04:11:13.846065: I tensorflow/core/platform/cpu_feature_guard.cc:142] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 AVX512F FMA
+2025-03-02 04:11:13.871100: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 3000000000 Hz
+2025-03-02 04:11:13.874333: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5623f0f2aff0 executing computations on platform Host. Devices:
+2025-03-02 04:11:13.874359: I tensorflow/compiler/xla/service/service.cc:175]   StreamExecutor device (0): <undefined>, <undefined>
+WARNING:tensorflow:From /usr/src/app/baseline-polyjuice/training/PG.py:192: The name tf.global_variables_initializer is deprecated. Please use tf.compat.v1.global_variables_initializer instead.
+
+2025-03-02 04:11:13.902406: W tensorflow/compiler/jit/mark_for_compilation_pass.cc:1412] (One-time warning): Not using XLA:CPU for cluster because envvar TF_XLA_FLAGS=--tf_xla_cpu_global_jit was not set.  If you want XLA:CPU, either set that envvar, or use experimental_jit_scope to enable XLA:CPU.  To confirm that XLA is active, pass --vmodule=xla_compilation_cache=1 (as a proper command-line flag, not via TF_XLA_FLAGS) or set the envvar XLA_FLAGS=--xla_hlo_profile.
+Traceback (most recent call last):
+  File "training/ERL_main.py", line 98, in <module>
+    main(parser.parse_args())
+  File "training/ERL_main.py", line 34, in main
+    load_per_sample = args.load_per_sample)
+  File "/usr/src/app/baseline-polyjuice/training/ERL.py", line 59, in training
+    = self.EA_agent.Evaluate(i, generations, self.command, writer)
+  File "/usr/src/app/baseline-polyjuice/training/EA.py", line 268, in Evaluate
+    assert False
+AssertionError
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 1
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 2
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 4
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 8
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 1
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 2
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 4
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 8
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 1
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 2
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 4
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 8
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 1
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 2
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 4
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 8
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 1
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 2
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 4
+panic: cannot find result inside experiment result
+python training/ERL_main.py --graph --workload-type ycsb --scale-factor 400 --bench-opts " --length 10 --access-dist 0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8 --partition --opt-dist r,r,r,r,r,w,w,w,w,w " --nworker 8
+panic: cannot find result inside experiment result
+All experiments completed.

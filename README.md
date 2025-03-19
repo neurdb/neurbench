@@ -5,7 +5,6 @@
 
 <!-- ## Dependencies -->
 
-
 ## Tools & Utilities
 
 NeurBench provides a drift-aware data and workload generation tool that effectively simulates real-world drift while preserving inherent correlations.
@@ -40,36 +39,6 @@ python qproc.py --input-file=orig_queries.sql --output=drifted_01_queries.sql --
 
 ## Benchmarks
 
-We employ NeurBench to evaluate state-of-the-art learned query optimizers, learned indexes, and learned concurrency control within a consistent experimental process.
+We employ NeurBench to evaluate state-of-the-art learned query optimizers, learned indexes, and learned concurrency control. We include the codes of evaluators that we used in `benchmark` folder.
 
-### Learned Query Optimziers
-
-Please check the documentation [here](./benchmarks/lqos/README.md).
-
-The main code for the benchmarks is in `benchmarks/lqos` and `neurbench/query`.
-
-### Learned Indexes
-
-Please check the documentation [here](./benchmarks/lidx/README.md).
-
-The main code for the benchmarks is in `benchmarks/lidx` and `neurbench/index`.
-
-
-### Learned Concurrency Control
-
-The benchmarks are conducted for Polyjuice. Please check the documentation at
-
-<https://github.com/derFischer/Polyjuice/tree/master/ae-tpcc-polyjuice>
-
-to set up the testbed.
-
-The experiments are done with the default config, i.e.,
-
-```ini
-selection=truncation
-psize=8
-random_branch=4
-mutate_rate=0.05
-pickup_policy=./training/input-RL-ic3-new-tpcc.txt
-```
 
