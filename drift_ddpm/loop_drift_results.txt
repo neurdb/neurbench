@@ -1,0 +1,12 @@
+0.1 [pearson] mean absolute loss: 0.130892, sum absolute loss: 2.094270
+0.1 [spearman] mean absolute loss: 0.130581, sum absolute loss: 2.089292
+0.1 mean JS divergence: 0.049069549196152557
+0.1 [pearson] mean absolute loss: 0.130892, sum absolute loss: 2.094270
+0.1 [spearman] mean absolute loss: 0.130581, sum absolute loss: 2.089292
+0.1 mean JS divergence: 0.049069549196152557
+0.1 [pearson] mean absolute loss: 0.130892, sum absolute loss: 2.094270
+0.1 [spearman] mean absolute loss: 0.130581, sum absolute loss: 2.089292
+0.1 mean JS divergence: 0.049069549196152557
+0.1 [pearson] mean absolute loss: 0.130892, sum absolute loss: 2.094270
+0.1 [spearman] mean absolute loss: 0.130581, sum absolute loss: 2.089292
+0.1 mean JS divergence: 0.049069549196152557

@@ -1,338 +1,198 @@
+import pickle
+
+import sys
+sys.path.append("drift_ddpm")
+
+import deterministic
+import numpy as np
+from tqdm import tqdm
+
+deterministic.seed_everything(42)
+
 import argparse
-import time
-from functools import cached_property
-from typing import List, Optional
+import os
+import warnings
 
+import data_utils as du
+import lib_oversampling as lo
 import pandas as pd
+import torch
 
-import neurbench
-from neurbench import config, dist, fileop, sample
-from neurbench.drift import find_q, jensenshannon
-from neurbench.util import formatted_list
+warnings.filterwarnings("ignore")
 
 
-def is_numerical_column(series: pd.Series, threshold: int = 20):
-    # if there is float, => numerical
-    for x in series:
-        if isinstance(x, float):
-            return True
-
-    # if all int + (unique values < thresholw) => cate
-    if all(isinstance(x, int) for x in series):
-        unique_count = series.nunique()
-        if unique_count < threshold:
-            return False
-        else:
-            return True
-
-    # If the series contains non-integer/non-float types, return False by default
-    return False
+INFERENCE_BATCH_SIZE = 524288
 
 
-class NumericalDistributionHelpers:
-    def __init__(
-        self,
-        series: pd.Series,
-        n_bins: Optional[int] = None,
-        config: Optional[dict] = None,
+def main(args: argparse.Namespace):
+    save_dir = os.path.join("expdir", args.dataset_name, args.table_name)
+    if args.variant_id > 0:
+        save_dir += f"-{args.variant_id}"
+
+    print("save_dir", save_dir)
+    os.makedirs(save_dir, exist_ok=True)
+
+    device = torch.device(f"cuda:{args.device}")
+
+    base_dir = os.path.join("datasets", args.dataset_name)
+
+    config: dict = du.load_json(os.path.join(base_dir, "dataset_info.json"))
+    config = config[args.table_name]
+
+    train_data_path = os.path.join(base_dir, f"{args.table_name}.csv")
+    original_data = pd.read_csv(
+        train_data_path, doublequote=False, escapechar="\\", low_memory=False
+    )
+    print("Original data")
+    print(original_data)
+
+    train_data = original_data[config["applicable_columns"]]
+    print("Data with drifting columns")
+    print(train_data)
+
+    if args.reuse and os.path.exists(os.path.join(save_dir, "data_wrapper.pkl")):
+        with open(os.path.join(save_dir, "data_wrapper.pkl"), "rb") as f:
+            data_wrapper = pickle.load(f)
+    else:
+        data_wrapper = du.DataWrapper()
+        data_wrapper.fit(train_data)
+
+        with open(os.path.join(save_dir, "data_wrapper.pkl"), "wb") as f:
+            pickle.dump(data_wrapper, f)
+
+    if args.reuse and os.path.exists(os.path.join(save_dir, "train_x.npy")):
+        with open(os.path.join(save_dir, "train_x.npy"), "rb") as f:
+            train_x = np.load(f)
+    else:
+        train_x = data_wrapper.transform(train_data)
+
+        with open(os.path.join(save_dir, "train_x.npy"), "wb") as f:
+            np.save(f, train_x)
+
+    """ diffuser training. To avoid randomness, reseed everything. """
+    deterministic.seed_everything(args.random_state)
+
+    if not args.retrain_diffuser and os.path.exists(
+        os.path.join(save_dir, "diffuser.pt")
     ):
-        self._series = series
-        self._n_bins = n_bins
-        self._config = config
-
-    @cached_property
-    def dist(self):
-        print("called dist on numerical_dist_on_predefined_bins")
-        if self._config:
-            d = dist.numerical_dist_on_predefined_bins(
-                self._series, bins=self._config["values"]
-            )
-            return d
-
-        if not self._n_bins:
-            raise ValueError("n_bins is required for numerical columns")
-
-        d = dist.numerical_dist(self._series, n_bins=self._n_bins)
-        print(d)
-        return d
-
-    @property
-    def bin_values(self):
-        return {
-            "type": "numerical",
-            "values": sorted(
-                [{"start": x.left, "end": x.right} for x in self.dist.index],
-                key=lambda x: x["start"],
-            ),
-        }
-
-
-class CategoricalDistributionHelpers:
-    def __init__(self, series: pd.Series, config: Optional[dict] = None):
-        self._series = series
-        self._config = config
-
-    @cached_property
-    def dist(self):
-        if self._config:
-            d = dist.categorical_dist_on_predefined_bins(
-                self._series, bins=self._config["values"]
-            )
-        else:
-            d = dist.categorical_dist(self._series)
-
-        return d
-
-    @property
-    def bin_values(self):
-        return {"type": "categorical", "values": sorted(self.dist.index)}
-
-
-class SeriesDistribution:
-    def __init__(
-        self,
-        series: pd.Series,
-        n_bins: Optional[int] = None,
-        config: Optional[dict] = None,
-    ):
-        self._series = series
-        self._n_bins = n_bins
-        self._config = config
-        self._is_numerical = is_numerical_column(series)
-        if self._is_numerical:
-            self._helpers = NumericalDistributionHelpers(
-                series, n_bins=n_bins, config=config
-            )
-        else:
-            self._helpers = CategoricalDistributionHelpers(series, config=config)
-
-    def get(self) -> pd.Series:
-        return self._helpers.dist
-
-    @property
-    def bin_values(self):
-        return self._helpers.bin_values
-
-    def __repr__(self):
-        return f"""Dist of Column {self._series.name}:
-{self.get()}
-"""
-
-
-class TableProcessor(neurbench.Processor):
-    def __init__(
-        self,
-        dbname: str,
-        table: str,
-        config_path: str,
-        n_bins: int,
-        skewed: int,
-    ):
-        self.dbname = dbname
-        self.table = table
-        self.config_path = config_path
-        self.n_bins = n_bins
-        self.skewed = skewed
-
-        self.applicable_columns_list = config.DB_MAP[dbname][
-            "drift_applicable_columns"
-        ][table]
-        self.predefined_bins = None
-        self.dists = {}
-        self.new_data = {}
-
-        self._config, err = neurbench.load_config(self.config_path)
-        if err is not None:
-            print("WARN  loading config: ", err)
-
-    @property
-    def config(self):
-        return self._config
-
-    def load(self, input_path: str):
-        if input_path.endswith(".csv"):
-            sep = ","
-        elif input_path.endswith(".tbl"):
-            sep = "|"
-        else:
-            raise ValueError(f"Unknown file type: {input_path}")
-
-        df = pd.read_csv(
-            input_path,
-            sep=sep,
-            header=None if self.dbname == "job" else "infer",
-            doublequote=False,
-            escapechar="\\",
-            low_memory=False,
+        print("Load existing diffuser")
+    else:
+        print("Train diffuser")
+        lo.diffuser_training(
+            train_x=train_x,
+            save_path=os.path.join(save_dir, "diffuser.pt"),
+            device=device,
+            d_hidden=args.diffuser_dim,
+            num_timesteps=args.diffuser_timesteps,
+            epochs=args.diffuser_steps,
+            lr=args.diffuser_lr,
+            drop_out=0.0,
+            bs=args.diffuser_bs,
+            lambda_p=args.lambda_p,
+            lambda_s=args.lambda_s,
         )
 
-        def test_and_convert_column_dtypes(series):
-            """Convert series to correct dtype based on the first 10 values.
+    diffuser = torch.load(os.path.join(save_dir, "diffuser.pt"))
 
-            If all values in the series are integers, convert the series to integers.
-            If all values in the series are floats, convert the series to floats.
-            If all values in the series are strings, convert the series to strings.
-            If some values in the series are integers and some are floats, convert the series to floats.
-            """
-            # print(series.head())
+    """ controller training. To avoid randomness, reseed everything. """
+    deterministic.seed_everything(args.random_state)
 
-            if all(isinstance(x, float) for x in series.head()):
-                if any(series.head().isna()):
-                    return series
-                elif all(abs(x - int(x)) < 1e-5 for x in series.head()):
-                    return series.fillna(value=0).apply(int)
-                else:
-                    return series
+    if not args.retrain_controller and os.path.exists(
+        os.path.join(save_dir, "controller.pt")
+    ):
+        print("Load existing controller")
+    else:
+        print("Train controller")
+        lo.controller_training(
+            train_x=train_x,
+            diffuser=diffuser,
+            save_path=os.path.join(save_dir, "controller.pt"),
+            device=device,
+            lr=args.controller_lr,
+            d_hidden=args.controller_dim,
+            steps=args.controller_steps,
+            drop_out=0.0,
+            bs=args.controller_bs,
+        )
 
-            if all(isinstance(x, str) for x in series.head()):
-                return series.apply(str)
-            else:
-                return series
+    controller = torch.load(os.path.join(save_dir, "controller.pt"))
 
-        for column, dtype in df.dtypes.items():
-            print(f"{column}: {dtype}")
-        print()
+    """ oversampling. To avoid randomness, reseed everything. """
+    deterministic.seed_everything(args.random_state)
 
-        df = df.apply(test_and_convert_column_dtypes, axis=0)
+    ids = range(config["n_samples"])
+    batched_ids = [
+        ids[x : x + INFERENCE_BATCH_SIZE]
+        for x in range(0, len(ids), INFERENCE_BATCH_SIZE)
+    ]
 
-        for column, dtype in df.dtypes.items():
-            print(f"{column}: {dtype}")
-        print()
+    all_data = []
+    for b in tqdm(batched_ids):
+        sample_data = lo.oversampling(
+            len(b), controller, diffuser, device, args.drift, args.scale_factor
+        )
+        all_data.append(sample_data)
 
-        df.columns = df.columns.astype(str)
-        self.df = df
+    sample_data = torch.cat(all_data, dim=0)
 
-    def compute_dists(self):
-        for i in range(len(self.applicable_columns_list)):
-            if not self.applicable_columns_list[i]:
-                continue
+    sample_data = sample_data.cpu().numpy()
+    sample_data = data_wrapper.Reverse(sample_data)
+    sample_data = sample_data[config["applicable_columns"]]
+    
+    if len(original_data.index) > len(sample_data.index):
+        original_data = original_data[:len(sample_data.index)]
 
-            ### Ver 1
-            # i = str(i)
-            # series = self.df[i]
-            
-            ### Ver 2
-            series = self.df.iloc[:, i]
-            
-            d = self._get_dist(series)
-            print(d)
+    print("Drifted columns")
+    print(sample_data)
 
-            self._update_config(series.name, d.bin_values)
+    original_data[config["applicable_columns"]] = sample_data
+    print("Drifted data")
+    print(original_data)
 
-            self.dists[str(series.name)] = d
-
-    def _get_dist(self, series):
-        if self.config:
-            c = self.config.get(str(series.name))
-        else:
-            c = None
-
-        return SeriesDistribution(series, n_bins=self.n_bins, config=c)
-
-    def _update_config(self, series_name, bin_values):
-        self.config[str(series_name)] = bin_values
-
-    def apply_drift(self, drift: float, n_samples: Optional[int]):
-        if n_samples is not None:
-            raise NotImplementedError("n_samples is not supported")
-
-        for k in self.dists.keys():
-            dist = self.dists[k].get()
-            # dist.values: frequence of bin/value
-            p = dist.values
-            
-            start_time = time.time()
-            q = find_q(p, drift, self.skewed == 1)
-            print(f"find_q time: {time.time() - start_time}")
-
-            print(formatted_list(p))
-            print(formatted_list(q))
-            print(f"JS divergence={jensenshannon(p, q)}")
-
-            self.new_data[k] = self._sample_data(
-                q, dist.index.values, len(self.df.index)
-            )
-
-    def _sample_data(self, dist: List[float], index: list, size: int):
-        return sample.sample_from_distribution(dist, index, size)[0]
-
-    def save(self, output_path: str):
-        df = self.df.copy()
-
-        for k in self.new_data.keys():
-            df[k] = self.new_data[k]
-
-        if output_path.endswith(".tbl"):
-            fileop.dump_tbl(df, output_path)
-        else:
-            fileop.dump_csv(df, output_path)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Drift data")
-
-    parser.add_argument(
-        "-d", "--dbname", default="tpch", help="Database name (default: tpch)"
+    original_data.to_csv(
+        os.path.join(save_dir, f"{args.table_name}.drifted.csv"),
+        index=False,
+        doublequote=False,
+        escapechar="\\",
     )
-    parser.add_argument("-t", "--table", required=True, help="Table name")
-    parser.add_argument(
-        "-i",
-        "--input",
-        default="./{table}.tbl",
-        help="Path to the input file (default: ./{table}.tbl)",
-    )
-    parser.add_argument(
-        "-D", "--drift", type=float, default=0.2, help="Drift factor (default: 0.2)"
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default="./{table}-drifted.tbl",
-        help="Path to the output CSV file (default: ./{table}-drifted.tbl)",
-    )
-    parser.add_argument(
-        "-b",
-        "--n-bins",
-        type=int,
-        default=10,
-        help="Number of bins for numerical data (default: 10)",
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        default="./{dbname}-table-{table}-config.json",
-        help="Path to table config file, including bin values (default: ./{dbname}-table-{table}-config.json)",
-    )
-    parser.add_argument(
-        "-s",
-        "--skewed",
-        type=int,
-        default=1,
-        help="Whether to distribution shifts towards more skewed. 1 = yes, 0 = no (default: 1)",
-    )
-
-    args = parser.parse_args()
-
-    for k, v in args.__dict__.items():
-        if isinstance(v, str) and ("{dbname}" in v or "{table}" in v):
-            args.__dict__[k] = v.format(dbname=args.dbname, table=args.table)
-
-    print(args)
-
-    # Validate drift factor
-    if not 0.0 <= args.drift <= 1.0:
-        parser.error("Drift factor must be between 0.0 and 1.0")
-
-    tp: neurbench.Processor = TableProcessor(
-        args.dbname,
-        args.table,
-        args.config,
-        args.n_bins,
-        args.skewed,
-    )
-
-    neurbench.make_drift(tp, "", args.input, args.output, args.config, args.drift)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset-name", type=str, default="imdb")
+    parser.add_argument("--table-name", type=str, default="nosuchtable")
+
+    parser.add_argument(
+        "--diffuser-dim", nargs="+", type=int, default=(512, 1024, 1024, 512)
+    )
+    parser.add_argument("--diffuser-lr", type=float, default=0.0018)
+    parser.add_argument("--diffuser-steps", type=int, default=30000)
+    parser.add_argument("--diffuser-bs", type=int, default=2048)
+    parser.add_argument("--diffuser-timesteps", type=int, default=1000)
+
+    parser.add_argument("--controller-dim", nargs="+", type=int, default=(512, 512))
+    parser.add_argument("--controller-lr", type=float, default=0.001)
+    parser.add_argument("--controller-steps", type=int, default=10000)
+    parser.add_argument("--controller-bs", type=int, default=512)
+
+    parser.add_argument("--device", type=int, default=1)
+    parser.add_argument("--scale-factor", type=float, default=8.0)
+    # parser.add_argument("--save-name", type=str, default="output")
+
+    parser.add_argument("--lambda-p", type=float, default=1.0)
+    parser.add_argument("--lambda-s", type=float, default=1.0)
+
+    parser.add_argument("--retrain-diffuser", action="store_true")
+    parser.add_argument("--retrain-controller", action="store_true")
+
+    parser.add_argument("--reuse", action="store_true")
+
+    parser.add_argument("--variant-id", type=int, default=-1)
+
+    parser.add_argument("--drift", type=float, default=0.3)
+    
+    parser.add_argument("--random-state", type=int, default=42)
+
+    args = parser.parse_args()
+
+    main(args)

@@ -176,5 +176,7 @@ cython_debug/
 # Datasets
 datasets/
 
+expdir/
+
 # Sample results
 sample-*.csv
