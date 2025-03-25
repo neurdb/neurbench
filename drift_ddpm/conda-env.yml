@@ -58,6 +58,7 @@ dependencies:
   - xz=5.4.6=h5eee18b_1
   - zlib=1.2.13=h5eee18b_1
   - pip:
+      - bm25s==0.2.10
       - certifi==2024.12.14
       - charset-normalizer==3.4.0
       - filelock==3.16.1
@@ -88,6 +89,7 @@ dependencies:
       - nvidia-nvtx-cu12==12.4.127
       - packaging==24.2
       - pandas==1.5.1
+      - pglast==7.3
       - pillow==11.0.0
       - py-spy==0.4.0
       - pymysql==1.0.2
