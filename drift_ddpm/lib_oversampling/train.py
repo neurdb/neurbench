@@ -88,6 +88,7 @@ def validate_no_nan(x: torch.Tensor):
 
 def controller_training(
     train_x,
+    real_x,
     diffuser,
     save_path,
     device,
@@ -99,13 +100,14 @@ def controller_training(
 ):
     """Train an MLP controller."""
     train_x = torch.from_numpy(train_x).float()
+    real_x = torch.from_numpy(real_x).float()
 
     model = modules.Drifter(
         d_in=train_x.shape[1],
         d_layers=d_hidden,
         dropout=drop_out,
     )
-    ds = [train_x]
+    ds = [train_x, real_x]
     dl = du.prepare_fast_dataloader(ds, batch_size=bs, shuffle=True)
     schedule_sampler = create_named_schedule_sampler("uniform", diffuser.num_timesteps)
 
@@ -122,8 +124,9 @@ def controller_training(
     for step in range(steps):
         loss = torch.zeros(1).to(device)
 
-        [x] = next(dl)
+        [x, real] = next(dl)
         x = x.to(device)
+        real = real.to(device)
 
         # t, _ = schedule_sampler.sample(len(y), device)
         t, _ = schedule_sampler.sample(1, device)
@@ -172,15 +175,19 @@ def controller_training(
         # s_loss_corr = spearman_rel(logits.t(), xt.t()).abs()
         # s_loss_corr = -(1.0 - s_loss_corr) * torch.log(1.0 - s_loss_corr)
 
+        mse_real = F.mse_loss(xc, real)
+
         print(
             f"{expected_drift.item():8.6f} "
             f"{actual_drifts[0].item():8.6f} "
             f"{abs(expected_drift.item() - actual_drifts[0].item()):8.6f} "
             f"{p_loss_corr.item():8.6f} "
+            f"{mse_real.item():8.6f}"
             # f"{s_loss_corr.item():8.6f} "
         )
 
-        total_loss = loss + 1.0 * p_loss_corr
+        # total_loss = loss + 1.0 * p_loss_corr # orig loss
+        total_loss = loss + 8.0 * p_loss_corr + 1.0 * mse_real
         # + 1.0 * s_loss_corr
 
         opt.zero_grad()
@@ -192,7 +199,8 @@ def controller_training(
         if (step + 1) % 100 == 0 or step == 0:
             print(
                 f"Step {step+1}/{steps}: Loss {total_loss.item():.8f} "
-                f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f})"
+                # f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f})"
+                f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f}, RealMSE: {mse_real.item():.8f})"
                 # f", SCorr: {s_loss_corr.item():.8f})"
             )
 

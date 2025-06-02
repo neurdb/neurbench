@@ -50,6 +50,23 @@ def main(args: argparse.Namespace):
     print("Data with drifting columns")
     print(train_data)
 
+    real_base_dir = os.path.join("datasets", args.dataset_name + "_2017")
+
+    real_drift_data_path = os.path.join(real_base_dir, f"{args.table_name}.csv")
+    original_real_drift_data = pd.read_csv(
+        real_drift_data_path, doublequote=True, quotechar='"', escapechar="\\", low_memory=False
+    )
+    print("Real Drift data")
+    print(original_real_drift_data)
+
+    real_data = original_real_drift_data[config["applicable_columns"]]
+    print("Real Drift Data with drifting columns")
+    print(real_data)
+
+    if args.fillna:
+        train_data.fillna(0.0, inplace=True)
+        real_data.fillna(0.0, inplace=True)
+
     if args.reuse and os.path.exists(os.path.join(save_dir, "data_wrapper.pkl")):
         with open(os.path.join(save_dir, "data_wrapper.pkl"), "rb") as f:
             data_wrapper = pickle.load(f)
@@ -68,6 +85,15 @@ def main(args: argparse.Namespace):
 
         with open(os.path.join(save_dir, "train_x.npy"), "wb") as f:
             np.save(f, train_x)
+
+    if args.reuse and os.path.exists(os.path.join(save_dir, "real_x.npy")):
+        with open(os.path.join(save_dir, "real_x.npy"), "rb") as f:
+            real_x = np.load(f)
+    else:
+        real_x = data_wrapper.transform(train_data)
+
+        with open(os.path.join(save_dir, "real_x.npy"), "wb") as f:
+            np.save(f, real_x)
 
     """ diffuser training. To avoid randomness, reseed everything. """
     deterministic.seed_everything(args.random_state)
@@ -105,6 +131,7 @@ def main(args: argparse.Namespace):
         print("Train controller")
         lo.controller_training(
             train_x=train_x,
+            real_x=real_x,
             diffuser=diffuser,
             save_path=os.path.join(save_dir, "controller.pt"),
             device=device,
@@ -139,17 +166,21 @@ def main(args: argparse.Namespace):
     sample_data = data_wrapper.Reverse(sample_data)
     sample_data = sample_data[config["applicable_columns"]]
     
-    if len(original_data.index) > len(sample_data.index):
-        original_data = original_data[:len(sample_data.index)]
+    # if len(original_data.index) > len(sample_data.index):
+        # original_data = original_data[:len(sample_data.index)]
+
+    if len(original_real_drift_data.index) > len(sample_data.index):
+        original_real_drift_data = original_real_drift_data[:len(sample_data.index)]
 
     print("Drifted columns")
     print(sample_data)
 
-    original_data[config["applicable_columns"]] = sample_data
+    # original_data[config["applicable_columns"]] = sample_data
+    original_real_drift_data[config["applicable_columns"]] = sample_data
     print("Drifted data")
-    print(original_data)
+    print(original_real_drift_data)
 
-    original_data.to_csv(
+    original_real_drift_data.to_csv(
         os.path.join(save_dir, f"{args.table_name}.drifted.csv"),
         index=False,
         doublequote=False,
@@ -170,9 +201,9 @@ if __name__ == "__main__":
     parser.add_argument("--diffuser-bs", type=int, default=2048)
     parser.add_argument("--diffuser-timesteps", type=int, default=1000)
 
-    parser.add_argument("--controller-dim", nargs="+", type=int, default=(512, 512))
-    parser.add_argument("--controller-lr", type=float, default=0.001)
-    parser.add_argument("--controller-steps", type=int, default=10000)
+    parser.add_argument("--controller-dim", nargs="+", type=int, default=(512, 512)) ## TODO: higher --controller-dim 1024 1024  512 512 512
+    parser.add_argument("--controller-lr", type=float, default=0.001) ## TODO: lower
+    parser.add_argument("--controller-steps", type=int, default=10000) ## TODO: higher 
     parser.add_argument("--controller-bs", type=int, default=512)
 
     parser.add_argument("--device", type=int, default=1)
@@ -192,6 +223,8 @@ if __name__ == "__main__":
     parser.add_argument("--drift", type=float, default=0.3)
     
     parser.add_argument("--random-state", type=int, default=42)
+
+    parser.add_argument("--fillna", action="store_true", default=False)
 
     args = parser.parse_args()
 
