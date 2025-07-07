@@ -1,18 +1,16 @@
 import sys
 
 sys.path.append("../")
-import os
 import time
 
+import data_utils as du
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from kornia.enhance import histogram
-
-import data_utils as du
 from ddpm import diffusion, modules, train
-from ddpm.corr import pearson, pearson_rel, spearman, spearman_rel
+from ddpm.corr import pearson
 from ddpm.resample import create_named_schedule_sampler
+from kornia.enhance import histogram
 
 
 def data_preprocessing(raw_data, save_dir=None):
@@ -73,7 +71,7 @@ def diffuser_training(
     train_sta = time.time()
     trainer.run_loop()
     train_end = time.time()
-    print(f"training time: {train_end-train_sta}")
+    print(f"training time: {train_end - train_sta}")
 
     diff_model.to(torch.device("cpu"))
     diff_model.variables_to_device(torch.device("cpu"))
@@ -89,8 +87,11 @@ def validate_no_nan(x: torch.Tensor):
 def controller_training(
     train_x,
     real_x,
+    # cond_x,
+    # synthetic_x,
     diffuser,
     save_path,
+    cond_save_path,
     device,
     lr=0.001,
     d_hidden=[512, 512],
@@ -102,12 +103,36 @@ def controller_training(
     train_x = torch.from_numpy(train_x).float()
     real_x = torch.from_numpy(real_x).float()
 
+    # train_cond_norm = torch.as_tensor(cond_x).float()  ## condition id
+    # train_data_norm = torch.as_tensor(synthetic_x).float()  ## real_x
+
+    diffuser.to(device)
+    diffuser.variables_to_device(device)
+    diffuser.eval()
+
+    # print(f"train_cond_norm.shape: {train_cond_norm.shape}")
+    # print(f"train_data_norm.shape: {train_data_norm.shape}")
+
+    # cond_encoder = modules.MLPEncoder(
+    #     train_cond_norm.shape[1], d_hidden, 128, 0.0, 128, t_in=False
+    # )
+    # data_encoder = modules.MLPEncoder(
+    #     train_cond_norm.shape[1], d_hidden, 128, 0.0, 128, t_in=True
+    # )
+    # controller = modules.CondScorer(cond_encoder, data_encoder)
+    # controller.to(device)
+
     model = modules.Drifter(
         d_in=train_x.shape[1],
         d_layers=d_hidden,
         dropout=drop_out,
     )
     ds = [train_x, real_x]
+    print(train_x.shape, real_x.shape)
+
+    # ds = [train_x, real_x, train_cond_norm]
+    # print(train_x.shape, real_x.shape, train_cond_norm.shape)
+
     dl = du.prepare_fast_dataloader(ds, batch_size=bs, shuffle=True)
     schedule_sampler = create_named_schedule_sampler("uniform", diffuser.num_timesteps)
 
@@ -119,18 +144,20 @@ def controller_training(
     jsd = modules.JSD()
 
     opt = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.00001)
+    # opt_cond = optim.AdamW(controller.parameters(), lr=lr, weight_decay=0.0)
+
     sta = time.time()
 
     for step in range(steps):
         loss = torch.zeros(1).to(device)
 
+        # [x, real, tcond] = next(dl)
         [x, real] = next(dl)
         x = x.to(device)
         real = real.to(device)
+        # tcond = tcond.to(device)
 
-        # t, _ = schedule_sampler.sample(len(y), device)
         t, _ = schedule_sampler.sample(1, device)
-        # t = torch.randint(0, diffuser.num_timesteps, (1,)).repeat(len(y)).to(device)
 
         expected_drift = torch.FloatTensor(1).uniform_(0.05, 0.75).to(device)
         # expected_drift = expected_drift / t[0]
@@ -165,47 +192,56 @@ def controller_training(
         p_corr_xc = pearson(xc).fill_diagonal_(0.0).nan_to_num_(1.0)
         p_loss_corr = F.mse_loss(p_corr_xt, p_corr_xc)
 
-        # s_corr_xt = spearman(xt).fill_diagonal_(0.0).nan_to_num_(1.0)
-        # s_corr_xc = spearman(xc).fill_diagonal_(0.0).nan_to_num_(1.0)
-        # s_loss_corr = F.mse_loss(s_corr_xt, s_corr_xc)
-
-        # p_loss_corr = pearson_rel(xt.t(), xc.t()).abs()
-        # p_loss_corr = -(1.0 - p_loss_corr) * torch.log(1.0 - p_loss_corr)
-
-        # s_loss_corr = spearman_rel(logits.t(), xt.t()).abs()
-        # s_loss_corr = -(1.0 - s_loss_corr) * torch.log(1.0 - s_loss_corr)
-
         mse_real = F.mse_loss(xc, real)
+
+        # xt_prim_column = xt[:, 0][:, None]
+        # logits_c, logits_x = controller(tcond, xt_prim_column, t)
+        # cond_loss = F.mse_loss(logits_c, logits_x)
 
         print(
             f"{expected_drift.item():8.6f} "
             f"{actual_drifts[0].item():8.6f} "
             f"{abs(expected_drift.item() - actual_drifts[0].item()):8.6f} "
             f"{p_loss_corr.item():8.6f} "
-            f"{mse_real.item():8.6f}"
+            f"{mse_real.item():8.6f} "
+            # f"{cond_loss.item():8.6f}"
             # f"{s_loss_corr.item():8.6f} "
         )
 
-        # total_loss = loss + 1.0 * p_loss_corr # orig loss
-        total_loss = loss + 8.0 * p_loss_corr + 1.0 * mse_real
-        # + 1.0 * s_loss_corr
+        # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real + 0.1 * cond_loss
+        # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real
+        total_loss = loss + 0.8 * p_loss_corr + 0.1 * mse_real
 
         opt.zero_grad()
+        # opt_cond.zero_grad()
+
         total_loss.backward()
+
         opt.step()
+        # opt_cond.step()
 
         set_anneal_lr(opt, lr, step, steps)
+        # set_anneal_lr(opt_cond, lr, step, steps)
 
-        if (step + 1) % 100 == 0 or step == 0:
+        if (step + 1) % 1 == 0 or step == 0:
             print(
-                f"Step {step+1}/{steps}: Loss {total_loss.item():.8f} "
+                f"Step {step + 1}/{steps}: Loss {total_loss.item():.8f} "
                 # f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f})"
-                f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f}, RealMSE: {mse_real.item():.8f})"
+                f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f}, "
+                f"RealMSE: {mse_real.item():.8f}, "
+                # f"Cond: {cond_loss.item():.8f}"
                 # f", SCorr: {s_loss_corr.item():.8f})"
             )
 
     end = time.time()
 
+    train_elapse = end - sta
+    print(f"training time: {train_elapse}")
+
     model.to(torch.device("cpu"))
     model.eval()
     torch.save(model, save_path)
+
+    # controller.to(torch.device("cpu"))
+    # controller.eval()
+    # torch.save(controller, cond_save_path)

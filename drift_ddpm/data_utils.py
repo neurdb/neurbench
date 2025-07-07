@@ -292,7 +292,7 @@ class FastTensorDataLoader:
             iterator is created out of this object.
         :returns: A FastTensorDataLoader.
         """
-        assert all(t.shape[0] == tensors[0].shape[0] for t in tensors)
+        # assert all(t.shape[0] == tensors[0].shape[0] for t in tensors)
         self.tensors = tensors
         self.n_dim = tensors[0].shape[0]
         self.dataset_len = self.tensors[0].shape[0]

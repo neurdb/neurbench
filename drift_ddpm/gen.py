@@ -37,15 +37,22 @@ def main(args: argparse.Namespace):
     config = config[args.table_name]
 
     train_data_path = os.path.join(base_dir, f"{args.table_name}.csv")
-    original_data = pd.read_csv(
-        train_data_path, doublequote=False, escapechar="\\", low_memory=False
-    )
+    try:
+        original_data = pd.read_csv(
+            train_data_path, doublequote=False, escapechar="\\", low_memory=False
+        )
+    except Exception:
+        original_data = pd.read_csv(train_data_path, doublequote=True, low_memory=False)
+    
     print("Original data")
     print(original_data)
 
     train_data = original_data[config["applicable_columns"]]
     print("Data with drifting columns")
     print(train_data)
+
+    if args.fillna:
+        train_data.fillna(0.0, inplace=True)
 
     if args.reuse and os.path.exists(os.path.join(save_dir, "data_wrapper.pkl")):
         with open(os.path.join(save_dir, "data_wrapper.pkl"), "rb") as f:
@@ -189,6 +196,8 @@ if __name__ == "__main__":
     parser.add_argument("--drift", type=float, default=0.3)
     
     parser.add_argument("--random-state", type=int, default=42)
+    
+    parser.add_argument("--fillna", action="store_true", default=False)
 
     args = parser.parse_args()
 

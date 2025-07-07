@@ -403,8 +403,8 @@ class GaussianDiffusion(torch.nn.Module):
 
         if control_tools is not None:
             cond, cond_fn = control_tools
-            if exists(cond):
-                cond = cond.to(x.device)
+            # if exists(cond):
+            #     cond = cond.to(x.device)
 
             out["mean"] = self.condition_mean(
                 cond_fn, cond, out, x, t, model_kwargs=model_kwargs

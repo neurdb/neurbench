@@ -1,7 +1,4 @@
-import sys
-sys.path.append("drift_ddpm")
-
-import deterministic
+from drift_ddpm import deterministic
 
 deterministic.seed_everything(42)
 
@@ -9,10 +6,10 @@ import argparse
 import os
 from typing import List, Literal
 
+import drift_ddpm.data_utils as du
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
-import data_utils as du
 
 CORR_TYPES: List[Literal["pearson", "kendall", "spearman"]] = ["pearson", "spearman"]
 
@@ -46,13 +43,20 @@ assert os.path.exists(save_dir)
 
 drifted_data_path = os.path.join(save_dir, f"{args.table_name}.drifted.csv")
 
-original_data = pd.read_csv(
-    dataset_path, doublequote=False, escapechar="\\", low_memory=False
-)
+try:
+    original_data = pd.read_csv(
+        dataset_path, doublequote=False, escapechar="\\", low_memory=False
+    )
+except:
+    original_data = pd.read_csv(dataset_path, doublequote=True, low_memory=False)
 print(original_data.head())
-drifted_data = pd.read_csv(
-    drifted_data_path, doublequote=False, escapechar="\\", low_memory=False
-)
+
+try:
+    drifted_data = pd.read_csv(
+        drifted_data_path, doublequote=False, escapechar="\\", low_memory=False
+    )
+except:
+    drifted_data = pd.read_csv(drifted_data_path, doublequote=True, low_memory=False)
 print(drifted_data.head())
 
 if args.enable_corr:
@@ -82,7 +86,7 @@ def numerical_dist(series: pd.Series, n_bins: int):
     if all(isinstance(x, int) for x in series):
         print("all values are integers")
         edges = np.linspace(series.min(), series.max(), n_bins + 1)
-        edges = np.unique(edges.astype(int))  # Ensure unique bin edges
+        edges = np.unique(edges.astype(np.int64))  # Ensure unique bin edges
 
         # Check if the number of unique edges is less than n_bins
         if len(edges) <= n_bins:
