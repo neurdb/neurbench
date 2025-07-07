@@ -36,7 +36,7 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload'):
             cur.execute(f"SET enable_bao TO {bao_select or bao_reward}")
             cur.execute(f"SET enable_bao_selection TO {bao_select}")
             cur.execute(f"SET enable_bao_rewards TO {bao_reward}")
-            cur.execute("SET bao_num_arms TO 25")
+            cur.execute("SET bao_num_arms TO 5")
             cur.execute(f"SET statement_timeout TO {TIMEOUT_LIMIT}")
 
             # As visible in the #should_report_reward method of the pg_extension
@@ -127,7 +127,7 @@ def main(args):
             print(f"[{current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining Bao...", flush=True)
             # os.system("cd bao_server && python3 baoctl.py --retrain")
             os.system(
-                'cd /app/AI4QueryOptimizer/baseline/lqo_ml_perspective/bao/bao_server && CUDA_VISIBLE_DEVICES="" python3 baoctl.py --retrain >> /app/AI4QueryOptimizer/experiment_setup/vldb_revision/job/res_bao/data_shift/retrain/retrain.log 2>&1')
+                'cd /app/AI4QueryOptimizer/baseline/lqo_ml_perspective/bao/bao_server && CUDA_VISIBLE_DEVICES="" python3 baoctl.py --retrain >> /app/AI4QueryOptimizer/experiment_setup/vldb_revision/job/res_bao/data_shift/retrain/retrain_stack.log 2>&1')
             os.system("sync")
             print(f"[{current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining done.", flush=True)
 

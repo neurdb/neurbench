@@ -89,6 +89,7 @@ class BaoRegression:
         self.__net = net.BaoNet(self.__in_channels)
         self.__net.load_state_dict(torch.load(_nn_path(path)))
         self.__net.eval()
+        print(f"Model device: {next(self.__net.parameters()).device}")
         
         with open(_y_transform_path(path), "rb") as f:
             self.__pipeline = joblib.load(f)
@@ -145,6 +146,7 @@ class BaoRegression:
         self.__net = net.BaoNet(in_channels)
         self.__in_channels = in_channels
         if CUDA:
+            self.__log("Using GPU, moving model into GPU")
             self.__net = self.__net.cuda()
 
         optimizer = torch.optim.Adam(self.__net.parameters())
@@ -166,8 +168,7 @@ class BaoRegression:
 
             loss_accum /= len(dataset)
             losses.append(loss_accum)
-            if epoch % 15 == 0:
-                self.__log("Epoch", epoch, "training loss:", loss_accum)
+            self.__log("Epoch", epoch, "training loss:", loss_accum)
 
             # stopping condition
             if len(losses) > 10 and losses[-1] < 0.1:

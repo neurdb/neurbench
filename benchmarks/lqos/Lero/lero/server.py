@@ -1,6 +1,6 @@
 import json
 import socketserver
-
+import traceback
 from card_picker import CardPicker
 from model import LeroModel
 from test_script.config import LERO_DUMP_CARD_FILE
@@ -28,7 +28,7 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
                         self.handle_msg(json_msg)
                         break
                     except json.decoder.JSONDecodeError as e:
-                        print(str(e))
+                        print("handle error", str(e))
                         print_log(
                             "Error decoding JSON:" + json_msg.replace("\"", "\'"), "./server.log", True)
                         break
@@ -60,7 +60,8 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
         except Exception as e:
             reply_msg['msg_type'] = "error"
             reply_msg['error'] = str(e)
-            print(e)
+            print("handle_msg error", e, msg_type)
+            traceback.print_exc()
 
         self.request.sendall(bytes(json.dumps(reply_msg), "utf-8"))
         self.request.close()
@@ -167,7 +168,12 @@ def start_server(listen_on, port, model: LeroModel):
 
 
 if __name__ == "__main__":
-    config = read_config()
+    import argparse
+    parser = argparse.ArgumentParser(description="Run the server with a specified config and task.")
+    parser.add_argument("--config_name", type=str, required=False, default="server.conf", help="Name of the configuration file to use")
+    args = parser.parse_args()
+
+    config = read_config(args.config_name)
     port = int(config["Port"])
     listen_on = config["ListenOn"]
     print_log(f"Listening on {listen_on} port {port}", "./server.log", True)

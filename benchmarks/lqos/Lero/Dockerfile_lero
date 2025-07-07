@@ -1,0 +1,22 @@
+FROM debian:buster
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装依赖
+RUN apt-get update && apt-get install -y \
+    build-essential gcc g++ \
+    libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt1-dev libssl-dev \
+    wget curl git sudo nano
+
+# 创建 postgres 用户
+RUN useradd -m postgres
+RUN echo 'postgres:postgres' | chpasswd
+RUN usermod -aG sudo postgres
+
+# 设置默认用户与工作目录
+# USER postgres
+WORKDIR /workspace
+
+ENV PATH=/workspace/build/bin:$PATH
+
+RUN chsh -s /bin/bash postgres

@@ -1,5 +1,6 @@
 import argparse
 import math
+import json
 
 from feature import *
 from model import LeroModel, LeroModelPairWise
@@ -63,7 +64,7 @@ def compute_rank_score(path, pretrain=False, rank_score_type=0):
                 elif rank_score_type == 2:
                     # 3. e^x
                     print("e^X")
-                    Y.append(float(math.exp(i+1)))
+                    Y.append(float(math.exp(i + 1)))
                 elif rank_score_type == 3:
                     # 3. x^1
                     print("X^1")
@@ -98,10 +99,12 @@ def training_pairwise(tuning_model_path, model_name, training_data_file, pretrai
     if not tuning_model:
         assert lero_model == None
         lero_model = LeroModelPairWise(feature_generator)
-    lero_model.fit(X1, X2, Y1, Y2, tuning_model)
+    history = lero_model.fit(X1, X2, Y1, Y2, tuning_model)
 
-    print(f"saving model... {model_name}")
+    print("saving model...")
     lero_model.save(model_name)
+    
+    return history
 
 
 def training_with_rank_score(tuning_model_path, model_name, training_data_file, pretrain=False, rank_score_type=0):
@@ -128,7 +131,7 @@ def training_with_rank_score(tuning_model_path, model_name, training_data_file, 
 
     lero_model.fit(local_features, Y, tuning_model)
 
-    print(f"saving model... {model_name}")
+    print("saving model...")
     lero_model.save(model_name)
 
 
@@ -155,11 +158,11 @@ def training_pointwise(tuning_model_path, model_name, training_data_file):
 
     lero_model.fit(local_features, y, tuning_model)
 
-    print(f"saving model... {model_name}")
+    print("saving model...")
     lero_model.save(model_name)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser("Model training helper")
     parser.add_argument("--training_data",
                         metavar="PATH",
@@ -168,7 +171,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_name", type=str)
     parser.add_argument("--pretrain_model_name", type=str)
     parser.add_argument("--rank_score_training_type", type=int)
-
+    parser.add_argument("--history_file", type=str,
+                      help='File to save training history')
     args = parser.parse_args()
 
     training_type = 0
@@ -201,8 +205,19 @@ if __name__ == "__main__":
         training_pointwise(pretrain_model_name, model_name, training_data)
     elif training_type == 1:
         print("training_pairwise")
-        training_pairwise(pretrain_model_name, model_name,
+        history = training_pairwise(pretrain_model_name, model_name,
                           training_data, False)
+        if args.history_file and history:
+            with open(args.history_file, 'w') as f:
+                json.dump(history, f, indent=2)
+            print(f"Training history saved to {args.history_file}")
+            # Print final metrics
+            final_metrics = history[-1]
+            print("\nFinal Training Metrics:")
+            print(f"Epoch: {final_metrics['epoch']}")
+            print(f"Iteration: {final_metrics['iteration']}")
+            print(f"Loss: {final_metrics['loss']:.4f}")
+            print(f"Accuracy: {final_metrics['accuracy']:.4f}")
     elif training_type == 2:
         print("training_with_rank_score")
         training_with_rank_score(
@@ -217,3 +232,7 @@ if __name__ == "__main__":
             pretrain_model_name, model_name, training_data, True, rank_score_training_type)
     else:
         raise Exception()
+
+
+if __name__ == "__main__":
+    main()

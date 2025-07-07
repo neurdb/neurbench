@@ -5,9 +5,9 @@ import os
 from feature import JOIN_TYPES, SCAN_TYPES
 
 
-def read_config():
+def read_config(config_name):
     config = configparser.ConfigParser()
-    config.read("server.conf")
+    config.read(config_name)
 
     if "lero" not in config:
         print("server.conf does not have a [lero] section.")
@@ -31,7 +31,7 @@ class PlanCardReplacer():
         self.SCAN_TYPES = SCAN_TYPES
         self.JOIN_TYPES = JOIN_TYPES
         self.SAME_CARD_TYPES = ["Hash", "Materialize",
-                                "Sort", "Incremental Sort", "Limit"]
+                                "Sort", "Incremental Sort", "Gather", "GatherMerge", "Limit"]
         self.OP_TYPES = ["Aggregate", "Bitmap Index Scan"] + \
             self.SCAN_TYPES + self.JOIN_TYPES + self.SAME_CARD_TYPES
         self.table_idx_map = {}

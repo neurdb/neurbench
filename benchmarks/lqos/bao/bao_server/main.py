@@ -135,8 +135,8 @@ def start_server(listen_on, port):
         print(f"Loading existing model from {DEFAULT_MODEL_PATH}")
         model.load_model(DEFAULT_MODEL_PATH)
     else:
-        print(f"Removing experience stored in SQLite DB")
-        storage.clear_experience()
+        print(f"Skipping Removing experience stored in SQLite DB")
+        # storage.clear_experience()
     
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer((listen_on, port), BaoJSONHandler) as server:
@@ -152,17 +152,9 @@ if __name__ == "__main__":
     port = int(config["Port"])
     listen_on = config["ListenOn"]
 
-    # lehl@2022-01-11: Added to allow for specific model to be loaded
-    # Provide the model path to be loaded as the first argument, i.e.
-    #
-    # python3 main.py /app/bao/bao_server/my_trained_model
-    #
-    if len(sys.argv) > 1:
-        DEFAULT_MODEL_PATH = sys.argv[1]
-
     print(f"Listening on {listen_on} port {port}")
-    
+
     server = Process(target=start_server, args=[listen_on, port])
-    
+
     print("Spawning server process...")
     server.start()

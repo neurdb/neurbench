@@ -26,11 +26,11 @@ def run_query(q, run_args):
         if run_args is not None and len(run_args) > 0:
             for arg in run_args:
                 cur.execute(arg)
+        cur.execute("SET lero_server_host TO '172.17.0.1';")
         cur.execute("SET statement_timeout TO " + str(TIMEOUT))
         # print(run_args)
         # print(q)
         print(f"------------ Explaining the query {q} ------------")
-        time_sleep()
         cur.execute(q)
         print(f"------------ Done Explaining the query {q} ------------")
         result = cur.fetchall()

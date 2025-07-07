@@ -15,6 +15,7 @@ def train_and_swap(fn, old, tmp, verbose=False):
         old_model = None
 
     new_model = train_and_save_model(tmp, verbose=verbose)
+    print("model is train_and_save_model")
     max_retries = 5
     current_retry = 1
     while not reg_blocker.should_replace_model(old_model, new_model):

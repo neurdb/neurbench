@@ -114,13 +114,10 @@ class LeroHelper():
         for c_idx, chunk in enumerate(lero_chunks):
             for fp, q in chunk:
                 self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                  self.output_query_latency_file + "_exploratory", None) 
-
-                # self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                        #   self.output_query_latency_file + "_exploratory", None)
+                                  self.output_query_latency_file + "_exploratory", None)  # ❌ No pool, run synchronously
 
             model_name = self.model_prefix + "_" + str(c_idx)
-            self.retrain(model_name)
+            # self.retrain(model_name)
 
             # todo: skip the teting for each train
             # self.test_benchmark(self.output_query_latency_file + "_" + model_name)

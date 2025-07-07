@@ -267,13 +267,17 @@ class LeroModelPairWise(LeroModel):
 
         bce_loss_fn = torch.nn.BCELoss()
 
-        losses = []
+        history = []
         sigmoid = nn.Sigmoid()
         start_time = time()
+        total_iteration = 0
+        
         for epoch in range(100):
-            loss_accum = 0
-            for x1, x2, label in dataset:
-
+            epoch_loss = 0
+            epoch_correct = 0
+            epoch_total = 0
+            
+            for batch_idx, (x1, x2, label) in enumerate(dataset):
                 tree_x1, tree_x2 = None, None
                 if CUDA:
                     tree_x1 = self._net.module.build_trees(x1)
@@ -292,8 +296,26 @@ class LeroModelPairWise(LeroModel):
                 if CUDA:
                     label_y = label_y.cuda(device)
 
+                # Calculate loss
                 loss = bce_loss_fn(prob_y, label_y)
-                loss_accum += loss.item()
+                batch_loss = loss.item()
+                epoch_loss += batch_loss
+
+                # Calculate accuracy
+                predictions = (prob_y > 0.5).float()
+                batch_correct = (predictions == label_y).sum().item()
+                batch_total = label_y.size(0)
+                epoch_correct += batch_correct
+                epoch_total += batch_total
+
+                # Record metrics for this batch
+                history.append({
+                    'epoch': epoch,
+                    'iteration': total_iteration,
+                    'batch': batch_idx,
+                    'loss': batch_loss,
+                    'accuracy': batch_correct / batch_total if batch_total > 0 else 0
+                })
 
                 if CUDA:
                     optimizer.module.zero_grad()
@@ -303,10 +325,32 @@ class LeroModelPairWise(LeroModel):
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
+                
+                total_iteration += 1
 
-            loss_accum /= len(dataset)
-            losses.append(loss_accum)
+            # Calculate and print epoch-level metrics
+            epoch_loss /= len(dataset)
+            epoch_accuracy = epoch_correct / epoch_total if epoch_total > 0 else 0
+            print(f"Epoch {epoch} - Training Loss: {epoch_loss:.4f}, Accuracy: {epoch_accuracy:.4f}")
+            
+        print(f"Training completed in {time() - start_time:.2f} seconds (batch size: {batch_size})")
+        print(f"Final metrics - Loss: {history[-1]['loss']:.4f}, Accuracy: {history[-1]['accuracy']:.4f}")
+        
+        return history
 
-            print("Epoch", epoch, "training loss:", loss_accum)
-        print("training time:", time() - start_time, "batch size:", batch_size)
+    def predict(self, x):
+        if CUDA:
+            self._net = self._net.cuda(device)
+
+        if not isinstance(x, list):
+            x = [x]
+
+        tree = None
+        if CUDA:
+            tree = self._net.module.build_trees(x)
+        else:
+            tree = self._net.build_trees(x)
+
+        pred = self._net(tree).cpu().detach().numpy()
+        return pred
         

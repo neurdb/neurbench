@@ -7,7 +7,7 @@ def __json_bytes(obj):
 
 def __connect():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("bao_server", 9381))
+    s.connect(("172.17.0.1", 9381))
     return s
 
 def send_model_load(path):
@@ -56,10 +56,12 @@ if __name__ == "__main__":
         exit(0)
 
     if args.retrain:
+        print("retraining...")
         import train
         from constants import DEFAULT_MODEL_PATH, OLD_MODEL_PATH, TMP_MODEL_PATH
         train.train_and_swap(DEFAULT_MODEL_PATH, OLD_MODEL_PATH, TMP_MODEL_PATH,
                              verbose=True)
+        print("retrain done, sending model")
         send_model_load(DEFAULT_MODEL_PATH)
         exit(0)
 
