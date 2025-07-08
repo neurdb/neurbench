@@ -44,9 +44,7 @@ def main(args: argparse.Namespace):
         ### imdb
         # train_data_path, doublequote=False, escapechar="\\", low_memory=False
         ### stack
-        train_data_path,
-        doublequote=True,
-        low_memory=False,
+        train_data_path, doublequote=True, low_memory=False,
     )
     print("Original data")
     print(original_data)

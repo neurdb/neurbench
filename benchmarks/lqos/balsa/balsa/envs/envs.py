@@ -116,23 +116,36 @@ class Workload(object):
         self.workload_info = plans_lib.WorkloadInfo(query_nodes)
 
     def FilterQueries(self, query_dir, query_glob, test_query_glob):
+        print(f"Getting query from {query_dir}, {query_glob}, {test_query_glob}")
         all_sql_set_new = self._get_sql_set(query_dir, query_glob)
         test_sql_set_new = self._get_sql_set(query_dir, test_query_glob)
         assert test_sql_set_new.issubset(all_sql_set_new), (test_sql_set_new,
                                                             all_sql_set_new)
 
         all_sql_set = set([n.info['path'] for n in self.query_nodes])
+
+        # all_sql_set is get from the data experience,
+        # reset the all_sql_set_new (read from the file system) to all_sql_set
+        all_sql_set_new = all_sql_set
+
         assert all_sql_set_new.issubset(all_sql_set), (
             'Missing nodes in init_experience; '
             'To fix: remove data/initial_policy_data.pkl, or see README.')
-
+        print(f"all query set is {all_sql_set_new}")
         query_nodes_new = [
             n for n in self.query_nodes if n.info['path'] in all_sql_set_new
         ]
+
+        # todo: we allow the train and test on same set to validates
         train_nodes_new = [
             n for n in query_nodes_new
-            if test_query_glob is None or n.info['path'] not in test_sql_set_new
         ]
+
+        # train_nodes_new = [
+        #     n for n in query_nodes_new
+        #     if test_query_glob is None or n.info['path'] not in test_sql_set_new
+        # ]
+
         test_nodes_new = [
             n for n in query_nodes_new if n.info['path'] in test_sql_set_new
         ]
@@ -181,7 +194,13 @@ class JoinOrderBenchmark(Workload):
         assert test_sql_set.issubset(all_sql_set)
         # sorted by query id for easy debugging
         all_sql_list = sorted(all_sql_set)
-        all_nodes = [ParseSqlToNode(sqlfile) for sqlfile in all_sql_list]
+        # all_nodes = [ParseSqlToNode(sqlfile) for sqlfile in all_sql_list]
+        all_nodes = []
+        for sqlfile in all_sql_list:
+            try:
+                all_nodes.append(ParseSqlToNode(sqlfile))
+            except Exception as e:
+                print(f"[Error], ParseSqlToNode err {e} {sqlfile}")
 
         train_nodes = [
             n for n in all_nodes

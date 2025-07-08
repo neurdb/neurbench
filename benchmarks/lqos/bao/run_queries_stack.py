@@ -36,7 +36,7 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload'):
             cur.execute(f"SET enable_bao TO {bao_select or bao_reward}")
             cur.execute(f"SET enable_bao_selection TO {bao_select}")
             cur.execute(f"SET enable_bao_rewards TO {bao_reward}")
-            cur.execute("SET bao_num_arms TO 5")
+            cur.execute("SET bao_num_arms TO 25")
             cur.execute(f"SET statement_timeout TO {TIMEOUT_LIMIT}")
 
             # As visible in the #should_report_reward method of the pg_extension

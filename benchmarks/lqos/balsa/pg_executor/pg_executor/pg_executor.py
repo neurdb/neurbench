@@ -34,10 +34,10 @@ import ray
 
 # STACK
 # everytime we execute, we need to change this
-LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_ori"
-# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_01v2"
-# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_05v2"
-# LOCAL_DSN = "postgres://postgres:postgres@localhost:5432/imdb_07v2"
+LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:54333/imdb_ori"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_01v2"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_05v2"
+# LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_07v2"
 
 # LOCAL_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
 REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
@@ -104,8 +104,7 @@ def Cursor(dsn=LOCAL_DSN):
         except psycopg2.OperationalError:
             time.sleep(10)
             return get_connection(dsn)
-    print("\n --------------- Debugging --------------- \n")
-    print(f"\n --------------- Connect via {dsn} --------------- \n")
+    print(f"--------------- Debug: Connect via {dsn} ---------------")
     conn = get_connection(dsn)
     conn.set_session(autocommit=True)
     try:
@@ -151,6 +150,14 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
     timeout_ms= None
     _SetGeneticOptimizer('off' if geqo_off else 'on', cursor)
     cursor.execute('SET statement_timeout to {}'.format(180000))
+
+    cursor.execute('SET enable_bitmapscan TO off')
+    cursor.execute('SHOW enable_bitmapscan')
+    print('enable_bitmapscan:', cursor.fetchone()[0])
+
+    cursor.execute('SET enable_tidscan TO off')
+    cursor.execute('SHOW enable_tidscan')
+    print('enable_tidscan:', cursor.fetchone()[0])
 
     # if timeout_ms is not None:
     #     cursor.execute('SET statement_timeout to {}'.format(int(timeout_ms)))

@@ -555,14 +555,17 @@ def FilterScansOrJoins(nodes):
 
     filtered = []
     for n in nodes:
-        new_node = _filter(n.Copy())
-        # Save top-level node's info and cost (which might be latency value
-        # from actual execution), since the top-level node may get filtered
-        # away.
-        new_node.info = n.info
-        new_node.cost = n.cost
-        new_node.actual_time_ms = n.actual_time_ms
-        filtered.append(new_node)
+        try:
+            new_node = _filter(n.Copy())
+            # Save top-level node's info and cost (which might be latency value
+            # from actual execution), since the top-level node may get filtered
+            # away.
+            new_node.info = n.info
+            new_node.cost = n.cost
+            new_node.actual_time_ms = n.actual_time_ms
+            filtered.append(new_node)
+        except Exception as e:
+            print(f"[Error] in _FilterExprsByAlias , {e}")
     if singleton_input:
         return filtered[0]
     return filtered

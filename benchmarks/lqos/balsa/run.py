@@ -30,6 +30,7 @@ import pprint
 import signal
 import time
 import datetime
+import csv
 
 from absl import app
 from absl import flags
@@ -68,6 +69,13 @@ import pg_executor
 from pg_executor  import dbmsx_executor
 import train_utils
 import experiments  # noqa # pylint: disable=unused-import
+import experiments_debug
+import exp_job_data_shift
+# import exp_job_light_debug
+# import exp_job_light_train
+import exp_job_light
+import exp_stack
+import json
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('run', 'Balsa_JOBRandSplit', 'Experiment config to run.')
@@ -163,7 +171,7 @@ def ExecuteSql(query_name,
         A ray.ObjectRef of the above.
     """
     # Unused args.
-    del query_name, hinted_plan, query_node, predicted_latency, found_plans,\
+    del query_name, hinted_plan, query_node, predicted_latency, found_plans, \
         predicted_costs, silent, is_test, plan_physical
 
     assert engine in ('postgres', 'dbmsx'), engine
@@ -253,11 +261,11 @@ def ParseExecutionResult(result_tup,
             real_cost = json_dict['Execution Time']
     if hint_str is not None:
         # Check that the hint has been respected.  No need to check if running baseline.
-        # 
+        #
         # lehl@2024-07-04: Because we included bitmap and tid scans into the allowed scan ops,
         # the back-parsed executed hint str will not match the sent one, as for example
         # hash joins are replaced with nested loop joins if there is a bitmap scan underneath.
-        # 
+        #
         do_hint_check = False
         if engine == 'dbmsx':
             raise NotImplementedError
@@ -351,7 +359,7 @@ def _GetQueryFeaturizerClass(p):
 def TrainSim(p, loggers=None):
     sim_p = sim_lib.Sim.Params()
     # Copy over relevant params.
-    
+
     if 'stack' in p.query_dir:
         sim_p.workload = envs.STACK.Params()
     else:
@@ -360,7 +368,7 @@ def TrainSim(p, loggers=None):
         sim_p.workload.test_query_glob = p.test_query_glob
         sim_p.workload.search_space_join_ops = p.search_space_join_ops
         sim_p.workload.search_space_scan_ops = p.search_space_scan_ops
-    
+
     sim_p.skip_data_collection_geq_num_rels = 12
     if p.cost_model == 'mincardcost':
         sim_p.search.cost_model = costing.MinCardCost.Params()
@@ -801,7 +809,7 @@ class BalsaAgent(object):
             # Requires baseline to run in this scenario.
             p.run_baseline = True
         return workload
-    
+
 
     def _InitLogging(self):
         p = self.params
@@ -842,8 +850,10 @@ class BalsaAgent(object):
         if self.sim is not None:
             # Use the already instantiated query featurizer, which may contain
             # computed normalization stats.
+
+            print("Get OrTrainSim in _MakeExperienceBuffer 2")
             query_featurizer_cls = self.GetOrTrainSim().query_featurizer
-            
+
         exp = Experience(self.train_nodes,
                          p.tree_conv,
                          workload_info=wi,
@@ -1049,6 +1059,8 @@ class BalsaAgent(object):
                 if train_from_scratch:
                     print('Training from scratch; forcing tau := 0.')
                     soft_assign_tau = 0.0
+
+                print("Get OrTrainSim in InitializeModel")
                 self.ema_source_net = InitializeModel(
                     p,
                     model,
@@ -1186,7 +1198,7 @@ class BalsaAgent(object):
         print('Dropping buffer cache.')
         postgres.DropBufferCache()
         print('Running queries as-is (baseline PG performance)...')
-        
+
         def Args(node):
             return {
                 'query_name': node.info['query_name'],
@@ -1212,28 +1224,32 @@ class BalsaAgent(object):
         else:
             refs = tasks
         for i, node in enumerate(self.all_nodes):
-            result_tup = ray.get(refs[i])
+            try:
+                result_tup = ray.get(refs[i])
 
-            # print("---debug", type(result_tup))
-            # assert isinstance(
-            #     result_tup,
-            #     (pg_executor.Result, dbmsx_executor.Result)), result_tup
+                # print("---debug", type(result_tup))
+                # assert isinstance(
+                #     result_tup,
+                #     (pg_executor.Result, dbmsx_executor.Result)), result_tup
 
-            result, real_cost, _, message = ParseExecutionResult(
-                result_tup, **Args(node))
-            # Save real cost (execution latency) to actual.
-            node.cost = real_cost
-            print('---------------------------------------')
-            if p.engine == 'postgres':
-                node.info['explain_json'] = result[0][0][0]
-                # 'node' is a PG plan; doesn't make sense to print if executed
-                # on a different engine.
-                # todo: comment out those
-                # print(node)
+                result, real_cost, _, message = ParseExecutionResult(
+                    result_tup, **Args(node))
+                # Save real cost (execution latency) to actual.
+                node.cost = real_cost
+                print('---------------------------------------')
+                if p.engine == 'postgres':
+                    # print("result =", result)
+                    print('q{},{:.1f} (baseline)'.format(node.info['query_name'],
+                                                    real_cost))
+                    print('Execution time: {}'.format(real_cost))
+                    node.info['explain_json'] = result[0][0][0]
+                    # 'node' is a PG plan; doesn't make sense to print if executed
+                    # on a different engine.
+                    # todo: comment out those
+                    # print(node)
+            except Exception as e:
+                print('get error for res:', e)
             # print(message)
-            print('q{},{:.1f} (baseline)'.format(node.info['query_name'],
-                                                 real_cost))
-            print('Execution time: {}'.format(real_cost))
         # NOTE: if engine != pg, we're still saving PG plans but with target
         # engine's latencies.  This mainly affects debug strings.
         if 'stack' in p.query_dir:
@@ -1266,20 +1282,24 @@ class BalsaAgent(object):
                 self.curr_value_iter))
         trainer = self._MakeTrainer(train_loader)
         if train_from_scratch:
+            print("---------------------- [debug]. train_from_scratch... ---------------------- ")
             trainer.fit(model, train_loader, val_loader)
         elif not (self.curr_value_iter == 0 and p.skip_training_on_expert and
                   (p.prev_replay_buffers_glob is None or
                    p.agent_checkpoint is not None)):
+            print("---------------------- [debug]. train next... ---------------------- ")
             # This condition only affects the first ever call to Train().
             # Iteration 0 doesn't have a timeout limit, so during the second
             # call to Train() we would always have self.curr_value_iter == 1.
             trainer.fit(model, train_loader, val_loader)
+            print("---------------------- [debug]. trainer.fit(model, train_loader, val_loader) Done... ---------------------- ")
             self.model = model.model
             # Optimizer state dict now available.
             self.prev_optimizer_state_dict = None
             if p.inherit_optimizer_state:
                 self.prev_optimizer_state_dict = trainer.optimizers[
                     0].state_dict()
+        print("---------------------- [debug]. train Done... ---------------------- ")
         # Load best ckpt.
         self._LoadBestCheckpointForEval(model, trainer)
         self.timer.Stop('train')
@@ -1408,6 +1428,7 @@ class BalsaAgent(object):
         to_execute = []
         tasks = []
         if p.sim:
+            print("Get OrTrainSim in PlanAndExecute")
             sim = self.GetOrTrainSim()
         positions_of_min_predicted = []
         nodes = self.test_nodes if is_test else self.train_nodes
@@ -1509,7 +1530,8 @@ class BalsaAgent(object):
                 'query_name': kwarg['query_name'],
                 'sql_str': kwarg['sql_str'],
                 'hint_str': kwarg['hint_str'],
-                'inference_time': query_inference_time
+                'inference_time': query_inference_time,
+                'predicted_latency': predicted_latency  # This is the predicted latency in milliseconds
             }
             query_execution_statistics[q_exec_stat['query_name']] = q_exec_stat
 
@@ -1567,7 +1589,9 @@ class BalsaAgent(object):
                 print('Retries exhausted; raising the exception.')
                 raise e
         execution_results = []
-        print("---------------------- [debug]. collecting result ---------------------- ")
+        print(f"---------------------- [debug]. collecting result, refs= {len(refs)} ---------------------- ")
+        execution_results_for_log = []
+
         for i, task in enumerate(refs):
             result_tup = None
             is_cached_plan = True
@@ -1635,7 +1659,11 @@ class BalsaAgent(object):
             assert isinstance(
                 result_tup,
                 (pg_executor.Result, dbmsx_executor.Result)), result_tup
-            result_tups = ParseExecutionResult(result_tup, **kwargs[i])
+
+            try:
+                result_tups = ParseExecutionResult(result_tup, **kwargs[i])
+            except Exception as e:
+                print(f"[error], Exception in ParseExecutionResult {e}")
 
             print("---------------------- [debug]. done with current ref ---------------------- ")
 
@@ -1651,11 +1679,13 @@ class BalsaAgent(object):
                 q_exec_stat['execution_time'] = json_dict['Execution Time']
                 q_exec_stat['planning_time'] = json_dict['Planning Time']
 
-            print(f"\t{q_exec_stat['query_name']}: Inference {q_exec_stat['inference_time']:.4f}\tPlanning {q_exec_stat['planning_time']:.4f}\tExecution {q_exec_stat['execution_time']:.4f}")
+            print(
+                f"\t{q_exec_stat['query_name']}: Inference {q_exec_stat['inference_time']:.4f}\tPlanning {q_exec_stat['planning_time']:.4f}\tExecution {q_exec_stat['execution_time']:.4f}")
 
             assert len(result_tups) == 4
             print(result_tups[-1])  # Messages.
             execution_results.append(result_tups[:-1])
+            execution_results_for_log.append(result_tups)
             # Increment counts for training.
             if not is_test:
                 if is_cached_plan:
@@ -1667,7 +1697,7 @@ class BalsaAgent(object):
                     self.num_query_execs += 1
         self.timer.Stop('wait_for_executions_test_set'
                         if is_test else 'wait_for_executions')
-        
+
         if 'cls' in wandb.run.config:
             experiment_cls = wandb.run.config['cls'].split('/')[-1]
         else:
@@ -1677,9 +1707,22 @@ class BalsaAgent(object):
         with open(query_log_file_name, 'a') as qlf:
             for k in query_execution_statistics.keys():
                 curr = query_execution_statistics[k]
-                output_string = f"{curr['query_name']};{curr['inference_time']:.4f};{curr['planning_time']:.4f};{curr['execution_time']:.4f}"
+                # Calculate MSE between predicted and actual execution time (both in milliseconds)
+                mse = ((curr['execution_time'] - curr['predicted_latency']) / 1e3) ** 2  # Convert to seconds for MSE
+                output_string = f"{curr['query_name']};{curr['inference_time']:.4f};{curr['planning_time']:.4f};{curr['execution_time']:.4f};{curr['predicted_latency']:.4f};{mse:.4f}"
                 qlf.write(output_string)
                 qlf.write(os.linesep)
+
+        if is_test:
+            try:
+                query_log_file_name_json = f"logs/{self.initialization_time}__{experiment_cls}__plan_and_execute_running_stastics.jsonl"
+                with open(query_log_file_name_json, "a") as f:
+                    f.write(json.dumps(query_execution_statistics) + "\n")
+                query_log_file_name_json_result = f"logs/{self.initialization_time}__{experiment_cls}__plan_and_execute_running_exe_result.jsonl"
+                with open(query_log_file_name_json_result, "a") as f:
+                    f.write(json.dumps(execution_results_for_log) + "\n")
+            except Exception as e:
+                print(f" save plans logs has error {e}")
 
         return to_execute, execution_results
 
@@ -1697,80 +1740,83 @@ class BalsaAgent(object):
         for node, result_tup, to_execute_tup in zip(self.train_nodes,
                                                     execution_results,
                                                     to_execute):
-            result, real_cost, server_ip = result_tup
-            _, hint_str, planning_time, actual, predicted_latency, \
-                curr_timeout = to_execute_tup
-            # Record execution result, potentially with real_cost = -1
-            # indicating a timeout.  The cache would only record a lower
-            # latency value so once it gets a -1 label for a plan, it'd not be
-            # updated again.  If a future iteration this plan is still
-            # selected, it'd get the same -1 label from the cache, ensuring
-            # that has_timeouts below would be set to True correctly.
-            self.query_execution_cache.Put(key=(node.info['query_name'],
-                                                hint_str),
-                                           value=result_tup,
-                                           latency=real_cost)
-            self.timeout_controller.RecordQueryExecution(node, real_cost)
+            try:
+                result, real_cost, server_ip = result_tup
+                _, hint_str, planning_time, actual, predicted_latency, \
+                    curr_timeout = to_execute_tup
+                # Record execution result, potentially with real_cost = -1
+                # indicating a timeout.  The cache would only record a lower
+                # latency value so once it gets a -1 label for a plan, it'd not be
+                # updated again.  If a future iteration this plan is still
+                # selected, it'd get the same -1 label from the cache, ensuring
+                # that has_timeouts below would be set to True correctly.
+                self.query_execution_cache.Put(key=(node.info['query_name'],
+                                                    hint_str),
+                                               value=result_tup,
+                                               latency=real_cost)
+                self.timeout_controller.RecordQueryExecution(node, real_cost)
 
-            # Process timeout.
-            # FIXME: even when use_timeout=False, pg_executor may treat a rare
-            # InternalError_ or OperationalError as a timeout event.  These are
-            # rare but could incorrectly get a timeout label below.  We should
-            # fix this by marking a Node as a timeout & allowing Experience to
-            # skip featurizing those marked nodes.
-            if real_cost < 0:
-                has_timeouts = True
-                num_timeouts += 1
-                self.num_total_timeouts += 1
-                if p.special_timeout_label:
-                    real_cost = self.timeout_label()
-                    print('Timeout detected! Assigning a special label',
-                          real_cost, '(server_ip={})'.format(server_ip))
+                # Process timeout.
+                # FIXME: even when use_timeout=False, pg_executor may treat a rare
+                # InternalError_ or OperationalError as a timeout event.  These are
+                # rare but could incorrectly get a timeout label below.  We should
+                # fix this by marking a Node as a timeout & allowing Experience to
+                # skip featurizing those marked nodes.
+                if real_cost < 0:
+                    has_timeouts = True
+                    num_timeouts += 1
+                    self.num_total_timeouts += 1
+                    if p.special_timeout_label:
+                        real_cost = self.timeout_label()
+                        print('Timeout detected! Assigning a special label',
+                              real_cost, '(server_ip={})'.format(server_ip))
+                    else:
+                        real_cost = curr_timeout * 2
+                        print('Timeout detected! Assigning 2*timeout as label',
+                              real_cost, '(server_ip={})'.format(server_ip))
+                    # At this point, 'actual' is a Node produced from the agent
+                    # consisting of just scan/join nodes.  It has gone through hint
+                    # checks in ParseExecutionResult() -- i.e., it should be the
+                    # same as the EXPLAIN result from a local PG with an
+                    # agent-produced hint string.
+                    #
+                    # We manually fill in this field for hindsight labeling (if
+                    # enabled) to work.  Intermediate goals are not collected since
+                    # we don't know what those "sub-latencies" are.
+                    actual.actual_time_ms = real_cost
+                    # Mark a special timeout field.
+                    actual.is_timeout = True
                 else:
-                    real_cost = curr_timeout * 2
-                    print('Timeout detected! Assigning 2*timeout as label',
-                          real_cost, '(server_ip={})'.format(server_ip))
-                # At this point, 'actual' is a Node produced from the agent
-                # consisting of just scan/join nodes.  It has gone through hint
-                # checks in ParseExecutionResult() -- i.e., it should be the
-                # same as the EXPLAIN result from a local PG with an
-                # agent-produced hint string.
-                #
-                # We manually fill in this field for hindsight labeling (if
-                # enabled) to work.  Intermediate goals are not collected since
-                # we don't know what those "sub-latencies" are.
-                actual.actual_time_ms = real_cost
-                # Mark a special timeout field.
-                actual.is_timeout = True
-            else:
-                agent_plans_diffs.append((real_cost - predicted_latency) / 1e3)
-            expert_plans_diffs.append(
-                (node.cost - node.info['curr_predicted_latency']) / 1e3)
+                    agent_plans_diffs.append((real_cost - predicted_latency) / 1e3)
+                expert_plans_diffs.append(
+                    (node.cost - node.info['curr_predicted_latency']) / 1e3)
 
-            assert real_cost > 0, real_cost
-            actual.cost = real_cost
-            actual.info = copy.deepcopy(node.info)
-            actual.info.pop('explain_json')
+                assert real_cost > 0, real_cost
+                actual.cost = real_cost
+                actual.info = copy.deepcopy(node.info)
+                actual.info.pop('explain_json')
 
-            # Put into experience/replay buffer.
-            self.exp.add(actual)
-            # Update the best plan cache.
-            self.best_plans.Put(key=node.info['query_name'],
-                                value=actual,
-                                latency=real_cost)
+                # Put into experience/replay buffer.
+                self.exp.add(actual)
+                # Update the best plan cache.
+                self.best_plans.Put(key=node.info['query_name'],
+                                    value=actual,
+                                    latency=real_cost)
 
-            # Logging.
-            results.append(result)
-            iter_total_latency += real_cost
-            iter_max_latency = max(iter_max_latency, real_cost)
-            self.LogScalars([
-                ('latency/q{}'.format(node.info['query_name']), real_cost / 1e3,
-                 self.curr_value_iter),
-                # Max per-query latency in this iter.  This bounds
-                # the time required for query execution if we were
-                # to parallelize everything.
-                ('curr_iter_max_ms', iter_max_latency, self.curr_value_iter),
-            ])
+                # Logging.
+                results.append(result)
+                iter_total_latency += real_cost
+                iter_max_latency = max(iter_max_latency, real_cost)
+                self.LogScalars([
+                    ('latency/q{}'.format(node.info['query_name']), real_cost / 1e3,
+                     self.curr_value_iter),
+                    # Max per-query latency in this iter.  This bounds
+                    # the time required for query execution if we were
+                    # to parallelize everything.
+                    ('curr_iter_max_ms', iter_max_latency, self.curr_value_iter),
+                ])
+            except Exception as e:
+                print(f"Wrong during the FeedbackExecution collection {e}")
 
         # Logging.
         self.LogScalars([
@@ -1950,7 +1996,7 @@ class BalsaAgent(object):
         # if (self.curr_value_iter + 1) % 5 == 0:
         #     self.SaveAgent(model, iter_total_latency, curr_value_iter=self.curr_value_iter)
 
-        self.SaveAgent(model, iter_total_latency, curr_value_iter=self.curr_value_iter)
+        self.SaveAgent(model, iter_total_latency, curr_value_iter=self.curr_value_iter, parameter=p)
 
         # Run and log test queries.
         print("---------------------- [debug]. start EvaluateTestSet ----------------------")
@@ -2042,7 +2088,43 @@ class BalsaAgent(object):
         path = Save(all_nodes, os.path.join(best_plans_dir, 'plans.pkl'))
         w.save(path, base_path=wandb_dir)
 
-    def SaveAgent(self, model, iter_total_latency, curr_value_iter=None):
+    # todo: this is the old version of the torch-lighting
+    # def SaveAgent(self, model, iter_total_latency, curr_value_iter=None):
+    #     """Saves the complete execution state of the agent."""
+    #     # TODO: not complete state, currently missing:
+    #     #  - query exec cache
+    #     #  - moving averages
+    #     #  - a bunch of fields (see Run())
+    #     # TODO: support reloading & resume.
+    #
+    #     # Model weights.  Saved under <wandb dir>/checkpoint.pt.
+    #     #
+    #     # Model weights can be reloaded with:
+    #     #   model = TheModelClass(*args, **kwargs)
+    #     #   model.load_state_dict(torch.load(PATH))
+    #     ckpt_path = os.path.join(self.wandb_logger.experiment.dir,
+    #                              'checkpoint.pt')
+    #     print(f"\n------ saving result into {ckpt_path} ------\n")
+    #     torch.save(model.state_dict(), ckpt_path)
+    #
+    #     # Saving intermediate checkpoints as well
+    #     if curr_value_iter is not None:
+    #         base_folder_path = os.path.join('checkpoints', self.initialization_time)
+    #         if not os.path.exists(base_folder_path):
+    #             os.makedirs(base_folder_path)
+    #         torch.save(model.state_dict(), os.path.join(base_folder_path, f'checkpoint__iter{curr_value_iter}.pt'))
+    #
+    #     SaveText(
+    #         'value_iter,{}'.format(self.curr_value_iter),
+    #         os.path.join(self.wandb_logger.experiment.dir,
+    #                      'checkpoint-metadata.txt'))
+    #     print('Saved iter={} checkpoint to: {}'.format(self.curr_value_iter,
+    #                                                    ckpt_path))
+    #
+    #     # Replay buffer.  Saved under data/.
+    #     self._SaveReplayBuffer(iter_total_latency)
+
+    def SaveAgent(self, model, iter_total_latency, curr_value_iter=None, parameter=None):
         """Saves the complete execution state of the agent."""
         # TODO: not complete state, currently missing:
         #  - query exec cache
@@ -2050,31 +2132,43 @@ class BalsaAgent(object):
         #  - a bunch of fields (see Run())
         # TODO: support reloading & resume.
 
-        # Model weights.  Saved under <wandb dir>/checkpoint.pt.
-        #
-        # Model weights can be reloaded with:
-        #   model = TheModelClass(*args, **kwargs)
-        #   model.load_state_dict(torch.load(PATH))
-        ckpt_path = os.path.join(self.wandb_logger.experiment.dir,
-                                 'checkpoint.pt')
+        # Determine save directory: use parameter.model_save_path if available, else Wandb dir
+        base_save_dir = parameter.model_save_path
+        ckpt_path = os.path.join(base_save_dir, f'{parameter.model_prefix}_checkpoint.pt')
         print(f"\n------ saving result into {ckpt_path} ------\n")
-        torch.save(model.state_dict(), ckpt_path)
 
-        # Saving intermediate checkpoints as well
+        # Manually construct state dictionary to avoid distributed hooks
+        try:
+            state_dict = {}
+            for name, param in model.named_parameters():
+                state_dict[name] = param.detach().cpu()
+            for name, buffer in model.named_buffers():
+                state_dict[name] = buffer.detach().cpu()
+            os.makedirs(base_save_dir, exist_ok=True)
+            torch.save(state_dict, ckpt_path)
+        except Exception as e:
+            print(f"Error saving checkpoint to {ckpt_path}: {e}")
+            raise
+
+        # Saving intermediate checkpoints
         if curr_value_iter is not None:
-            base_folder_path = os.path.join('checkpoints', self.initialization_time)
+            base_folder_path = os.path.join(base_save_dir, f'{parameter.model_prefix}_checkpoints', self.initialization_time)
             if not os.path.exists(base_folder_path):
                 os.makedirs(base_folder_path)
-            torch.save(model.state_dict(), os.path.join(base_folder_path, f'checkpoint__iter{curr_value_iter}.pt'))
+            intermediate_path = os.path.join(base_folder_path, f'checkpoint__iter{curr_value_iter}.pt')
+            try:
+                torch.save(state_dict, intermediate_path)
+            except Exception as e:
+                print(f"Error saving intermediate checkpoint to {intermediate_path}: {e}")
+                raise
 
+        # Save metadata
         SaveText(
             'value_iter,{}'.format(self.curr_value_iter),
-            os.path.join(self.wandb_logger.experiment.dir,
-                         'checkpoint-metadata.txt'))
-        print('Saved iter={} checkpoint to: {}'.format(self.curr_value_iter,
-                                                       ckpt_path))
+            os.path.join(base_save_dir, f'{parameter.model_prefix}_checkpoint-metadata.txt'))
+        print('Saved iter={} checkpoint to: {}'.format(self.curr_value_iter, ckpt_path))
 
-        # Replay buffer.  Saved under data/.
+        # Replay buffer. Saved under data/.
         self._SaveReplayBuffer(iter_total_latency)
 
     def UpdateMovingAverage(self, model, moving_average, ema_decay=None):
@@ -2146,8 +2240,8 @@ class BalsaAgent(object):
         stages = ['train', 'plan', 'wait_for_executions']
         num_iters_done = self.curr_value_iter + 1
         if p.test_query_glob is not None and \
-           num_iters_done >= p.test_after_n_iters and \
-           num_iters_done % p.test_every_n_iters == 0:
+                num_iters_done >= p.test_after_n_iters and \
+                num_iters_done % p.test_every_n_iters == 0:
             stages += ['plan_test_set', 'wait_for_executions_test_set']
         timings = [self.timer.GetLatestTiming(s) for s in stages]
         iter_total_s = sum(timings)
@@ -2179,6 +2273,7 @@ class BalsaAgent(object):
         p = self.params
         print(p)
         if p.run_baseline:
+            print("---------------------- [debug]. start to run baseline ----------------------")
             return self.RunBaseline()
         else:
             self.curr_value_iter = 0
@@ -2193,11 +2288,17 @@ class BalsaAgent(object):
             # self.{all,train,test}_nodes no longer share any references.
             self.train_nodes = plans_lib.FilterScansOrJoins(self.train_nodes)
             self.test_nodes = plans_lib.FilterScansOrJoins(self.test_nodes)
-        print(f"---------------------- [debug]. start to run {self.curr_value_iter, p.val_iters} ----------------------")
+
+        print(
+            f"---------------------- [debug]. start to run {self.curr_value_iter, p.val_iters} ----------------------")
         while self.curr_value_iter < p.val_iters:
+            begin_iteration = time.time()
             has_timeouts = self.RunOneIter()
             self.LogTimings()
-            print("---------------------- [debug]. train one iteration done ----------------------")
+            end_iteration = time.time()
+            print(f"---------------------- [debug]. train one iteration done, "
+                  f"with time={end_iteration-begin_iteration} ----------------------")
+
             if (p.early_stop_on_skip_fraction is not None and
                     self.curr_iter_skipped_queries >=
                     p.early_stop_on_skip_fraction * len(self.train_nodes)):
@@ -2229,7 +2330,10 @@ class BalsaAgent(object):
                     if self.adaptive_lr_schedule is not None:
                         self.adaptive_lr_schedule.Step()
 
+        print("[Training] All iteration done")
 
+# from memory_profiler import profile
+# @profile
 def Main(argv):
     del argv  # Unused.
     name = FLAGS.run
@@ -2237,18 +2341,19 @@ def Main(argv):
     p = balsa.params_registry.Get(name)
 
     p.use_local_execution = FLAGS.local
+
     # Override params here for quick debugging.
     # p.sim_checkpoint = None
-    p.epochs = 6
-    p.val_iters = 2
+    # p.epochs = 1
+    # p.val_iters = 0
     # p.query_glob = ['7*.sql']
     # p.test_query_glob = ['7c.sql']
-    p.search_until_n_complete_plans = 1
+    # p.search_until_n_complete_plans = 1
+    #
+    # for k in dict(p).keys():
+    #     print(f"{k}\t\t{dict(p)[k]}")
 
-    for k in dict(p).keys():
-        print(f"{k}\t\t{dict(p)[k]}")
-
-    #import code; code.interact(local=dict(globals(), **locals()))
+    # import code; code.interact(local=dict(globals(), **locals()))
     agent = BalsaAgent(p)
 
     agent.Run()
