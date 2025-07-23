@@ -19,7 +19,7 @@ class Config:
         self.input_size = 9  # 7+2, 7 = All types (scans/joins), 2= ['total cost', 'plan rows']
         self.hidden_size = 64
         self.batch_size = 256
-        self.ip = "pg_balsa"
+        self.ip = "172.17.0.1"
         self.port = 5432
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.cpudevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,7 +35,7 @@ class Config:
         self.searchFactor = 4
         self.U_factor = 0.0
         self.log_file = 'log_c3_h64_s4_t3.txt'
-        self.latency_file = 'latency_record.txt'
+        self.latency_file = './latency_record.txt'
         self.modelpath = 'model/'
         self.offset = 20  # Offset for numerical stability?
 
@@ -55,7 +55,7 @@ class Config:
                              'cc': 22, 'cct2': 24, 'an': 20, 'mk': 10, 'cn': 3, 'it3': 25, 't1': 27, 'mc1': 33}
         self.max_column = 100  # Number of columns in the database (JOB=108, but not all are used in queries?)
 
-        self.n_epochs = 10
+        self.n_epochs = 50
         self.queries_file = 'workload/query_join__train.json'
 
         self.mcts_input_size = self.max_alias_num * self.max_alias_num + self.max_column

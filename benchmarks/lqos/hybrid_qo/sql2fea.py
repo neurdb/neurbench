@@ -44,6 +44,7 @@ class Sql2Vec:
         self.target_table_list = [TargetTable(x["ResTarget"]) for x in parse_result["targetList"]]
         self.from_table_list = [FromTable(x["RangeVar"]) for x in parse_result["fromClause"]]
         if len(self.from_table_list) < 2:
+            print(f"table list = {self.from_table_list}, and is <2, return none ")
             return
         self.aliasname2fullname = {}
 
@@ -215,6 +216,7 @@ class TreeBuilder:
                     return np.asarray([-1])
                     return np.asarray([self.aliasname2id[rel]])
 
+            return np.asarray([-1])
         #     raise TreeBuilderError("Could not find relation name for bitmap index scan")
         print(node)
         raise TreeBuilderError("Cannot extract Alias type from node")

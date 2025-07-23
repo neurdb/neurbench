@@ -12,6 +12,6 @@ static bool enable_bao_rewards = false;
 static bool enable_bao_selection = false;
 static char* bao_host = NULL;
 static int bao_port = 9381;
-static int bao_num_arms = 5;
+static int bao_num_arms = 25;
 static bool bao_include_json_in_explain = false;
 #endif

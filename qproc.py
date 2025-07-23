@@ -167,8 +167,6 @@ class QueryProcessor(neurbench.Processor):
                             self.config["map"][k][info_k_values_str] = []
 
                         self.config["map"][k][info_k_values_str].append(s)
-
-        # self.compute_dists()
         
         if self.dump_feature_table:
             self._dump_feature_table()

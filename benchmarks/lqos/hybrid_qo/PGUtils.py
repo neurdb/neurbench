@@ -31,6 +31,9 @@ class PGGRunner:
         :param latencyRecord:-1:loadFromFile
         :param latencyRecordFile:
         """
+        if dbname == "":
+            print("skip initializing everything!")
+
         self.dbname = dbname
         self.con = psycopg2.connect(database=dbname, user=user,
                                     password=password, host=host, port=port)

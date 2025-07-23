@@ -93,7 +93,6 @@ class Hinter:
         return chosen_leading_pair
 
     def hinterRun(self, sql, is_train=True):
-
         if is_train:
             pgrunner = pgrunner_train
         else:
@@ -125,6 +124,12 @@ class Hinter:
                 knn_plan) < config.threshold and self.value_extractor.decode(plan_times[0][0]) > 100:
             from math import e
             max_time_out = min(int(self.value_extractor.decode(chosen_leading_pair[0][0]) * 3), config.max_time_out)
+
+            # Get predicted time for the chosen hinted plan
+            hinted_plan_json = pgrunner.getCostPlanJson(chosen_leading_pair[1] + sql)
+            hinted_plan_times = self.predictWithUncertaintyBatch(plan_jsons=[hinted_plan_json], sql_vec=sql_vec)
+            predicted_time = self.value_extractor.decode(hinted_plan_times[0][0])  # Decode predicted time
+            
             if config.cost_test_for_debug:
                 leading_time_flag = pgrunner.getCost(sql=chosen_leading_pair[1] + sql)
                 self.hinter_runtime_list.append(leading_time_flag[0])
@@ -135,6 +140,7 @@ class Hinter:
                 plan_json = pgrunner.getAnalysePlanJson(sql=chosen_leading_pair[1] + sql)
                 leading_time_flag = (plan_json['Plan']['Actual Total Time'], plan_json['timeout'])
                 self.hinter_runtime_list.append(leading_time_flag[0])
+                actual_time = leading_time_flag[0]  # Store actual time
                 ##To do: parallel planning
                 self.hinter_planningtime_list.append(plan_json['Planning Time'])
 
@@ -166,14 +172,19 @@ class Hinter:
                 self.hinter_time_list.append([leading_time_flag[0]])
                 self.chosen_plan.append([chosen_leading_pair[1]])
         else:
+            # Use PostgreSQL default plan
+            predicted_time = self.value_extractor.decode(plan_times[0][0])  # Decode predicted time for PG plan
+            
             if config.cost_test_for_debug:
                 pg_time_flag = pgrunner.getCost(sql=sql)
                 self.hinter_runtime_list.append(pg_time_flag[0])
+                actual_time = pg_time_flag[0]  # Store actual time
                 ##To do: parallel planning
                 self.hinter_planningtime_list.append(pgrunner.getCostPlanJson(sql)['Planning Time'])
             else:
                 pg_time_flag = pgrunner.getLatency(sql=sql, timeout=300 * 1000)
                 self.hinter_runtime_list.append(pg_time_flag[0])
+                actual_time = pg_time_flag[0]  # Store actual time
                 ##To do: parallel planning
 
                 self.hinter_planningtime_list.append(pgrunner.getAnalysePlanJson(sql=sql)['Planning Time'])
@@ -190,6 +201,9 @@ class Hinter:
             self.mcts_searcher.train(tree_feature=self.model.tree_builder.plan_to_feature_tree(sample[0]),
                                      sql_vec=sql_vec, target_value=sample[1], alias_set=alias)
 
+        # Compute loss but don't optimize during testing
+        loss = 0
+        variance = 0
         if self.hinter_times < 1000 or self.hinter_times % 10 == 0:
             loss = self.model.optimize()[0]
             loss1 = self.mcts_searcher.optimize()
@@ -203,12 +217,17 @@ class Hinter:
                 loss = self.model.optimize()[0]
                 loss1 = self.mcts_searcher.optimize()
 
+        # Compute MSE: ((actual_time - predicted_time) / 1e3) ** 2
+        # Convert actual_time from seconds to milliseconds to match predicted_time units
+        actual_time_ms = actual_time * 1000
+        mse = (actual_time_ms - predicted_time) ** 2
+
         assert len(set([len(self.hinter_runtime_list), len(self.pg_runningtime_list), len(self.mcts_time_list),
                         len(self.hinter_planningtime_list), len(self.MHPE_time_list), len(self.hinter_runtime_list),
                         len(self.chosen_plan), len(self.hinter_time_list)])) == 1
         return self.pg_planningtime_list[-1], self.pg_runningtime_list[-1], self.mcts_time_list[-1], \
                self.hinter_planningtime_list[-1], self.MHPE_time_list[-1], self.hinter_runtime_list[-1], \
-               self.chosen_plan[-1], self.hinter_time_list[-1]
+               self.chosen_plan, self.hinter_time_list[-1], loss, mse, predicted_time / 1e3
 
     def predictWithUncertaintyBatch(self, plan_jsons, sql_vec):
         sql_feature = self.model.value_network.sql_feature(sql_vec)

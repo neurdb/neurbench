@@ -12,6 +12,7 @@ config = Config()
 import torch
 # model_path = './saved_models/supervised.pt'
 from NET import ValueNet
+print("Init the predictionNet and initlize the prameters")
 predictionNet = ValueNet(config.mcts_input_size, n_words=config.max_alias_num, hidden_size=config.hidden_size).to(config.cpudevice)
 for name, param in predictionNet.named_parameters():
     from torch.nn import init
@@ -121,14 +122,14 @@ class planState:
             self.join_matrix[p[1]].add(p[0])
         self.nodes = nodes
         self.possibleActions = []
-        
+
     def getPossibleActions(self):
         global getPossibleActionsTime
         startTime = time.time()
         # print(self.nodes)
         if len(self.possibleActions)>0 and self.currentStep>1:
             return self.possibleActions
-        
+
         possibleActions = set()
         if self.currentStep == 1:
             for join in self.joins_with_predicate:
@@ -144,7 +145,7 @@ class planState:
                     possibleActions.add(join[1])
                 elif join[1] in order_list_set and (not join[0] in order_list_set):
                     possibleActions.add(join[0])
-        
+
         # possibleActions = list(possibleActions)
         self.possibleActions = possibleActions
         getPossibleActionsTime += time.time()-startTime
@@ -332,16 +333,17 @@ class MCTSHinterSearch():
         predictionNet.load_state_dict(torch.load('model/'+self.modelhead+".pth"))
         predictionNet.cuda()
     def findCanHints(self, totalNumberOfTables, numberOfTables, queryEncode,all_joins,joins_with_predicate,nodes,depth=2):
+        random.seed(113)
         self.total_cnt +=1
         if self.total_cnt%200==0:
             self.savemodel()
         initialState = planState(totalNumberOfTables, numberOfTables, queryEncode,
                                 all_joins,joins_with_predicate,nodes)
-        
+
         searchFactor = config.searchFactor
         currentState = initialState
         # print(len(currentState.getPossibleActions()))
-        self.mct = mcts(iterationLimit=(int)(len(currentState.getPossibleActions()) *  searchFactor)) 
+        self.mct = mcts(iterationLimit=(int)(len(currentState.getPossibleActions()) *  searchFactor))
         self.Utility = []
         self.mct.search(initialState = currentState)
         self.dfs(self.mct.root, depth)
@@ -366,8 +368,8 @@ class MCTSHinterSearch():
                 if param.grad is not None:
                     param.grad.data.clamp_(-0.5*10, 0.5*10)
         optimizer.step()
-        return loss_value.item()    
-    
+        return loss_value.item()
+
     def train(self,tree_feature,sql_vec,target_value,alias_set,is_train=False):
         def plan_to_count(tree_feature):
     #     alias_list = []
@@ -401,14 +403,14 @@ class MCTSHinterSearch():
         label = torch.tensor([(flog(target_value))*10],device = config.cpudevice,dtype = torch.float32)
         # print('label',label)
         loss_value = self.loss(input=predictionRuntime,target=label,optimize=True)
-        
-        
-        
+
+
+
         self.addASample(inputState1,inputState2,label)
-        
+
         return loss_value
-    
-    
+
+
     def optimize(self):
         samples = self.memory.sample(config.batch_size)
         sql_features = []

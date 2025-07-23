@@ -45,7 +45,7 @@ def main():
         "-o",
         "--output",
         default="./{dbname}-pp.sql",
-        help="Path to the output CSV file (default: ./{dbname}-drifted.sql)",
+        help="Path to the output CSV file (default: ./{dbname}-pp.sql)",
     )
     parser.add_argument(
         "-c",

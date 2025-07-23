@@ -223,7 +223,7 @@ def controller_training(
         set_anneal_lr(opt, lr, step, steps)
         # set_anneal_lr(opt_cond, lr, step, steps)
 
-        if (step + 1) % 1 == 0 or step == 0:
+        if (step + 1) % 500 == 0 or step == 0:
             print(
                 f"Step {step + 1}/{steps}: Loss {total_loss.item():.8f} "
                 # f"(Drift: {loss.item():.8f}, PCorr: {p_loss_corr.item():.8f})"
