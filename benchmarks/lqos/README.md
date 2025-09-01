@@ -1,51 +1,19 @@
-<!-- # Is Your Learned Query Optimizer Behaving As You Expect? - A Machine Learning Perspective -->
-
-This part of test code is cloned and updated based on the codebase used in the paper "Is Your Learned Query Optimizer Behaving As You Expect? A Machine Learning Perspective", VLDB 2024.
+This part of the test code is cloned and updated based on the codebase used in the paper "Is Your Learned Query Optimizer Behaving As You Expect? A Machine Learning Perspective", VLDB 2024.
 
 # Setup
 
-This repository holds a variety of learned query optimizer methods and ways to train and evaluate them. All methods are run inside docker container environments using **64 GB of RAM**, **16 CPU cores** and with **access to a GPU**. Please refer to the individual `README.md` files in the `docker` subdirectory on how to setup each individual method.
-
-<!-- We assume that the JOB and STACK datasets has been downloaded and prepared in the `data` subfolder. See the [data/README.md](data/README.md) on how to do this. -->
+This repository includes a variety of learned query optimizer methods and ways to train and evaluate them. Please refer to the individual `README.md` files in the `docker` subdirectory on how to setup each individual method.
 
 
-<!-- ## Train/Test Splits
+Currently, we use the configuration file provided in `conf` to setup PostgreSQL. If you want to change the configuration, you can directly edit the file before installing PostgreSQL.
 
-The train/test splits can be found in the following places:
-- [Balsa/Neo](balsa/experiments.py) (see the test set definitions at the beginning of the file, for example `RANDOM_SPLIT_1__TEST_QUERIES`)
-- [Bao](bao/queries) (as explicit directories containing just the SQL files)
-- [LEON](leon/util/train_test_splits.py) (Note, that LEON references the queries from the queries directory of Balsa `balsa/queries`, see the definition of the `load_sql_Files` method in `leon/train_job.py` and `leon/train_stack.py`)
-- [HybridQO](hybrid_qo/workload) (Splits are defined as specific JSON files referencing the queries directly, IPython notebooks are given in `notebooks/Build_HybridQO_Workloads.ipynb` and `notebooks/Build_HybridQO_Workloads__STACK.ipynb` on how to prepare these workload files.) -->
 
 ## Methods
 
 Information about setting up and running all the methods included in this codebase can be found in the corresponding READMEs of the docker directories.
 
-Currently we include the following methods:
-<!-- - Neo: see the [docker/postgres_balsa/README.md](docker/postgres_balsa/README.md) (Neo is run through the code base of Balsa, as the Neo authors did not make the code available. However, the authors of Neo have assured us, that the implementation of Neo inside the Balsa codebase has been checked and approved by them.) -->
-<!-- - Bao: see the [docker/postgres_bao/README.md](docker/postgres_bao/README.md) (Bao uses an extension running inside PostgreSQL. To make sure it does not interfere with other methods, Bao is run in a seperate container with identical settings otherwise)
-- Balsa: see the [docker/postgres_balsa/README.md](docker/postgres_balsa/README.md)
-- LEON: see the [docker/postgres_balsa/README.md](docker/postgres_balsa/README.md) to set up the container (LEON runs inside the same containers as Balsa)
-- HybridQO: see the [docker/postgres_balsa/README.md](docker/postgres_balsa/README.md) to set up the container (HybridQO runs inside the same containers as Balsa)
-- Lero: See the  -->
-
 > **Note:** The PostgreSQL baseline is run from the Bao codebase using the `bao/run_test_queries.py` with the parameter `--use_postgres`.
-<!-- 
-## Figures
 
-The figures used in our publication are created using the notebooks found in the `notebooks` directory and the data from the `experiment_logs` directory (though the individual model checkpoints and log files are generally available in the respective subdirectories of the methods). The notebooks `notebooks/FullEvaluation_<workload>_MergeResultFiles.ipynb` are meant to collect the individual log files for all experiments, while the `notebooks/FullEvaluation_<workload>_ResultAnalysis.ipynb` contains code for the detailed result figures.
-
-If you want to run these notebooks, you have to install the dependencies on the outermost `requirements.txt` file in order to have all libraries available:
-
-```bash
-python3 -m venv env
-
-. activate_env.sh
-pip install -r requirements.txt
-
-jupyter-notebook
-```
- -->
 
 # Citations
 
