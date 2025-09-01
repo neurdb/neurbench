@@ -12,10 +12,13 @@ To create the conda environment, run:
 conda env create -f environment.yml
 ```
 
-
 ## Tools & Utilities
 
 NeurBench provides a drift-aware data and workload generation tool that effectively simulates real-world drift while preserving inherent correlations.
+
+```
+conda activate neurbench
+```
 
 ### Data and Workload Generator
 
