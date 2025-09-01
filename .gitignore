@@ -183,3 +183,12 @@ sample-*.csv
 
 benchmarks/lidx/*.out
 benchmarks/lidx/results
+
+# CLI history
+.cli_history
+
+# VS Code config
+.vscode/
+
+# Trash
+.trash/
