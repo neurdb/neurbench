@@ -63,7 +63,10 @@ print(
 
 def show_help():
     print(
-        """Available commands:
+        """NeurBench - Available Commands
+"======================================================"
+
+Core Commands:
   h, help                            Show this help message
   q, quit                            Exit the interactive shell
   gd DATASET [TABLE] DRIFT [SCALE]   Generate data that drifts DRIFT on DATASET
@@ -202,6 +205,242 @@ def handle_delete_data(tokens: List[str]):
             print(f"Moved {src} to {dst}")
 
 
+def handle_tqo(tokens: List[str]):
+    """Handle training learned query optimizer command"""
+    tokens = tokens[1:]
+    
+    if len(tokens) < 1:
+        print("Error: Please specify LQO_NAME")
+        print("Usage: tqo [LQO_NAME]")
+        print("Available LQO: bao, balsa, hybridqo, lero")
+        return
+    
+    lqo_name = tokens[0].lower()
+    
+    if lqo_name == "bao":
+        print("Training Bao learned query optimizer...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if bao directory exists
+        bao_dir = os.path.join("benchmarks", "lqos", "bao")
+        if not os.path.exists(bao_dir):
+            print(f"Error: Bao directory not found at {bao_dir}")
+            return
+        
+        # Check if train_bao.py script exists
+        train_script = os.path.join(bao_dir, "train_bao.py")
+        if not os.path.exists(train_script):
+            print(f"Error: Bao training script not found at {train_script}")
+            return
+        
+        # Run the training script
+        print("Starting Bao training pipeline...")
+        result = os.system(f"cd {bao_dir} && python train_bao.py")
+        
+        if result == 0:
+            print("✅ Bao training completed successfully!")
+        else:
+            print(f"❌ Bao training failed with exit code {result}")
+    
+    elif lqo_name == "balsa":
+        print("Training Balsa learned query optimizer...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if balsa directory exists
+        balsa_dir = os.path.join("benchmarks", "lqos", "balsa")
+        if not os.path.exists(balsa_dir):
+            print(f"Error: Balsa directory not found at {balsa_dir}")
+            return
+        
+        # Check if train_balsa.py script exists
+        train_script = os.path.join(balsa_dir, "train_balsa.py")
+        if not os.path.exists(train_script):
+            print(f"Error: Balsa training script not found at {train_script}")
+            return
+        
+        # Run the training script
+        print("Starting Balsa training pipeline...")
+        result = os.system(f"cd {balsa_dir} && python train_balsa.py")
+        
+        if result == 0:
+            print("✅ Balsa training completed successfully!")
+        else:
+            print(f"❌ Balsa training failed with exit code {result}")
+    
+    elif lqo_name == "hybridqo":
+        print("Training HybridQO learned query optimizer...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if hybrid_qo directory exists
+        hybridqo_dir = os.path.join("benchmarks", "lqos", "hybrid_qo")
+        if not os.path.exists(hybridqo_dir):
+            print(f"Error: HybridQO directory not found at {hybridqo_dir}")
+            return
+        
+        # Check if train_hybridqo.py script exists
+        train_script = os.path.join(hybridqo_dir, "train_hybridqo.py")
+        if not os.path.exists(train_script):
+            print(f"Error: HybridQO training script not found at {train_script}")
+            return
+        
+        # Run the training script
+        print("Starting HybridQO training pipeline...")
+        result = os.system(f"cd {hybridqo_dir} && python train_hybridqo.py")
+        
+        if result == 0:
+            print("✅ HybridQO training completed successfully!")
+        else:
+            print(f"❌ HybridQO training failed with exit code {result}")
+    
+    elif lqo_name == "lero":
+        print("Training Lero learned query optimizer...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if Lero directory exists
+        lero_dir = os.path.join("benchmarks", "lqos", "Lero")
+        if not os.path.exists(lero_dir):
+            print(f"Error: Lero directory not found at {lero_dir}")
+            return
+        
+        # Check if train_lero.py script exists
+        train_script = os.path.join(lero_dir, "train_lero.py")
+        if not os.path.exists(train_script):
+            print(f"Error: Lero training script not found at {train_script}")
+            return
+        
+        # Run the training script
+        print("Starting Lero training pipeline...")
+        result = os.system(f"cd {lero_dir} && python train_lero.py")
+        
+        if result == 0:
+            print("✅ Lero training completed successfully!")
+        else:
+            print(f"❌ Lero training failed with exit code {result}")
+            
+    else:
+        print(f"Error: Unknown LQO '{lqo_name}'")
+        print("Available LQO: bao, balsa, hybridqo, lero")
+        return
+
+
+def handle_iqo(tokens: List[str]):
+    """Handle inference learned query optimizer command"""
+    tokens = tokens[1:]
+    
+    if len(tokens) < 1:
+        print("Error: Please specify LQO_NAME")
+        print("Usage: iqo [LQO_NAME]")
+        print("Available LQO: bao, balsa, hybridqo, lero")
+        return
+    
+    lqo_name = tokens[0].lower()
+    
+    if lqo_name == "bao":
+        print("Running Bao learned query optimizer inference...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if bao directory exists
+        bao_dir = os.path.join("benchmarks", "lqos", "bao")
+        if not os.path.exists(bao_dir):
+            print(f"Error: Bao directory not found at {bao_dir}")
+            return
+        
+        # Check if inference script exists
+        inference_script = os.path.join(bao_dir, "inference_bao.py")
+        if not os.path.exists(inference_script):
+            print(f"Error: Bao inference script not found at {inference_script}")
+            return
+        
+        # Run the inference script
+        print("Starting Bao inference...")
+        result = os.system(f"cd {bao_dir} && python inference_bao.py")
+        
+        if result == 0:
+            print("✅ Bao inference completed successfully!")
+        else:
+            print(f"❌ Bao inference failed with exit code {result}")
+    
+    elif lqo_name == "balsa":
+        print("Running Balsa learned query optimizer inference...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if balsa directory exists
+        balsa_dir = os.path.join("benchmarks", "lqos", "balsa")
+        if not os.path.exists(balsa_dir):
+            print(f"Error: Balsa directory not found at {balsa_dir}")
+            return
+        
+        # Check if inference script exists
+        inference_script = os.path.join(balsa_dir, "inference_balsa.py")
+        if not os.path.exists(inference_script):
+            print(f"Error: Balsa inference script not found at {inference_script}")
+            return
+        
+        # Run the inference script
+        print("Starting Balsa inference...")
+        result = os.system(f"cd {balsa_dir} && python inference_balsa.py")
+        
+        if result == 0:
+            print("✅ Balsa inference completed successfully!")
+        else:
+            print(f"❌ Balsa inference failed with exit code {result}")
+    
+    elif lqo_name == "hybridqo":
+        print("Running HybridQO learned query optimizer inference...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if hybrid_qo directory exists
+        hybridqo_dir = os.path.join("benchmarks", "lqos", "hybrid_qo")
+        if not os.path.exists(hybridqo_dir):
+            print(f"Error: HybridQO directory not found at {hybridqo_dir}")
+            return
+        
+        # Check if inference script exists
+        inference_script = os.path.join(hybridqo_dir, "inference_hybridqo.py")
+        if not os.path.exists(inference_script):
+            print(f"Error: HybridQO inference script not found at {inference_script}")
+            return
+        
+        # Run the inference script
+        print("Starting HybridQO inference...")
+        result = os.system(f"cd {hybridqo_dir} && python inference_hybridqo.py")
+        
+        if result == 0:
+            print("✅ HybridQO inference completed successfully!")
+        else:
+            print(f"❌ HybridQO inference failed with exit code {result}")
+    
+    elif lqo_name == "lero":
+        print("Running Lero learned query optimizer inference...")
+        print_args(lqo_name=lqo_name)
+        
+        # Check if Lero directory exists
+        lero_dir = os.path.join("benchmarks", "lqos", "Lero")
+        if not os.path.exists(lero_dir):
+            print(f"Error: Lero directory not found at {lero_dir}")
+            return
+        
+        # Check if inference script exists
+        inference_script = os.path.join(lero_dir, "inference_lero.py")
+        if not os.path.exists(inference_script):
+            print(f"Error: Lero inference script not found at {inference_script}")
+            return
+        
+        # Run the inference script
+        print("Starting Lero inference...")
+        result = os.system(f"cd {lero_dir} && python inference_lero.py")
+        
+        if result == 0:
+            print("✅ Lero inference completed successfully!")
+        else:
+            print(f"❌ Lero inference failed with exit code {result}")
+            
+    else:
+        print(f"Error: Unknown LQO '{lqo_name}'")
+        print("Available LQO: bao, balsa, hybridqo, lero")
+        return
+
+
 def main():
     session = PromptSession(
         history=FileHistory(os.path.join(os.path.dirname(__file__), ".cli_history"))
@@ -241,7 +480,17 @@ def main():
                 handle_delete_data(tokens)
                 continue
 
-            if main_command in ["tqo", "tid", "tcc", "iqo", "iid", "icc"]:
+            if main_command == "tqo":
+                # Train learned query optimizer command
+                handle_tqo(tokens)
+                continue
+
+            if main_command == "iqo":
+                # Inference learned query optimizer command
+                handle_iqo(tokens)
+                continue
+
+            if main_command in ["tid", "tcc", "iid", "icc"]:
                 print("Error: Training or inference commands are not yet implemented.")
                 continue
 

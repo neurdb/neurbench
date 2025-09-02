@@ -2,18 +2,18 @@ FROM debian:buster
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装依赖
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     build-essential gcc g++ \
     libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt1-dev libssl-dev \
     wget curl git sudo nano
 
-# 创建 postgres 用户
+# Create postgres user
 RUN useradd -m postgres
 RUN echo 'postgres:postgres' | chpasswd
 RUN usermod -aG sudo postgres
 
-# 设置默认用户与工作目录
+# Set the default user to postgres and the workspace to /workspace
 # USER postgres
 WORKDIR /workspace
 
