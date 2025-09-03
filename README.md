@@ -66,10 +66,10 @@ python cli.py
 |---------|-------------|---------|
 | `h`, `help` | Show help message | `h` |
 | `q`, `quit` | Exit CLI | `q` |
-| `gd [DATASET] [TABLE] [DRIFT] [SCALE]` | Generate drifted data | `gd imdb movie 0.3 8.0` |
-| `dd [DATASET] [TABLE]` | Delete data generator models | `dd imdb movie` |
-| `tqo [LQO_NAME]` | Train learned query optimizer | `tqo bao` |
-| `iqo [LQO_NAME]` | Run LQO inference | `iqo bao` |
+| `gd DATASET [TABLE] DRIFT [SCALE]` | Generate drifted data | `gd imdb movie 0.3 8.0` |
+| `dd DATASET [TABLE]` | Delete data generator models | `dd imdb movie` |
+| `tqo LQO_NAME` | Train learned query optimizer | `tqo bao` |
+| `iqo LQO_NAME` | Run LQO inference | `iqo bao` |
 
 ### Supported Learned Query Optimizers (LQOs)
 
