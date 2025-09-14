@@ -6,6 +6,8 @@ from config import *
 import fcntl
 import psycopg2
 
+NUM_EXECUTIONS = 3
+
 def time_sleep():
     import time
     time.sleep(1.5)
@@ -158,11 +160,12 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
             # 3. run current query 
             run_start = time()
             try:
-                _, latency_json = run_query("EXPLAIN (ANALYZE, TIMING, VERBOSE, COSTS, SUMMARY, FORMAT JSON) " + sql, run_args)
-                latency_json = latency_json[0][0]
-                if len(latency_json) == 2:
-                    # remove bao's prediction
-                    latency_json = [latency_json[1]]
+                for i in range(NUM_EXECUTIONS):
+                    _, latency_json = run_query("EXPLAIN (ANALYZE, TIMING, VERBOSE, COSTS, SUMMARY, FORMAT JSON) " + sql, run_args)
+                    latency_json = latency_json[0][0]
+                    if len(latency_json) == 2:
+                        # remove bao's prediction
+                        latency_json = [latency_json[1]]
             except Exception as e:
                 if  time() - run_start > (TIMEOUT / 1000 * 0.9):
                     # Execution timeout

@@ -69,12 +69,12 @@ import pg_executor
 from pg_executor  import dbmsx_executor
 import train_utils
 import experiments  # noqa # pylint: disable=unused-import
-import experiments_debug
-import exp_job_data_shift
+# import experiments_debug
+import exp_job
 # import exp_job_light_debug
 # import exp_job_light_train
-import exp_job_light
-import exp_stack
+# import exp_job_light
+# import exp_stack
 import json
 
 FLAGS = flags.FLAGS

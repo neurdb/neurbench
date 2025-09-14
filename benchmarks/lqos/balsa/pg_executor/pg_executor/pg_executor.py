@@ -43,7 +43,7 @@ LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:54333/imdb_ori"
 REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
 
 QUERY_LOG_FILE = 'query_log_file.txt'
-NUM_EXECUTIONS = 1
+NUM_EXECUTIONS = 3
 
 # TPC-H.
 # LOCAL_DSN = "postgres://psycopg:psycopg@localhost/tpch-sf10"

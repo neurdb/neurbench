@@ -1,121 +1,44 @@
-cmake_minimum_required(VERSION 3.10)
-project(WOSD)
+cmake_minimum_required (VERSION 3.14)
+project (GRE)
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-if(UNIX AND NOT APPLE)
-    set(LINUX TRUE)
-endif()
+include(FetchContent)
+include(ExternalProject)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -Wfatal-errors -march=native")
-
-# Enable OpenMP if available
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-fopenmp HAS_OPENMP)
-if (HAS_OPENMP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-endif()
+find_package(OpenMP)
+find_package(MKL REQUIRED)
+find_package(JeMalloc REQUIRED)
+find_package(TBB REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
-find_package(Boost REQUIRED COMPONENTS chrono)
+include_directories(${MKL_INCLUDE_DIRS})
+include_directories(${TBB_INCLUDE_DIRS})
+include_directories(${JEMALLOC_INCLUDE_DIR})
+include_directories(SYSTEM src/competitor/hot/src/libs/hot/commons/include)
+include_directories(SYSTEM src/competitor/hot/src/libs/hot/rowex/include)
+include_directories(SYSTEM src/competitor/hot/src/libs/hot/single-threaded/include)
+include_directories(SYSTEM src/competitor/hot/src/libs/idx/content-helpers/include)
 
-# find_library(JemallocLib jemalloc)
-# find_library(TbbLib tbb)
+add_compile_options(-faligned-new -march=native -g -O3)
 
-set(MKL_INCLUDE_DIRECTORY "/users/guoyu/intel/oneapi/mkl/2024.0/include")
-set(MKL_LINK_DIRECTORY "/users/guoyu/intel/oneapi/mkl/2024.0/lib")
+# add_subdirectory(src/competitor/wormhole)
+add_subdirectory(src/competitor/wormhole_u64)
+add_subdirectory(src/competitor/masstree)
+add_subdirectory(src/competitor/rmi)
 
-set(TBB_INCLUDE_DIRECTORY "/users/lingze/intel/oneapi/tbb/2021.13/include")
-set(TBB_LINK_DIRECTORY "/users/lingze/intel/oneapi/tbb/2021.13/lib")
-
-set(JEMALLOC_INCLUDE_DIRECTORY "/users/lingze/cpp_pkg/jemalloc-5.3.0/include/jemalloc")
-set(JEMALLOC_LINK_DIRECTORY "/users/lingze/cpp_pkg/jemalloc-5.3.0/lib")
-
-
-add_subdirectory(dtl)
-
-if (${APPLE})
-    include_directories(/usr/local/include/) # required by Mac OS to find boost
-endif ()
-
-include_directories(${MKL_INCLUDE_DIRECTORY} ${TBB_INCLUDE_DIRECTORY} ${JEMALLOC_INCLUDE_DIRECTORY})
-link_directories(${MKL_LINK_DIRECTORY} ${TBB_LINK_DIRECTORY} ${JEMALLOC_LINK_DIRECTORY})
-
-set(SOURCE_FILES util.h)
-file(GLOB_RECURSE RMI_SOURCES "competitors/rmi/*.cpp")
-file(GLOB_RECURSE BENCH_SOURCES "benchmarks/*.cc")
-file(GLOB_RECURSE SEARCH_SOURCES "searches/*.h" "searches/search.cpp")
-
-
-# Exclude the specific file from the list
-list(REMOVE_ITEM BENCH_SOURCES "${CMAKE_SOURCE_DIR}/benchmarks/benchmark_rmi.cc")
-
-
-if (${APPLE})
-    # Certain headers (e.g., byteswap) not supported under Mac OS.
-    list(REMOVE_ITEM BENCH_SOURCES "${CMAKE_SOURCE_DIR}/benchmarks/benchmark_wormhole.cc")
-endif ()
-
-add_executable(searches searches.cpp ${SOURCE_FILES} ${SEARCH_SOURCES})
-add_executable(generate generate.cc ${SOURCE_FILES})
-add_executable(drift_generate drift_generate.cc ${SOURCE_FILES})
-
-target_include_directories(generate
-        PRIVATE "competitors/finedex/include")
-target_link_libraries(generate Threads::Threads)
-
-target_include_directories(drift_generate
-        PRIVATE "competitors/finedex/include")
-target_link_libraries(drift_generate Threads::Threads)
-
-
-
-if (${LINUX})
-    add_custom_target(
-            libwh
-            COMMAND make libwh.so
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/wormhole/
+# microbench
+add_executable(microbench
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/benchmark/microbench.cpp
+        $<TARGET_OBJECTS:rmi_sources>
     )
-endif ()
 
-# add_executable(benchmark benchmark.cc ${SOURCE_FILES} ${RMI_SOURCES} ${BENCH_SOURCES} ${SEARCH_SOURCES})
+target_link_libraries(microbench
+        PRIVATE
+        # WORMHOLE
+        WORMHOLEU64
+        MASSTREE
+)
 
-# exclude RMI
-add_executable(benchmark benchmark.cc ${SOURCE_FILES}  ${BENCH_SOURCES} ${SEARCH_SOURCES})
-
-target_compile_definitions(benchmark PRIVATE NDEBUGGING)
-
-target_include_directories(benchmark
-        PRIVATE "competitors/CHT/include"
-        PRIVATE "competitors/FST/include"
-        PRIVATE "competitors/PGM-index/include"
-        PRIVATE "competitors/rs/include"
-        PRIVATE "competitors/stx-btree-0.9/include"
-        PRIVATE "competitors/ts/include"
-        PRIVATE ${Boost_INCLUDE_DIRS})
-
-if (${LINUX})
-    target_include_directories(benchmark PRIVATE "wormhole")
-    target_link_libraries(benchmark PRIVATE ${CMAKE_SOURCE_DIR}/wormhole/libwh.so)
-    add_dependencies(benchmark libwh)
-endif ()
-
-target_link_libraries(benchmark
-        PRIVATE Threads::Threads dtl
-        PRIVATE ${Boost_LIBRARIES})
-        
-# target_link_libraries(benchmark
-#         # PRIVATE ${TbbLib} 
-#         # PRIVATE ${JemallocLib}
-#         PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-
-target_link_libraries(benchmark
-        PRIVATE jemalloc
-        PRIVATE tbb
-        PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-
-target_link_libraries(benchmark
-        PRIVATE dl
-        PRIVATE mkl_rt)
-
+target_link_libraries(microbench PUBLIC OpenMP::OpenMP_CXX ${JEMALLOC_LIBRARIES} ${MKL_LIBRARIES} ${TBB_LIBRARIES})

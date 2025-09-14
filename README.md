@@ -66,10 +66,14 @@ python cli.py
 |---------|-------------|---------|
 | `h`, `help` | Show help message | `h` |
 | `q`, `quit` | Exit CLI | `q` |
+| `set [KEY] [VALUE]` | Set global configuration | `set drift 0.5` |
+| `set` | Show current configuration | `set` |
 | `gd DATASET [TABLE] DRIFT [SCALE]` | Generate drifted data | `gd imdb movie 0.3 8.0` |
 | `dd DATASET [TABLE]` | Delete data generator models | `dd imdb movie` |
 | `tqo LQO_NAME` | Train learned query optimizer | `tqo bao` |
 | `iqo LQO_NAME` | Run LQO inference | `iqo bao` |
+| `idx [IDX_NAME]` | Test learned index | `idx alex` |
+| `lcc` | Test learned concurrency control | `lcc` |
 
 ### Supported Learned Query Optimizers (LQOs)
 
@@ -77,6 +81,38 @@ python cli.py
 - **Balsa** - Deep reinforcement learning optimizer using sim-to-real learning
 - **HybridQO** - Hybrid cost-based and learning-based approach with MCTS
 - **Lero** - Learning-to-rank optimizer for query plan selection
+
+### Supported Learned Indexes (LIDX)
+
+- **ALEX** - Updatable Adaptive Learned Index (SIGMOD 2020)
+- **ART** - Adaptive Radix Tree (ICDE 2013)
+- **B+ Tree** - Traditional baseline index
+- **PGM-Index** - Piecewise Geometric Model Index (VLDB 2020)
+- **XIndex** - Scalable Learned Index (SIGMOD 2019)
+
+### Supported Learned Concurrency Control (LCC)
+
+- **Polyjuice** - Learned concurrency control framework with ERL training
+
+### Global Configuration
+
+The CLI supports global configuration for common parameters:
+
+```bash
+# Set global configuration
+[neurbench]> set dataset books
+[neurbench]> set drift 0.5
+
+# Show current configuration
+[neurbench]> set
+
+# Use simplified commands with global settings
+[neurbench]> tqo bao       # Train Bao with current settings
+[neurbench]> iqo bao       # Test Bao with current settings
+[neurbench]> idx alex      # Test ALEX with current settings
+[neurbench]> idx art       # Test ART with current settings
+[neurbench]> lcc           # Test Polyjuice 
+```
 
 ### Complete Workflow Example
 
@@ -121,6 +157,12 @@ python train_balsa.py --experiment exp_job_light --verbose
 - **HybridQO**: [Original Documentation](benchmarks/lqos/hybrid_qo/README.md) - HybridQO configuration
 - **Lero**: [Original Documentation](benchmarks/lqos/Lero/README.md) - Lero implementation details
 
+### Learned Index (LIDX) Documentation
+- **[LIDX Framework Guide](benchmarks/lidx/README.md)** - Complete LIDX benchmark framework
+
+### Learned Concurrency Control (LCC) Documentation
+- **[LCC Framework Guide](benchmarks/lcc/README.md)** - Complete LCC benchmark framework
+
 ## Environment Setup
 
 ### Prerequisites
@@ -160,7 +202,7 @@ This benchmark suite builds upon and integrates with several state-of-the-art le
 - **Bao** (SIGMOD 2021) - Making learned query optimization practical
 - **Balsa** (SIGMOD 2022) - Learning a query optimizer without expert demonstrations  
 - **HybridQO** (VLDB 2022) - Cost-based or learning-based hybrid approach
-- **Lero** - Learning-to-rank query optimizer
+- **Lero** (VLDB 2023) - Learning-to-rank query optimizer
 
 ## License
 

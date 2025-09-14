@@ -1,7 +1,0 @@
-target/
-Cargo.lock
-*~
-.ipynb_checkpoints/
-*\#
-\#*
-rmi_data

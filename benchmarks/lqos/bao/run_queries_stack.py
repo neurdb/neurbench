@@ -9,7 +9,7 @@ import glob
 
 USE_BAO = True
 TIMEOUT_LIMIT = 3 * 60 * 1000
-NUM_EXECUTIONS = 2
+NUM_EXECUTIONS = 3
 
 
 # https://stackoverflow.com/questions/312443/
