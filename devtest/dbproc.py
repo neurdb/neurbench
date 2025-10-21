@@ -5,10 +5,10 @@ from typing import List, Optional
 
 import pandas as pd
 
-import neurbench
-from neurbench import config, dist, fileop, sample
-from neurbench.drift import find_q, jensenshannon
-from neurbench.util import formatted_list
+import nrbench
+from nrbench import config, dist, fileop, sample
+from nrbench.drift import find_q, jensenshannon
+from nrbench.util import formatted_list
 
 
 def is_numerical_column(series: pd.Series, threshold: int = 20):
@@ -119,7 +119,7 @@ class SeriesDistribution:
 """
 
 
-class TableProcessor(neurbench.Processor):
+class TableProcessor(nrbench.Processor):
     def __init__(
         self,
         dbname: str,
@@ -141,7 +141,7 @@ class TableProcessor(neurbench.Processor):
         self.dists = {}
         self.new_data = {}
 
-        self._config, err = neurbench.load_config(self.config_path)
+        self._config, err = nrbench.load_config(self.config_path)
         if err is not None:
             print("WARN  loading config: ", err)
 
@@ -323,7 +323,7 @@ def main():
     if not 0.0 <= args.drift <= 1.0:
         parser.error("Drift factor must be between 0.0 and 1.0")
 
-    tp: neurbench.Processor = TableProcessor(
+    tp: nrbench.Processor = TableProcessor(
         args.dbname,
         args.table,
         args.config,
@@ -331,7 +331,7 @@ def main():
         args.skewed,
     )
 
-    neurbench.make_drift(tp, "", args.input, args.output, args.config, args.drift)
+    nrbench.make_drift(tp, "", args.input, args.output, args.config, args.drift)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# NeurBench CLI Quick Reference
+# NRBench CLI Quick Reference
 
 ## 🚀 Quick Start
 
@@ -68,22 +68,22 @@ dd stack                    # Delete all STACK data
 
 ### 1. Generate Training Data
 ```bash
-[neurbench]> gd imdb movie 0.3 8.0
+[nrbench]> gd imdb movie 0.3 8.0
 ```
 
 ### 2. Train LQO
 ```bash
-[neurbench]> tqo bao
+[nrbench]> tqo bao
 ```
 
 ### 3. Run Inference
 ```bash
-[neurbench]> iqo bao
+[nrbench]> iqo bao
 ```
 
 ### 4. Cleanup (Optional)
 ```bash
-[neurbench]> dd imdb movie
+[nrbench]> dd imdb movie
 ```
 
 ## 🛠️ Advanced Usage

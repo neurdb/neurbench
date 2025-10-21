@@ -1,6 +1,6 @@
 from experiments import *
 
-######################### NeurBench (NB) Revision #########################
+######################### NRBench (NB) Revision #########################
 
 
 ######################### 1. JOB query on multiple datasets #########################

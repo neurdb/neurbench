@@ -1,6 +1,6 @@
 This part of the test code is cloned and updated based on the codebase used in the paper "Is Your Learned Query Optimizer Behaving As You Expect? A Machine Learning Perspective", VLDB 2024.
 
-# NeurBench LQO Framework
+# NRBench LQO Framework
 
 This repository includes a comprehensive framework for learned query optimizer methods with automated training and inference capabilities. The framework provides a unified CLI interface for managing multiple LQO implementations.
 
@@ -32,7 +32,7 @@ This repository includes a comprehensive framework for learned query optimizer m
 
 ## Quick Start
 
-### 1. Start NeurBench CLI
+### 1. Start NRBench CLI
 ```bash
 cd benchmarks/lqos
 python cli.py
@@ -40,24 +40,24 @@ python cli.py
 
 ### 2. Available Commands
 ```bash
-[neurbench]> h                    # Show help
-[neurbench]> tqo [LQO_NAME]      # Train LQO
-[neurbench]> iqo [LQO_NAME]      # Run LQO inference
-[neurbench]> gd [DATASET] [TABLE] [DRIFT] [SCALE]  # Generate drifted data
-[neurbench]> dd [DATASET] [TABLE] # Delete data generator models
+[nrbench]> h                    # Show help
+[nrbench]> tqo [LQO_NAME]      # Train LQO
+[nrbench]> iqo [LQO_NAME]      # Run LQO inference
+[nrbench]> gd [DATASET] [TABLE] [DRIFT] [SCALE]  # Generate drifted data
+[nrbench]> dd [DATASET] [TABLE] # Delete data generator models
 ```
 
 ### 3. Training Examples
 ```bash
 # Train Bao LQO
-[neurbench]> tqo bao
+[nrbench]> tqo bao
 
 ```
 
 ### 4. Inference Examples
 ```bash
 # Run Bao inference
-[neurbench]> iqo bao
+[nrbench]> iqo bao
 
 ```
 
@@ -253,17 +253,17 @@ LQO-specific packages are automatically installed during training.
 python cli.py
 
 # 2. Generate training data
-[neurbench]> gd imdb movie 0.3 8.0
+[nrbench]> gd imdb movie 0.3 8.0
 
 # 3. Train LQO
-[neurbench]> tqo bao
+[nrbench]> tqo bao
 
 # 4. Run inference
-[neurbench]> iqo bao
+[nrbench]> iqo bao
 
 # 5. Compare with other LQOs
-[neurbench]> tqo balsa
-[neurbench]> iqo balsa
+[nrbench]> tqo balsa
+[nrbench]> iqo balsa
 ```
 
 ### Development Workflow
@@ -280,7 +280,7 @@ python inference_bao.py
 
 # 4. Cleanup (if needed)
 cd .. && python cli.py
-[neurbench]> dd imdb movie
+[nrbench]> dd imdb movie
 ```
 
 ## Troubleshooting

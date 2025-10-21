@@ -1,6 +1,6 @@
-# NeurBench
+# NRBench
 
-**NeurBench** is a benchmark suite designed to evaluate end-to-end learned DBMSs containing all learned components under controllable data and workload drift.
+**NRBench** is a benchmark suite designed to evaluate end-to-end learned DBMSs containing all learned components under controllable data and workload drift.
 
 ## Dependencies
 
@@ -13,10 +13,10 @@ conda env create -f environment.yml
 
 ## Tools & Utilities
 
-NeurBench provides a drift-aware data and workload generation tool that effectively simulates real-world drift while preserving inherent correlations.
+NRBench provides a drift-aware data and workload generation tool that effectively simulates real-world drift while preserving inherent correlations.
 
 ```
-conda activate neurbench
+conda activate NRBench
 ```
 
 ### Data and Workload Generator
@@ -47,11 +47,11 @@ python qproc.py --input_file=orig_queries.sql --output=drifted_01_queries.sql --
 
 ## Benchmarks
 
-We employ NeurBench to evaluate state-of-the-art learned query optimizers, learned indexes, and learned concurrency control. We include the codes of evaluators that we used in `benchmark` folder.
+We employ NRBench to evaluate state-of-the-art learned query optimizers, learned indexes, and learned concurrency control. We include the codes of evaluators that we used in `benchmark` folder.
 
 ## Interactive CLI Interface
 
-NeurBench provides an interactive command-line interface for managing learned query optimizers (LQOs) and data generation workflows.
+NRBench provides an interactive command-line interface for managing learned query optimizers (LQOs) and data generation workflows.
 
 ### Quick Start with CLI
 
@@ -100,34 +100,34 @@ The CLI supports global configuration for common parameters:
 
 ```bash
 # Set global configuration
-[neurbench]> set dataset books
-[neurbench]> set drift 0.5
+[nrbench]> set dataset books
+[nrbench]> set drift 0.5
 
 # Show current configuration
-[neurbench]> set
+[nrbench]> set
 
 # Use simplified commands with global settings
-[neurbench]> tqo bao       # Train Bao with current settings
-[neurbench]> iqo bao       # Test Bao with current settings
-[neurbench]> idx alex      # Test ALEX with current settings
-[neurbench]> idx art       # Test ART with current settings
-[neurbench]> lcc           # Test Polyjuice 
+[nrbench]> tqo bao       # Train Bao with current settings
+[nrbench]> iqo bao       # Test Bao with current settings
+[nrbench]> idx alex      # Test ALEX with current settings
+[nrbench]> idx art       # Test ART with current settings
+[nrbench]> lcc           # Test Polyjuice 
 ```
 
 ### Complete Workflow Example
 
 ```bash
 # 1. Generate training data
-[neurbench]> gd imdb 0.3 8.0
+[nrbench]> gd imdb 0.3 8.0
 
 # 2. Train LQO
-[neurbench]> tqo bao
+[nrbench]> tqo bao
 
 # 3. Run inference
-[neurbench]> iqo bao
+[nrbench]> iqo bao
 
 # 4. Cleanup (optional)
-[neurbench]> dd imdb
+[nrbench]> dd imdb
 ```
 
 ### Advanced CLI Usage

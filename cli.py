@@ -63,13 +63,13 @@ def print_args(**kwargs):
 
 
 print(
-    "Welcome to NeurBench interactive shell. Type 'h' to view a list of commands. Type 'q' to quit."
+    "Welcome to NRBench interactive shell. Type 'h' to view a list of commands. Type 'q' to quit."
 )
 
 
 def show_help():
     print(
-        """NeurBench - Available Commands
+        """NRBench - Available Commands
 "======================================================"
 
 Core Commands:
@@ -647,7 +647,7 @@ def main():
 
     while True:
         try:
-            text = session.prompt("[neurbench]> ")
+            text = session.prompt("[NRBench]> ")
             text = text.strip()
 
         except KeyboardInterrupt:

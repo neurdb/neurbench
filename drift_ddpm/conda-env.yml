@@ -1,4 +1,4 @@
-name: neurbench
+name: nrbench
 channels:
   - nvidia
   - conda-forge
@@ -110,4 +110,4 @@ dependencies:
       - triton==3.1.0
       - typing-extensions==4.12.2
       - urllib3==2.3.0
-prefix: /home/user/anaconda3/envs/neurbench
+prefix: /home/user/anaconda3/envs/nrbench

@@ -1,4 +1,4 @@
-name: neurbench
+name: nrbench
 channels:
   - nvidia
   - conda-forge

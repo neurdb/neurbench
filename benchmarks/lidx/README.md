@@ -1,6 +1,6 @@
 # LIDX (Learned Index) Benchmark Framework
 
-This document describes how to use the LIDX benchmark functionality within the NeurBench framework.
+This document describes how to use the LIDX benchmark functionality within the NRBench framework.
 
 ## Overview
 
@@ -31,17 +31,17 @@ bash datasets/download.sh
 ### 2. Run Benchmark via CLI
 
 ```bash
-# From NeurBench root directory
+# From NRBench root directory
 python cli.py
 
 # Test ALEX index with 0.3 drift on IMDB 4M dataset
-[neurbench]> idx alex 0.3
+[nrbench]> idx alex 0.3
 
 # Test ART index with 0.5 drift on Books 200M dataset  
-[neurbench]> idx art 0.5 books 200M
+[nrbench]> idx art 0.5 books 200M
 
 # Test PGM index with 0.2 drift on Facebook 200M dataset
-[neurbench]> idx pgm 0.2 fb 200M
+[nrbench]> idx pgm 0.2 fb 200M
 ```
 
 ### 3. Run Benchmark Directly
@@ -253,14 +253,14 @@ This will check:
 - Script functionality  
 - Basic benchmark execution
 
-## Integration with NeurBench
+## Integration with NRBench
 
-The LIDX framework integrates seamlessly with NeurBench:
+The LIDX framework integrates seamlessly with NRBench:
 
 1. **CLI Integration**: Use `idx` command from main CLI
 2. **Data Generation**: Leverages existing drift generation
-3. **Result Analysis**: Compatible with NeurBench analysis tools
-4. **Workflow**: Fits into complete NeurBench evaluation pipeline
+3. **Result Analysis**: Compatible with NRBench analysis tools
+4. **Workflow**: Fits into complete NRBench evaluation pipeline
 
 ## Advanced Usage
 

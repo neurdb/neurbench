@@ -1205,7 +1205,7 @@ class JOBRandSplit_NoExplore(Balsa_JOBRandSplit):
         return p
 
 
-######################### NeurBench Code #########################
+######################### NRBench Code #########################
 
 JOB_JOIN_PRED_TABLE_TEST = [
     "1a.sql",

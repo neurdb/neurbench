@@ -7,7 +7,7 @@ import bm25s
 import pandas as pd
 import numpy as np
 
-from neurbench.query import make_query_features_map, build_feature_retriever, tokenize
+from nrbench.query import make_query_features_map, build_feature_retriever, tokenize
 
 
 FEATURES = ["tables", "joins", "predicates"]

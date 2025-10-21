@@ -205,7 +205,7 @@ def main():
     if passed == total:
         print("🎉 All tests passed! Bao inference environment is ready.")
         print("\nTo run inference:")
-        print("1. From NeurBench CLI: iqo bao")
+        print("1. From NRBench CLI: iqo bao")
         print("2. Direct execution: python inference_bao.py")
         print("3. Test only: python inference_bao.py --test-only")
         sys.exit(0)

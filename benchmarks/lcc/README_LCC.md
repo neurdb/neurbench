@@ -1,6 +1,6 @@
 # LCC (Learned Concurrency Control) Framework
 
-This document describes how to use the LCC benchmark functionality within the NeurBench framework.
+This document describes how to use the LCC benchmark functionality within the NRBench framework.
 
 ## Overview
 
@@ -9,7 +9,7 @@ LCC provides benchmarking for Polyjuice, a learned concurrency control framework
 1. **Policy Training**: ERL (Evolutionary Reinforcement Learning) training
 2. **Benchmark Execution**: TPCC workload testing
 3. **Performance Measurement**: Basic concurrency control metrics
-4. **Integration**: Seamless CLI integration with NeurBench
+4. **Integration**: Seamless CLI integration with NRBench
 
 ## Quick Start
 
@@ -28,11 +28,11 @@ python test_lcc.py
 ### 2. Run Benchmark via CLI
 
 ```bash
-# From NeurBench root directory
+# From NRBench root directory
 python cli.py
 
 # Test Polyjuice with ERL training
-[neurbench]> lcc
+[nrbench]> lcc
 ```
 
 ### 3. Run Test Script Directly
@@ -163,14 +163,14 @@ This will check:
 - Script functionality  
 - Basic benchmark execution
 
-## Integration with NeurBench
+## Integration with NRBench
 
-The LCC framework integrates seamlessly with NeurBench:
+The LCC framework integrates seamlessly with NRBench:
 
 1. **CLI Integration**: Use `lcc` command from main CLI
 2. **Global Configuration**: Leverages existing drift and dataset settings
-3. **Result Analysis**: Compatible with NeurBench analysis tools
-4. **Workflow**: Fits into complete NeurBench evaluation pipeline
+3. **Result Analysis**: Compatible with NRBench analysis tools
+4. **Workflow**: Fits into complete NRBench evaluation pipeline
 
 ## Advanced Usage
 

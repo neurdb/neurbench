@@ -34,17 +34,17 @@ The `iqo bao` command runs inference using a trained Bao model:
 
 ## Usage
 
-### From NeurBench CLI
+### From NRBench CLI
 
 ```bash
-# Start NeurBench interactive shell
+# Start NRBench interactive shell
 python cli.py
 
 # Train Bao LQO
-[neurbench]> tqo bao
+[nrbench]> tqo bao
 
 # Run Bao inference
-[neurbench]> iqo bao
+[nrbench]> iqo bao
 ```
 
 ### Direct Script Execution
@@ -183,9 +183,9 @@ bao/
 └── run_queries.py       # Query execution utilities
 ```
 
-## Integration with NeurBench
+## Integration with NRBench
 
-Both commands integrate with the NeurBench framework:
+Both commands integrate with the NRBench framework:
 - Automatically handle directory navigation
 - Provide consistent error handling
 - Integrate with CLI help system

@@ -8,11 +8,11 @@ import pandas as pd
 import pglast
 from scipy.spatial.distance import jensenshannon
 
-import neurbench
-from neurbench import deterministic, dist, fileop, sample
-from neurbench.drift import find_q
-from neurbench.query import SQLInfoExtractor
-from neurbench.util import formatted_list, tuple_to_list
+import nrbench
+from nrbench import deterministic, dist, fileop, sample
+from nrbench.drift import find_q
+from nrbench.query import SQLInfoExtractor
+from nrbench.util import formatted_list, tuple_to_list
 
 TYPES = ["tables", "predicates", "joins", "aliasname_fullname"]
 
@@ -61,7 +61,7 @@ class MetadataDistribution:
 """
 
 
-class QueryProcessor(neurbench.Processor):
+class QueryProcessor(nrbench.Processor):
     def __init__(
             self,
             dbname: str,
@@ -85,7 +85,7 @@ class QueryProcessor(neurbench.Processor):
 
         self._create = False
 
-        self._config, err = neurbench.load_config(
+        self._config, err = nrbench.load_config(
             self.config_path, {"bin_values": {}, "map": {}}
         )
         if err is not None:
@@ -313,7 +313,7 @@ def main():
 
     p = QueryProcessor(args.dbname, args.type, args.config, args.skewed, args.dump_feature_table)
 
-    neurbench.make_drift(
+    nrbench.make_drift(
         p, args.input_file, args.input_dir, args.output, args.config, args.drift, args.n_samples
     )
 
