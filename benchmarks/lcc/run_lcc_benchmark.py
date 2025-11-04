@@ -57,7 +57,7 @@ class LCCBenchmarkRunner:
         
         # Check if build directory exists
         if not self.build_dir.exists():
-            self.log("❌ Build directory not found. Please build LCC first:")
+            self.log("[FAILED] Build directory not found. Please build LCC first:")
             self.log("   cd benchmarks/lcc")
             self.log("   MODE=perf make -j dbtest")
             return False
@@ -65,15 +65,15 @@ class LCCBenchmarkRunner:
         # Check if benchmark binary exists
         benchmark_binary = self.build_dir / "benchmarks" / "dbtest"
         if not benchmark_binary.exists():
-            self.log("❌ Benchmark binary not found. Please build LCC first.")
+            self.log("[FAILED] Benchmark binary not found. Please build LCC first.")
             return False
             
         # Check if training directory exists
         if not self.training_dir.exists():
-            print(f"❌ Training directory not found at {self.training_dir}")
+            print(f"[FAILED] Training directory not found at {self.training_dir}")
             return False
             
-        self.log("✅ Prerequisites check passed")
+        self.log("[SUCCESS] Prerequisites check passed")
         return True
         
     def train_policy(self):
@@ -85,7 +85,7 @@ class LCCBenchmarkRunner:
         elif self.policy == "genetic":
             return self.train_genetic_policy()
         else:
-            self.log(f"❌ Unknown policy type: {self.policy}")
+            self.log(f"[FAILED] Unknown policy type: {self.policy}")
             return False
             
     def train_erl_policy(self):
@@ -95,7 +95,7 @@ class LCCBenchmarkRunner:
         # Check if ERL training script exists
         erl_script = self.training_dir / "ERL_main.py"
         if not erl_script.exists():
-            self.log(f"❌ ERL training script not found at {erl_script}")
+            self.log(f"[FAILED] ERL training script not found at {erl_script}")
             return False
             
         # Prepare training command
@@ -119,14 +119,14 @@ class LCCBenchmarkRunner:
             result = subprocess.run(cmd, cwd=self.training_dir, capture_output=True, text=True)
             
             if result.returncode == 0:
-                self.log("✅ ERL training completed successfully!")
+                self.log("[SUCCESS] ERL training completed successfully!")
                 return True
             else:
-                self.log(f"❌ ERL training failed: {result.stderr}")
+                self.log(f"[FAILED] ERL training failed: {result.stderr}")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ ERL training error: {e}")
+            self.log(f"[FAILED] ERL training error: {e}")
             return False
             
     def train_genetic_policy(self):
@@ -136,7 +136,7 @@ class LCCBenchmarkRunner:
         # Check if genetic training script exists
         genetic_script = self.training_dir / "genetic_main.py"
         if not genetic_script.exists():
-            self.log(f"❌ Genetic training script not found at {genetic_script}")
+            self.log(f"[FAILED] Genetic training script not found at {genetic_script}")
             return False
             
         # Prepare training command
@@ -159,14 +159,14 @@ class LCCBenchmarkRunner:
             result = subprocess.run(cmd, cwd=self.training_dir, capture_output=True, text=True)
             
             if result.returncode == 0:
-                self.log("✅ Genetic training completed successfully!")
+                self.log("[SUCCESS] Genetic training completed successfully!")
                 return True
             else:
-                self.log(f"❌ Genetic training failed: {result.stderr}")
+                self.log(f"[FAILED] Genetic training failed: {result.stderr}")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Genetic training error: {e}")
+            self.log(f"[FAILED] Genetic training error: {e}")
             return False
             
     def run_benchmark(self):
@@ -176,7 +176,7 @@ class LCCBenchmarkRunner:
         # Check if benchmark binary exists
         benchmark_binary = self.build_dir / "benchmarks" / "dbtest"
         if not benchmark_binary.exists():
-            self.log(f"❌ Benchmark binary not found at {benchmark_binary}")
+            self.log(f"[FAILED] Benchmark binary not found at {benchmark_binary}")
             return False
             
         # Prepare benchmark command
@@ -208,20 +208,20 @@ class LCCBenchmarkRunner:
             result = subprocess.run(cmd, cwd=self.build_dir, capture_output=True, text=True)
             
             if result.returncode == 0:
-                self.log("✅ Benchmark completed successfully!")
+                self.log("[SUCCESS] Benchmark completed successfully!")
                 self.parse_benchmark_output(result.stdout)
                 return True
             else:
-                self.log(f"❌ Benchmark failed: {result.stderr}")
+                self.log(f"[FAILED] Benchmark failed: {result.stderr}")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Benchmark error: {e}")
+            self.log(f"[FAILED] Benchmark error: {e}")
             return False
             
     def parse_benchmark_output(self, output: str):
         """Parse benchmark output and display key metrics"""
-        self.log(f"📊 {self.workload.upper()} Benchmark Results:")
+        self.log(f"[CHART] {self.workload.upper()} Benchmark Results:")
         
         # Extract key metrics from output
         lines = output.split('\n')
@@ -231,7 +231,7 @@ class LCCBenchmarkRunner:
                 
     def run_full_workflow(self):
         """Run the complete LCC workflow"""
-        self.log("🚀 Starting LCC Benchmark Workflow")
+        self.log("[LAUNCH] Starting LCC Benchmark Workflow")
         self.log(f"Mode: {self.mode}")
         self.log(f"Policy: {self.policy}")
         self.log(f"Workload: {self.workload}")
@@ -252,12 +252,12 @@ class LCCBenchmarkRunner:
         if not self.run_benchmark():
             return False
             
-        self.log("\n✅ LCC benchmark completed successfully!")
+        self.log("\n[SUCCESS] LCC benchmark completed successfully!")
         return True
         
     def cleanup(self):
         """Clean up temporary files"""
-        self.log("🧹 Cleaning up temporary files...")
+        self.log("[CLEANUP] Cleaning up temporary files...")
         
         # Remove training artifacts
         training_artifacts = [
@@ -330,7 +330,7 @@ def main():
         print("\n⚠️  Benchmark interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n[FAILED] Unexpected error: {e}")
         sys.exit(1)
 
 

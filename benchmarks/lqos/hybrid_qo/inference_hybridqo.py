@@ -23,17 +23,17 @@ class HybridQOInference:
         # Check for model files
         model_dir = self.hybridqo_dir / "model"
         if not model_dir.exists():
-            print("❌ Model directory not found")
+            print("[FAILED] Model directory not found")
             return False
         
         # Check for model files
         model_files = list(model_dir.glob("*"))
         if not model_files:
-            print("❌ Model directory is empty")
-            print("💡 Please run 'tqo hybridqo' first to train a model")
+            print("[FAILED] Model directory is empty")
+            print("[INFO] Please run 'tqo hybridqo' first to train a model")
             return False
         
-        print(f"✅ Found {len(model_files)} model files:")
+        print(f"[SUCCESS] Found {len(model_files)} model files:")
         for file in model_files:
             print(f"  - {file.name}")
         
@@ -53,10 +53,10 @@ class HybridQOInference:
         
         for file_path in required_files:
             if not (self.hybridqo_dir / file_path).exists():
-                print(f"❌ Required file not found: {file_path}")
+                print(f"[FAILED] Required file not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -72,13 +72,13 @@ class HybridQOInference:
                 from run_mcts import neur_bench_load_hinter
                 from ImportantConfig import ImportantConfig
                 
-                print("✅ Successfully imported HybridQO modules")
+                print("[SUCCESS] Successfully imported HybridQO modules")
                 
                 # Load the trained model
                 config = ImportantConfig()
                 hinter = neur_bench_load_hinter(config, "test")
                 
-                print("✅ Successfully loaded trained model")
+                print("[SUCCESS] Successfully loaded trained model")
                 
                 # Test model prediction (basic test)
                 print("Testing model prediction...")
@@ -87,10 +87,10 @@ class HybridQOInference:
                 return True
                 
             except ImportError as e:
-                print(f"❌ Import error: {e}")
+                print(f"[FAILED] Import error: {e}")
                 return False
             except Exception as e:
-                print(f"❌ Model loading error: {e}")
+                print(f"[FAILED] Model loading error: {e}")
                 return False
             finally:
                 # Remove from path
@@ -98,7 +98,7 @@ class HybridQOInference:
                     sys.path.remove(str(self.hybridqo_dir))
                 
         except Exception as e:
-            print(f"❌ Inference tests error: {e}")
+            print(f"[FAILED] Inference tests error: {e}")
             return False
     
     def run_custom_inference(self, query_file=None):
@@ -121,14 +121,14 @@ class HybridQOInference:
             )
             
             if result.returncode == 0:
-                print("✅ Configuration test passed")
+                print("[SUCCESS] Configuration test passed")
                 return True
             else:
                 print(f"⚠ Configuration test failed: {result.stderr}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Custom inference error: {e}")
+            print(f"[FAILED] Custom inference error: {e}")
             return False
     
     def run_inference_pipeline(self, query_file=None):
@@ -154,11 +154,11 @@ class HybridQOInference:
                 if not self.run_custom_inference(query_file):
                     print("⚠ Custom inference failed, but basic tests passed")
             
-            print("🎉 HybridQO inference completed successfully!")
+            print("[DONE] HybridQO inference completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Inference failed: {e}")
+            print(f"[FAILED] Inference failed: {e}")
             return False
             
         finally:

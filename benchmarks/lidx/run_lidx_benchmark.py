@@ -56,7 +56,7 @@ class LIDXBenchmarkRunner:
         
         # Check if build directory exists
         if not self.build_dir.exists():
-            self.log("❌ Build directory not found. Please build LIDX first:")
+            self.log("[FAILED] Build directory not found. Please build LIDX first:")
             self.log("   cd benchmarks/lidx")
             self.log("   mkdir -p build && cd build")
             self.log("   cmake -DCMAKE_BUILD_TYPE=Release .. && make")
@@ -64,16 +64,16 @@ class LIDXBenchmarkRunner:
             
         # Check if benchmark binary exists
         if not self.benchmark_path.exists():
-            self.log("❌ Benchmark binary not found. Please build LIDX first.")
+            self.log("[FAILED] Benchmark binary not found. Please build LIDX first.")
             return False
             
         # Check if generator exists
         if not self.generator_path.exists():
-            self.log("❌ Data generator not found. Compiling generator...")
+            self.log("[FAILED] Data generator not found. Compiling generator...")
             if not self.compile_generator():
                 return False
                 
-        self.log("✅ Prerequisites check passed")
+        self.log("[SUCCESS] Prerequisites check passed")
         return True
         
     def compile_generator(self):
@@ -81,7 +81,7 @@ class LIDXBenchmarkRunner:
         try:
             generator_cpp = self.datasets_dir / "generator.cpp"
             if not generator_cpp.exists():
-                self.log("❌ Generator source not found")
+                self.log("[FAILED] Generator source not found")
                 return False
                 
             cmd = ["g++", "--std=c++17", str(generator_cpp), "-o", str(self.generator_path)]
@@ -89,14 +89,14 @@ class LIDXBenchmarkRunner:
             
             result = subprocess.run(cmd, cwd=self.datasets_dir, capture_output=True, text=True)
             if result.returncode != 0:
-                self.log(f"❌ Generator compilation failed: {result.stderr}")
+                self.log(f"[FAILED] Generator compilation failed: {result.stderr}")
                 return False
                 
-            self.log("✅ Generator compiled successfully")
+            self.log("[SUCCESS] Generator compiled successfully")
             return True
             
         except Exception as e:
-            self.log(f"❌ Generator compilation error: {e}")
+            self.log(f"[FAILED] Generator compilation error: {e}")
             return False
             
     def generate_drift_data(self):
@@ -105,12 +105,12 @@ class LIDXBenchmarkRunner:
         
         # Check if drift dataset already exists
         if self.drift_dataset_file.exists():
-            self.log(f"✅ Drift dataset already exists: {self.drift_dataset_file}")
+            self.log(f"[SUCCESS] Drift dataset already exists: {self.drift_dataset_file}")
             return True
             
         # Check if base dataset exists
         if not self.dataset_file.exists():
-            self.log(f"❌ Base dataset not found: {self.dataset_file}")
+            self.log(f"[FAILED] Base dataset not found: {self.dataset_file}")
             self.log("Please download datasets first using: bash download.sh")
             return False
             
@@ -144,14 +144,14 @@ class LIDXBenchmarkRunner:
         try:
             result = subprocess.run(cmd, cwd=self.datasets_dir, capture_output=True, text=True)
             if result.returncode != 0:
-                self.log(f"❌ Data generation failed: {result.stderr}")
+                self.log(f"[FAILED] Data generation failed: {result.stderr}")
                 return False
                 
-            self.log("✅ Drift data generated successfully")
+            self.log("[SUCCESS] Drift data generated successfully")
             return True
             
         except Exception as e:
-            self.log(f"❌ Data generation error: {e}")
+            self.log(f"[FAILED] Data generation error: {e}")
             return False
             
     def run_benchmark(self, operation_type: str, read_ratio: float = 0.0, 
@@ -185,7 +185,7 @@ class LIDXBenchmarkRunner:
             result = subprocess.run(cmd, cwd=self.build_dir, capture_output=True, text=True)
             
             if result.returncode != 0:
-                self.log(f"❌ Benchmark failed: {result.stderr}")
+                self.log(f"[FAILED] Benchmark failed: {result.stderr}")
                 return False
                 
             # Parse and display results
@@ -193,12 +193,12 @@ class LIDXBenchmarkRunner:
             return True
             
         except Exception as e:
-            self.log(f"❌ Benchmark error: {e}")
+            self.log(f"[FAILED] Benchmark error: {e}")
             return False
             
     def parse_benchmark_output(self, output: str, operation_type: str):
         """Parse benchmark output and display key metrics"""
-        self.log(f"📊 {operation_type.title()} Benchmark Results:")
+        self.log(f"[CHART] {operation_type.title()} Benchmark Results:")
         
         # Extract key metrics from output
         lines = output.split('\n')
@@ -209,11 +209,11 @@ class LIDXBenchmarkRunner:
         # Look for result file
         result_files = list(self.build_dir.glob(f"results_{operation_type}_{self.index}_{int(self.drift * 100)}.csv"))
         if result_files:
-            self.log(f"📁 Results saved to: {result_files[0]}")
+            self.log(f"[FOLDER] Results saved to: {result_files[0]}")
             
     def run_full_benchmark(self):
         """Run the complete benchmark workflow"""
-        self.log("🚀 Starting LIDX Benchmark Workflow")
+        self.log("[LAUNCH] Starting LIDX Benchmark Workflow")
         self.log(f"Dataset: {self.dataset} ({self.size})")
         self.log(f"Index: {self.index}")
         self.log(f"Drift: {self.drift}")
@@ -229,31 +229,31 @@ class LIDXBenchmarkRunner:
             return False
             
         # Step 3: Run insert benchmark
-        self.log("\n📝 Phase 1: Insert Operations")
+        self.log("\n[NOTE] Phase 1: Insert Operations")
         if not self.run_benchmark("insert", read_ratio=0.0, insert_ratio=1.0):
             return False
             
         # Step 4: Run read benchmark
-        self.log("\n📖 Phase 2: Read Operations")
+        self.log("\n[DOCS] Phase 2: Read Operations")
         if not self.run_benchmark("read", read_ratio=1.0, insert_ratio=0.0):
             return False
             
         # Step 5: Run mixed workload benchmark
-        self.log("\n🔄 Phase 3: Mixed Workload (80% read, 20% insert)")
+        self.log("\n[REFRESH] Phase 3: Mixed Workload (80% read, 20% insert)")
         if not self.run_benchmark("mixed", read_ratio=0.8, insert_ratio=0.2):
             return False
             
         # Step 6: Run scan benchmark
-        self.log("\n🔍 Phase 4: Range Scan Operations")
+        self.log("\n[SEARCH] Phase 4: Range Scan Operations")
         if not self.run_benchmark("scan", read_ratio=0.0, insert_ratio=0.0, scan_ratio=1.0):
             return False
             
-        self.log("\n✅ LIDX Benchmark completed successfully!")
+        self.log("\n[SUCCESS] LIDX Benchmark completed successfully!")
         return True
         
     def cleanup(self):
         """Clean up temporary files"""
-        self.log("🧹 Cleaning up temporary files...")
+        self.log("[CLEANUP] Cleaning up temporary files...")
         
         # Remove result files
         result_pattern = f"results_*_{self.index}_{int(self.drift * 100)}.csv"
@@ -291,7 +291,7 @@ def main():
     
     # Validate drift factor
     if not 0.0 <= args.drift <= 1.0:
-        print("❌ Error: Drift factor must be between 0.0 and 1.0")
+        print("[FAILED] Error: Drift factor must be between 0.0 and 1.0")
         sys.exit(1)
         
     # Create and run benchmark
@@ -320,7 +320,7 @@ def main():
         print("\n⚠️  Benchmark interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n[FAILED] Unexpected error: {e}")
         sys.exit(1)
 
 

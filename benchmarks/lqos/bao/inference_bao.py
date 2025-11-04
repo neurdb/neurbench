@@ -22,11 +22,11 @@ class BaoInference:
         """Check if trained Bao model exists"""
         model_path = self.bao_server_dir / "model"
         if model_path.exists():
-            print(f"✅ Found trained model at {model_path}")
+            print(f"[SUCCESS] Found trained model at {model_path}")
             return True
         else:
-            print(f"❌ No trained model found at {model_path}")
-            print("💡 Please run 'tqo bao' first to train a model")
+            print(f"[FAILED] No trained model found at {model_path}")
+            print("[INFO] Please run 'tqo bao' first to train a model")
             return False
     
     def start_server(self):
@@ -90,7 +90,7 @@ class BaoInference:
             )
             
             if result.returncode == 0:
-                print("✅ Connection test successful")
+                print("[SUCCESS] Connection test successful")
                 return True
             else:
                 print(f"⚠ Connection test failed: {result.stderr}")
@@ -127,7 +127,7 @@ class BaoInference:
                 )
                 
                 if result.returncode == 0:
-                    print("✅ Status check successful")
+                    print("[SUCCESS] Status check successful")
                     results.append({"query": query, "status": "success"})
                 else:
                     print(f"⚠ Status check failed: {result.stderr}")
@@ -168,7 +168,7 @@ class BaoInference:
             )
             
             if result.returncode == 0:
-                print("✅ Server status check successful")
+                print("[SUCCESS] Server status check successful")
                 print("Server output:")
                 print(result.stdout)
                 return True
@@ -226,21 +226,21 @@ class BaoInference:
             print("Inference Test Results:")
             print("="*50)
             for result in results:
-                status_icon = "✅" if result["status"] == "success" else "❌"
+                status_icon = "[SUCCESS]" if result["status"] == "success" else "[FAILED]"
                 print(f"{status_icon} {result['query']}: {result['status']}")
             
             success_count = sum(1 for r in results if r["status"] == "success")
             print(f"\nOverall: {success_count}/{len(results)} tests passed")
             
             if success_count > 0:
-                print("🎉 Bao inference is working!")
+                print("[DONE] Bao inference is working!")
                 return True
             else:
-                print("❌ All inference tests failed")
+                print("[FAILED] All inference tests failed")
                 return False
                 
         except Exception as e:
-            print(f"❌ Inference failed: {e}")
+            print(f"[FAILED] Inference failed: {e}")
             return False
             
         finally:
@@ -304,10 +304,10 @@ Examples:
             inference.start_server()
             inference.test_connection()
             inference.check_server_status()
-            print("✅ Environment test completed")
+            print("[SUCCESS] Environment test completed")
             success = True
         except Exception as e:
-            print(f"❌ Environment test failed: {e}")
+            print(f"[FAILED] Environment test failed: {e}")
             success = False
         finally:
             inference.cleanup()

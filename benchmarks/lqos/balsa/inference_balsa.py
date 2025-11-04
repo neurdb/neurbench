@@ -35,7 +35,7 @@ class BalsaInference:
                 # Check if it contains any files
                 model_files = list(model_path.glob("*"))
                 if model_files:
-                    print(f"✅ Found model files in {location}: {len(model_files)} files")
+                    print(f"[SUCCESS] Found model files in {location}: {len(model_files)} files")
                     model_found = True
                 else:
                     print(f"⚠ Directory {location} exists but is empty")
@@ -43,8 +43,8 @@ class BalsaInference:
                 print(f"⚠ Directory {location} not found")
         
         if not model_found:
-            print("❌ No trained model found")
-            print("💡 Please run 'tqo balsa' first to train a model")
+            print("[FAILED] No trained model found")
+            print("[INFO] Please run 'tqo balsa' first to train a model")
             return False
         
         return True
@@ -61,10 +61,10 @@ class BalsaInference:
         
         for file_path in required_files:
             if not (self.balsa_dir / file_path).exists():
-                print(f"❌ Required file/directory not found: {file_path}")
+                print(f"[FAILED] Required file/directory not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -83,7 +83,7 @@ class BalsaInference:
             )
             
             if result.returncode == 0:
-                print("✅ Balsa inference tests completed successfully")
+                print("[SUCCESS] Balsa inference tests completed successfully")
                 print("Test output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -95,7 +95,7 @@ class BalsaInference:
             print("⚠ Balsa inference tests timed out (30 minutes)")
             return False
         except Exception as e:
-            print(f"❌ Balsa inference tests error: {e}")
+            print(f"[FAILED] Balsa inference tests error: {e}")
             return False
     
     def run_custom_inference(self, experiment_name="Balsa_JOBRandSplit"):
@@ -113,7 +113,7 @@ class BalsaInference:
             )
             
             if result.returncode == 0:
-                print("✅ Balsa inference completed successfully")
+                print("[SUCCESS] Balsa inference completed successfully")
                 print("Inference output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -125,7 +125,7 @@ class BalsaInference:
             print("⚠ Balsa inference timed out (30 minutes)")
             return False
         except Exception as e:
-            print(f"❌ Balsa inference error: {e}")
+            print(f"[FAILED] Balsa inference error: {e}")
             return False
     
     def run_inference_pipeline(self, experiment_name="Balsa_JOBRandSplit"):
@@ -151,11 +151,11 @@ class BalsaInference:
                 if not self.run_custom_inference(experiment_name):
                     print("⚠ Custom inference failed, but basic tests passed")
             
-            print("🎉 Balsa inference completed successfully!")
+            print("[DONE] Balsa inference completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Inference failed: {e}")
+            print(f"[FAILED] Inference failed: {e}")
             return False
             
         finally:

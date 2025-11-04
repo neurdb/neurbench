@@ -30,10 +30,10 @@ class LeroTrainer:
         
         for file_path in required_files:
             if not (self.lero_dir / file_path).exists():
-                print(f"❌ Required file/directory not found: {file_path}")
+                print(f"[FAILED] Required file/directory not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -51,16 +51,16 @@ class LeroTrainer:
             )
             
             if result.returncode == 0:
-                print("✅ PostgreSQL is running")
+                print("[SUCCESS] PostgreSQL is running")
                 return True
             else:
                 print("⚠ PostgreSQL is not running or not accessible")
-                print("💡 Please ensure PostgreSQL is running and accessible")
+                print("[INFO] Please ensure PostgreSQL is running and accessible")
                 return False
                 
         except FileNotFoundError:
             print("⚠ pg_isready command not found")
-            print("💡 Please ensure PostgreSQL is installed and in PATH")
+            print("[INFO] Please ensure PostgreSQL is installed and in PATH")
             return False
         except Exception as e:
             print(f"⚠ PostgreSQL check error: {e}")
@@ -104,14 +104,14 @@ class LeroTrainer:
             
             # Check if server is running
             if server_process.poll() is None:
-                print(f"✅ Lero server started with PID: {server_process.poll()}")
+                print(f"[SUCCESS] Lero server started with PID: {server_process.poll()}")
                 return True
             else:
-                print("❌ Failed to start Lero server")
+                print("[FAILED] Failed to start Lero server")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error starting Lero server: {e}")
+            print(f"[FAILED] Error starting Lero server: {e}")
             return False
     
     def run_training(self, query_path=None, test_query_path=None):
@@ -123,7 +123,7 @@ class LeroTrainer:
             query_path = self.lero_dir / "lero" / "test_script" / "tpch_train.txt"
             if not query_path.exists():
                 print("⚠ No training query file specified and default not found")
-                print("💡 Please provide --query-path argument")
+                print("[INFO] Please provide --query-path argument")
                 return False
         
         if not test_query_path:
@@ -131,7 +131,7 @@ class LeroTrainer:
             test_query_path = self.lero_dir / "lero" / "test_script" / "tpch_test.txt"
             if not test_query_path.exists():
                 print("⚠ No test query file specified and default not found")
-                print("💡 Please provide --test-query-path argument")
+                print("[INFO] Please provide --test-query-path argument")
                 return False
         
         print(f"Using training queries: {query_path}")
@@ -161,7 +161,7 @@ class LeroTrainer:
             )
             
             if result.returncode == 0:
-                print("✅ Lero training completed successfully")
+                print("[SUCCESS] Lero training completed successfully")
                 print("Training output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -173,7 +173,7 @@ class LeroTrainer:
             print("⚠ Lero training timed out (1 hour)")
             return False
         except Exception as e:
-            print(f"❌ Lero training error: {e}")
+            print(f"[FAILED] Lero training error: {e}")
             return False
     
     def run_training_pipeline(self, query_path=None, test_query_path=None):
@@ -198,11 +198,11 @@ class LeroTrainer:
             if not self.run_training(query_path, test_query_path):
                 raise RuntimeError("Lero training failed")
             
-            print("🎉 Lero training completed successfully!")
+            print("[DONE] Lero training completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Training failed: {e}")
+            print(f"[FAILED] Training failed: {e}")
             return False
             
         finally:

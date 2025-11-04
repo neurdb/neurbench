@@ -260,9 +260,9 @@ def handle_tqo(tokens: List[str]):
         result = os.system(f"cd {bao_dir} && python train_bao.py")
         
         if result == 0:
-            print("✅ Bao training completed successfully!")
+            print("[SUCCESS] Bao training completed successfully!")
         else:
-            print(f"❌ Bao training failed with exit code {result}")
+            print(f"[FAILED] Bao training failed with exit code {result}")
     
     elif lqo_name == "balsa":
         print("Training Balsa learned query optimizer...")
@@ -284,9 +284,9 @@ def handle_tqo(tokens: List[str]):
         result = os.system(f"cd {balsa_dir} && python train_balsa.py")
         
         if result == 0:
-            print("✅ Balsa training completed successfully!")
+            print("[SUCCESS] Balsa training completed successfully!")
         else:
-            print(f"❌ Balsa training failed with exit code {result}")
+            print(f"[FAILED] Balsa training failed with exit code {result}")
     
     elif lqo_name == "hybridqo":
         print("Training HybridQO learned query optimizer...")
@@ -308,9 +308,9 @@ def handle_tqo(tokens: List[str]):
         result = os.system(f"cd {hybridqo_dir} && python train_hybridqo.py")
         
         if result == 0:
-            print("✅ HybridQO training completed successfully!")
+            print("[SUCCESS] HybridQO training completed successfully!")
         else:
-            print(f"❌ HybridQO training failed with exit code {result}")
+            print(f"[FAILED] HybridQO training failed with exit code {result}")
     
     elif lqo_name == "lero":
         print("Training Lero learned query optimizer...")
@@ -332,9 +332,9 @@ def handle_tqo(tokens: List[str]):
         result = os.system(f"cd {lero_dir} && python train_lero.py")
         
         if result == 0:
-            print("✅ Lero training completed successfully!")
+            print("[SUCCESS] Lero training completed successfully!")
         else:
-            print(f"❌ Lero training failed with exit code {result}")
+            print(f"[FAILED] Lero training failed with exit code {result}")
             
     else:
         print(f"Error: Unknown LQO '{lqo_name}'")
@@ -391,9 +391,9 @@ def handle_iqo(tokens: List[str]):
         result = os.system(f"cd {bao_dir} && python inference_bao.py")
         
         if result == 0:
-            print("✅ Bao inference completed successfully!")
+            print("[SUCCESS] Bao inference completed successfully!")
         else:
-            print(f"❌ Bao inference failed with exit code {result}")
+            print(f"[FAILED] Bao inference failed with exit code {result}")
     
     elif lqo_name == "balsa":
         print("Running Balsa learned query optimizer inference...")
@@ -416,9 +416,9 @@ def handle_iqo(tokens: List[str]):
         result = os.system(f"cd {balsa_dir} && python inference_balsa.py")
         
         if result == 0:
-            print("✅ Balsa inference completed successfully!")
+            print("[SUCCESS] Balsa inference completed successfully!")
         else:
-            print(f"❌ Balsa inference failed with exit code {result}")
+            print(f"[FAILED] Balsa inference failed with exit code {result}")
     
     elif lqo_name == "hybridqo":
         print("Running HybridQO learned query optimizer inference...")
@@ -441,9 +441,9 @@ def handle_iqo(tokens: List[str]):
         result = os.system(f"cd {hybridqo_dir} && python inference_hybridqo.py")
         
         if result == 0:
-            print("✅ HybridQO inference completed successfully!")
+            print("[SUCCESS] HybridQO inference completed successfully!")
         else:
-            print(f"❌ HybridQO inference failed with exit code {result}")
+            print(f"[FAILED] HybridQO inference failed with exit code {result}")
     
     elif lqo_name == "lero":
         print("Running Lero learned query optimizer inference...")
@@ -466,9 +466,9 @@ def handle_iqo(tokens: List[str]):
         result = os.system(f"cd {lero_dir} && python inference_lero.py")
         
         if result == 0:
-            print("✅ Lero inference completed successfully!")
+            print("[SUCCESS] Lero inference completed successfully!")
         else:
-            print(f"❌ Lero inference failed with exit code {result}")
+            print(f"[FAILED] Lero inference failed with exit code {result}")
             
     else:
         print(f"Error: Unknown LQO '{lqo_name}'")
@@ -510,7 +510,7 @@ def handle_set(tokens: List[str]):
             print(f"Available datasets: {', '.join(valid_datasets)}")
             return
         GLOBAL_CONFIG[key] = value.lower()
-        print(f"✅ Set {key} = {value.lower()}")
+        print(f"[SUCCESS] Set {key} = {value.lower()}")
         
     elif key == "drift":
         try:
@@ -519,7 +519,7 @@ def handle_set(tokens: List[str]):
                 print("Error: Drift must be between 0.0 and 1.0")
                 return
             GLOBAL_CONFIG[key] = drift_float
-            print(f"✅ Set {key} = {drift_float}")
+            print(f"[SUCCESS] Set {key} = {drift_float}")
         except ValueError:
             print("Error: Drift must be a valid number")
             return
@@ -584,9 +584,9 @@ def handle_idx(tokens: List[str]):
     result = os.system(cmd)
     
     if result == 0:
-        print("✅ LIDX benchmark completed successfully!")
+        print("[SUCCESS] LIDX benchmark completed successfully!")
     else:
-        print(f"❌ LIDX benchmark failed with exit code {result}")
+        print(f"[FAILED] LIDX benchmark failed with exit code {result}")
 
 
 def handle_lcc(tokens: List[str]):
@@ -633,9 +633,9 @@ def handle_lcc(tokens: List[str]):
     result = os.system(cmd)
     
     if result == 0:
-        print("✅ Polyjuice test completed successfully!")
+        print("[SUCCESS] Polyjuice test completed successfully!")
     else:
-        print(f"❌ Polyjuice test failed with exit code {result}")
+        print(f"[FAILED] Polyjuice test failed with exit code {result}")
         print("Note: This is normal if LCC is not built yet.")
         print("To build LCC, run: cd benchmarks/lcc && MODE=perf make -j dbtest")
 

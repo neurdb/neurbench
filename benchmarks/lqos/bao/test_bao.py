@@ -28,7 +28,7 @@ def test_bao_environment():
     
     for file_path in required_files:
         if not (bao_dir / file_path).exists():
-            print(f"❌ Required file not found: {file_path}")
+            print(f"[FAILED] Required file not found: {file_path}")
             return False
         else:
             print(f"✓ Found: {file_path}")
@@ -38,17 +38,17 @@ def test_bao_environment():
         import psycopg2
         print("✓ psycopg2 imported successfully")
     except ImportError:
-        print("❌ psycopg2 not available")
+        print("[FAILED] psycopg2 not available")
         return False
     
     try:
         import torch
         print("✓ torch imported successfully")
     except ImportError:
-        print("❌ torch not available")
+        print("[FAILED] torch not available")
         return False
     
-    print("✅ Bao environment check passed")
+    print("[SUCCESS] Bao environment check passed")
     return True
 
 def test_bao_server_startup():
@@ -75,11 +75,11 @@ def test_bao_server_startup():
             return True
         else:
             stdout, stderr = process.communicate()
-            print(f"❌ Bao server failed to start: {stderr.decode()}")
+            print(f"[FAILED] Bao server failed to start: {stderr.decode()}")
             return False
             
     except Exception as e:
-        print(f"❌ Error starting Bao server: {e}")
+        print(f"[FAILED] Error starting Bao server: {e}")
         return False
 
 def test_bao_commands():
@@ -108,15 +108,15 @@ def test_bao_commands():
                     print(f"  Error: {result.stderr.strip()}")
                     
         except subprocess.TimeoutExpired:
-            print(f"❌ Command timed out: {' '.join(cmd)}")
+            print(f"[FAILED] Command timed out: {' '.join(cmd)}")
         except Exception as e:
-            print(f"❌ Error running command {' '.join(cmd)}: {e}")
+            print(f"[FAILED] Error running command {' '.join(cmd)}: {e}")
     
     return True
 
 def main():
     """Main test function"""
-    print("🧪 Bao LQO Test Suite")
+    print("[TEST] Bao LQO Test Suite")
     print("=" * 50)
     
     # Change to bao directory if needed
@@ -139,13 +139,13 @@ def main():
             if test():
                 passed += 1
         except Exception as e:
-            print(f"❌ Test {test.__name__} failed with exception: {e}")
+            print(f"[FAILED] Test {test.__name__} failed with exception: {e}")
     
     print("\n" + "=" * 50)
     print(f"Test Results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 All tests passed! Bao environment is ready.")
+        print("[DONE] All tests passed! Bao environment is ready.")
         sys.exit(0)
     else:
         print("⚠ Some tests failed. Please check the errors above.")

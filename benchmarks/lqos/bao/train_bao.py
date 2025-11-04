@@ -247,11 +247,11 @@ class BaoTrainer:
             if not self.finalize_training():
                 raise RuntimeError("Final training failed")
             
-            print("🎉 Bao training completed successfully!")
+            print("[DONE] Bao training completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Training failed: {e}")
+            print(f"[FAILED] Training failed: {e}")
             return False
             
         finally:
@@ -281,14 +281,14 @@ class BaoTrainer:
             self.cleanup()
             
             if connection_ok:
-                print("✅ Environment test passed!")
+                print("[SUCCESS] Environment test passed!")
                 return True
             else:
                 print("⚠ Environment test completed with warnings")
                 return True  # Still consider it a pass
                 
         except Exception as e:
-            print(f"❌ Environment test failed: {e}")
+            print(f"[FAILED] Environment test failed: {e}")
             return False
         finally:
             # Return to original directory

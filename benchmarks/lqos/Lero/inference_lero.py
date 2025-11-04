@@ -33,14 +33,14 @@ class LeroInference:
         for model_file in possible_model_files:
             model_path = self.lero_dir / "lero" / model_file
             if model_path.exists():
-                print(f"✅ Found model file: {model_file}")
+                print(f"[SUCCESS] Found model file: {model_file}")
                 model_found = True
             else:
                 print(f"⚠ Model file not found: {model_file}")
         
         if not model_found:
-            print("❌ No trained model found")
-            print("💡 Please run 'tqo lero' first to train a model")
+            print("[FAILED] No trained model found")
+            print("[INFO] Please run 'tqo lero' first to train a model")
             return False
         
         return True
@@ -59,10 +59,10 @@ class LeroInference:
         
         for file_path in required_files:
             if not (self.lero_dir / file_path).exists():
-                print(f"❌ Required file/directory not found: {file_path}")
+                print(f"[FAILED] Required file/directory not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -80,16 +80,16 @@ class LeroInference:
             )
             
             if result.returncode == 0:
-                print("✅ PostgreSQL is running")
+                print("[SUCCESS] PostgreSQL is running")
                 return True
             else:
                 print("⚠ PostgreSQL is not running or not accessible")
-                print("💡 Please ensure PostgreSQL is running and accessible")
+                print("[INFO] Please ensure PostgreSQL is running and accessible")
                 return False
                 
         except FileNotFoundError:
             print("⚠ pg_isready command not found")
-            print("💡 Please ensure PostgreSQL is installed and in PATH")
+            print("[INFO] Please ensure PostgreSQL is installed and in PATH")
             return False
         except Exception as e:
             print(f"⚠ PostgreSQL check error: {e}")
@@ -133,14 +133,14 @@ class LeroInference:
             
             # Check if server is running
             if server_process.poll() is None:
-                print(f"✅ Lero server started with PID: {server_process.poll()}")
+                print(f"[SUCCESS] Lero server started with PID: {server_process.poll()}")
                 return True
             else:
-                print("❌ Failed to start Lero server")
+                print("[FAILED] Failed to start Lero server")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error starting Lero server: {e}")
+            print(f"[FAILED] Error starting Lero server: {e}")
             return False
     
     def run_inference_tests(self, query_path=None):
@@ -152,7 +152,7 @@ class LeroInference:
             query_path = self.lero_dir / "lero" / "test_script" / "tpch_test.txt"
             if not query_path.exists():
                 print("⚠ No test query file specified and default not found")
-                print("💡 Please provide --query-path argument")
+                print("[INFO] Please provide --query-path argument")
                 return False
         
         print(f"Using test queries: {query_path}")
@@ -179,7 +179,7 @@ class LeroInference:
             )
             
             if result.returncode == 0:
-                print("✅ Lero inference tests completed successfully")
+                print("[SUCCESS] Lero inference tests completed successfully")
                 print("Test output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -191,7 +191,7 @@ class LeroInference:
             print("⚠ Lero inference tests timed out (30 minutes)")
             return False
         except Exception as e:
-            print(f"❌ Lero inference tests error: {e}")
+            print(f"[FAILED] Lero inference tests error: {e}")
             return False
     
     def run_postgresql_comparison(self, query_path=None):
@@ -225,7 +225,7 @@ class LeroInference:
             )
             
             if result.returncode == 0:
-                print("✅ PostgreSQL comparison completed successfully")
+                print("[SUCCESS] PostgreSQL comparison completed successfully")
                 return True
             else:
                 print(f"⚠ PostgreSQL comparison had issues: {result.stderr}")
@@ -235,7 +235,7 @@ class LeroInference:
             print("⚠ PostgreSQL comparison timed out (30 minutes)")
             return False
         except Exception as e:
-            print(f"❌ PostgreSQL comparison error: {e}")
+            print(f"[FAILED] PostgreSQL comparison error: {e}")
             return False
     
     def run_inference_pipeline(self, query_path=None, run_comparison=False):
@@ -269,11 +269,11 @@ class LeroInference:
                 if not self.run_postgresql_comparison(query_path):
                     print("⚠ PostgreSQL comparison failed, but inference tests passed")
             
-            print("🎉 Lero inference completed successfully!")
+            print("[DONE] Lero inference completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Inference failed: {e}")
+            print(f"[FAILED] Inference failed: {e}")
             return False
             
         finally:

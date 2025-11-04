@@ -114,7 +114,7 @@ class LeroHelper():
         for c_idx, chunk in enumerate(lero_chunks):
             for fp, q in chunk:
                 self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                  self.output_query_latency_file + "_exploratory", None)  # ❌ No pool, run synchronously
+                                  self.output_query_latency_file + "_exploratory", None)  # [FAILED] No pool, run synchronously
 
             model_name = self.model_prefix + "_" + str(c_idx)
             # self.retrain(model_name)

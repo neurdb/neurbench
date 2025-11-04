@@ -6,7 +6,7 @@
 @readme        :
 @time        :2021/11/25 21:16:32
 @author        :yxfish13
-@版本        :1.0
+@version        :1.0
 # Copyright 2018-2021 Xiang Yu(x-yu17(at)mails.tsinghua.edu.cn)
 #
 # Licensed under the Apache License, Version 2.0 (the 

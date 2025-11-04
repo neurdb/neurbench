@@ -12,7 +12,7 @@ from pathlib import Path
 
 def test_polyjuice():
     """Test basic Polyjuice functionality"""
-    print("🧪 Testing Polyjuice (Learned Concurrency Control)")
+    print("[TEST] Testing Polyjuice (Learned Concurrency Control)")
     print("=" * 50)
     
     # Get current directory
@@ -22,16 +22,16 @@ def test_polyjuice():
     # Check if training directory exists
     training_dir = lcc_dir / "training"
     if not training_dir.exists():
-        print(f"❌ Training directory not found at {training_dir}")
+        print(f"[FAILED] Training directory not found at {training_dir}")
         return False
     
     # Check if ERL training script exists
     erl_script = training_dir / "ERL_main.py"
     if not erl_script.exists():
-        print(f"❌ ERL training script not found at {erl_script}")
+        print(f"[FAILED] ERL training script not found at {erl_script}")
         return False
     
-    print(f"✅ Found ERL training script: {erl_script}")
+    print(f"[SUCCESS] Found ERL training script: {erl_script}")
     
     # Check if build directory exists
     build_dir = lcc_dir / "out-perf.masstree"
@@ -40,17 +40,17 @@ def test_polyjuice():
         print("   To build Polyjuice, run: MODE=perf make -j dbtest")
         print("   For now, we'll test the training script only.")
     else:
-        print(f"✅ Build directory exists: {build_dir}")
+        print(f"[SUCCESS] Build directory exists: {build_dir}")
         
         # Check if benchmark binary exists
         benchmark_path = build_dir / "benchmarks" / "dbtest"
         if benchmark_path.exists():
-            print(f"✅ Benchmark binary exists: {benchmark_path}")
+            print(f"[SUCCESS] Benchmark binary exists: {benchmark_path}")
         else:
             print(f"⚠️  Benchmark binary missing. Please build Polyjuice first.")
     
     # Test the ERL training script with help
-    print("\n🧪 Testing ERL training script...")
+    print("\n[TEST] Testing ERL training script...")
     try:
         result = subprocess.run(
             [sys.executable, str(erl_script), "--help"],
@@ -61,23 +61,23 @@ def test_polyjuice():
         )
         
         if result.returncode == 0:
-            print("✅ ERL training script help works")
+            print("[SUCCESS] ERL training script help works")
             print("Available options:")
             for line in result.stdout.split('\n'):
                 if line.strip() and ('--' in line or 'Usage:' in line):
                     print(f"   {line.strip()}")
         else:
-            print(f"❌ ERL training script help failed: {result.stderr}")
+            print(f"[FAILED] ERL training script help failed: {result.stderr}")
             return False
             
     except subprocess.TimeoutExpired:
         print("⚠️  ERL training script help timed out")
     except Exception as e:
-        print(f"❌ Error testing ERL training script: {e}")
+        print(f"[FAILED] Error testing ERL training script: {e}")
         return False
     
     # Test a simple training run (with minimal parameters)
-    print("\n🧪 Testing simple ERL training run...")
+    print("\n[TEST] Testing simple ERL training run...")
     try:
         # Use minimal parameters for testing
         cmd = [
@@ -103,7 +103,7 @@ def test_polyjuice():
         )
         
         if result.returncode == 0:
-            print("✅ Simple ERL training completed successfully!")
+            print("[SUCCESS] Simple ERL training completed successfully!")
             return True
         else:
             print(f"⚠️  ERL training failed as expected (this is normal for first run):")
@@ -125,7 +125,7 @@ def test_polyjuice():
         print("⚠️  ERL training timed out (this may indicate it's running)")
         return True
     except Exception as e:
-        print(f"❌ Error running ERL training: {e}")
+        print(f"[FAILED] Error running ERL training: {e}")
         return False
 
 def main():
@@ -133,13 +133,13 @@ def main():
     success = test_polyjuice()
     
     if success:
-        print("\n🎉 Polyjuice test completed!")
+        print("\n[DONE] Polyjuice test completed!")
         print("\nNext steps:")
         print("1. Build Polyjuice: cd benchmarks/lcc && MODE=perf make -j dbtest")
         print("2. Run this test again: python test_polyjuice.py")
         print("3. Or use CLI: cd ../.. && python cli.py, then 'lcc'")
     else:
-        print("\n❌ Polyjuice test failed. Please check the errors above.")
+        print("\n[FAILED] Polyjuice test failed. Please check the errors above.")
     
     return success
 

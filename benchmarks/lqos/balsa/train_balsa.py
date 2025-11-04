@@ -30,10 +30,10 @@ class BalsaTrainer:
         
         for file_path in required_files:
             if not (self.balsa_dir / file_path).exists():
-                print(f"❌ Required file/directory not found: {file_path}")
+                print(f"[FAILED] Required file/directory not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -52,7 +52,7 @@ class BalsaTrainer:
             )
             
             if result.returncode == 0:
-                print("✅ Balsa package installed successfully")
+                print("[SUCCESS] Balsa package installed successfully")
             else:
                 print(f"⚠ Balsa package installation had issues: {result.stderr}")
             
@@ -68,7 +68,7 @@ class BalsaTrainer:
                 )
                 
                 if result.returncode == 0:
-                    print("✅ pg_executor installed successfully")
+                    print("[SUCCESS] pg_executor installed successfully")
                 else:
                     print(f"⚠ pg_executor installation had issues: {result.stderr}")
             
@@ -84,14 +84,14 @@ class BalsaTrainer:
                 )
                 
                 if result.returncode == 0:
-                    print("✅ Requirements installed successfully")
+                    print("[SUCCESS] Requirements installed successfully")
                 else:
                     print(f"⚠ Requirements installation had issues: {result.stderr}")
             
             return True
             
         except Exception as e:
-            print(f"❌ Error installing dependencies: {e}")
+            print(f"[FAILED] Error installing dependencies: {e}")
             return False
     
     def run_training(self, experiment_name="Balsa_JOBRandSplit"):
@@ -109,7 +109,7 @@ class BalsaTrainer:
             )
             
             if result.returncode == 0:
-                print("✅ Balsa training completed successfully")
+                print("[SUCCESS] Balsa training completed successfully")
                 print("Training output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -121,7 +121,7 @@ class BalsaTrainer:
             print("⚠ Balsa training timed out (1 hour)")
             return False
         except Exception as e:
-            print(f"❌ Balsa training error: {e}")
+            print(f"[FAILED] Balsa training error: {e}")
             return False
     
     def run_training_pipeline(self, experiment_name="Balsa_JOBRandSplit"):
@@ -142,11 +142,11 @@ class BalsaTrainer:
             if not self.run_training(experiment_name):
                 raise RuntimeError("Balsa training failed")
             
-            print("🎉 Balsa training completed successfully!")
+            print("[DONE] Balsa training completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Training failed: {e}")
+            print(f"[FAILED] Training failed: {e}")
             return False
             
         finally:

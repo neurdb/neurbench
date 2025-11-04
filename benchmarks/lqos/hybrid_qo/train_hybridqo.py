@@ -31,10 +31,10 @@ class HybridQOTrainer:
         
         for file_path in required_files:
             if not (self.hybridqo_dir / file_path).exists():
-                print(f"❌ Required file not found: {file_path}")
+                print(f"[FAILED] Required file not found: {file_path}")
                 return False
             else:
-                print(f"✅ Found: {file_path}")
+                print(f"[SUCCESS] Found: {file_path}")
         
         return True
     
@@ -55,7 +55,7 @@ class HybridQOTrainer:
                 )
                 
                 if result.returncode == 0:
-                    print("✅ Requirements installed successfully")
+                    print("[SUCCESS] Requirements installed successfully")
                 else:
                     print(f"⚠ Requirements installation had issues: {result.stderr}")
             
@@ -79,7 +79,7 @@ class HybridQOTrainer:
                     )
                     
                     if result.returncode == 0:
-                        print(f"✅ {dep} installed successfully")
+                        print(f"[SUCCESS] {dep} installed successfully")
                     else:
                         print(f"⚠ {dep} installation had issues: {result.stderr}")
                         
@@ -89,7 +89,7 @@ class HybridQOTrainer:
             return True
             
         except Exception as e:
-            print(f"❌ Error installing dependencies: {e}")
+            print(f"[FAILED] Error installing dependencies: {e}")
             return False
     
     def check_configuration(self):
@@ -98,19 +98,19 @@ class HybridQOTrainer:
         
         config_file = self.hybridqo_dir / "ImportantConfig.py"
         if not config_file.exists():
-            print("❌ ImportantConfig.py not found")
+            print("[FAILED] ImportantConfig.py not found")
             return False
         
-        print("✅ Configuration file found")
+        print("[SUCCESS] Configuration file found")
         
         # Check if model directory exists
         model_dir = self.hybridqo_dir / "model"
         if not model_dir.exists():
             print("Creating model directory...")
             model_dir.mkdir(exist_ok=True)
-            print("✅ Model directory created")
+            print("[SUCCESS] Model directory created")
         else:
-            print("✅ Model directory exists")
+            print("[SUCCESS] Model directory exists")
         
         return True
     
@@ -129,7 +129,7 @@ class HybridQOTrainer:
             )
             
             if result.returncode == 0:
-                print("✅ HybridQO training completed successfully")
+                print("[SUCCESS] HybridQO training completed successfully")
                 print("Training output:")
                 print(result.stdout[-1000:])  # Last 1000 characters
                 return True
@@ -141,7 +141,7 @@ class HybridQOTrainer:
             print("⚠ HybridQO training timed out (1 hour)")
             return False
         except Exception as e:
-            print(f"❌ HybridQO training error: {e}")
+            print(f"[FAILED] HybridQO training error: {e}")
             return False
     
     def run_training_pipeline(self):
@@ -166,11 +166,11 @@ class HybridQOTrainer:
             if not self.run_training():
                 raise RuntimeError("HybridQO training failed")
             
-            print("🎉 HybridQO training completed successfully!")
+            print("[DONE] HybridQO training completed successfully!")
             return True
             
         except Exception as e:
-            print(f"❌ Training failed: {e}")
+            print(f"[FAILED] Training failed: {e}")
             return False
             
         finally:
