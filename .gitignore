@@ -192,3 +192,5 @@ benchmarks/lidx/results
 
 # Trash
 .trash/
+
+!bao_log/**/*.log

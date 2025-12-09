@@ -20,7 +20,7 @@ def chunks(lst, n):
 
 
 def pg_connection_string(db_name):
-    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1"
+    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1 port=5430"
 
 
 def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload'):

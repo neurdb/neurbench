@@ -1,5 +1,6 @@
 import pickle
 import sys
+import time
 
 sys.path.append("drift_ddpm")
 
@@ -21,10 +22,15 @@ import torch
 warnings.filterwarnings("ignore")
 
 
-INFERENCE_BATCH_SIZE = 262144  # 524288
+INFERENCE_BATCH_SIZE = 524288  # 262144
 
 
 def main(args: argparse.Namespace):
+    print("=" * 80)
+    print(f"[TIMING] Starting data generation pipeline at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 80)
+    total_start = time.time()
+
     save_dir = os.path.join("expdir", args.dataset_name, args.table_name)
     if args.variant_id > 0:
         save_dir += f"-{args.variant_id}"
@@ -42,9 +48,9 @@ def main(args: argparse.Namespace):
     train_data_path = os.path.join(base_dir, f"{args.table_name}.csv")
     original_data = pd.read_csv(
         ### imdb
-        # train_data_path, doublequote=False, escapechar="\\", low_memory=False
+        train_data_path, doublequote=False, escapechar="\\", low_memory=False
         ### stack
-        train_data_path, doublequote=True, low_memory=False,
+        # train_data_path, doublequote=True, low_memory=False,
     )
     print("Original data")
     print(original_data)
@@ -53,19 +59,19 @@ def main(args: argparse.Namespace):
     print("Data with drifting columns")
     print(train_data)
 
-    real_base_dir = os.path.join("datasets", args.dataset_name + "_2009")
+    real_base_dir = os.path.join("datasets", args.dataset_name + "_2014")
 
     real_drift_data_path = os.path.join(real_base_dir, f"{args.table_name}.csv")
     original_real_drift_data = pd.read_csv(
         real_drift_data_path,
         ### imdb
-        # doublequote=True,
-        # quotechar='"',
-        # escapechar="\\",
-        # low_memory=False,
-        ### stack
         doublequote=True,
+        quotechar='"',
+        escapechar="\\",
         low_memory=False,
+        ### stack
+        # doublequote=True,
+        # low_memory=False,
     )
     print("Real Drift data")
     print(original_real_drift_data)
@@ -80,13 +86,13 @@ def main(args: argparse.Namespace):
     original_real_cond_data = pd.read_csv(
         real_cond_data_path,
         ### imdb
-        # doublequote=True,
-        # quotechar='"',
-        # escapechar="\\",
-        # low_memory=False,
-        ### stack
         doublequote=True,
+        quotechar='"',
+        escapechar="\\",
         low_memory=False,
+        ### stack
+        # doublequote=True,
+        # low_memory=False,
     )
     print("Conditional data")
     print(original_real_cond_data)
@@ -168,6 +174,7 @@ def main(args: argparse.Namespace):
         print("Load existing diffuser")
     else:
         print("Train diffuser")
+        diffuser_start = time.time()
         lo.diffuser_training(
             train_x=train_x,
             save_path=os.path.join(save_dir, "diffuser.pt"),
@@ -181,6 +188,8 @@ def main(args: argparse.Namespace):
             lambda_p=args.lambda_p,
             lambda_s=args.lambda_s,
         )
+        diffuser_end = time.time()
+        print(f"[TIMING] Diffuser training took: {diffuser_end - diffuser_start:.2f} seconds")
 
     diffuser = torch.load(os.path.join(save_dir, "diffuser.pt"))
 
@@ -193,6 +202,7 @@ def main(args: argparse.Namespace):
         print("Load existing controller")
     else:
         print("Train controller")
+        controller_start = time.time()
         lo.controller_training(
             train_x=train_x,
             real_x=real_x,
@@ -208,6 +218,8 @@ def main(args: argparse.Namespace):
             drop_out=0.0,
             bs=args.controller_bs,
         )
+        controller_end = time.time()
+        print(f"[TIMING] Controller training took: {controller_end - controller_start:.2f} seconds")
 
     controller = torch.load(os.path.join(save_dir, "controller.pt"))
     # controller_cond = torch.load(os.path.join(save_dir, "controller_cond.pt"))
@@ -221,8 +233,12 @@ def main(args: argparse.Namespace):
         for x in range(0, len(ids), INFERENCE_BATCH_SIZE)
     ]
 
+    print(f"[TIMING] Starting data generation for {config['n_samples']} samples in {len(batched_ids)} batches...")
+    oversampling_start = time.time()
+
     all_data = []
-    for b in tqdm(batched_ids):
+    for batch_idx, b in enumerate(tqdm(batched_ids)):
+        batch_start = time.time()
         sample_data = lo.oversampling(
             len(b),
             controller,
@@ -234,9 +250,13 @@ def main(args: argparse.Namespace):
             args.drift,
             args.scale_factor,
         )
+        batch_end = time.time()
+        print(f"[TIMING] Batch {batch_idx + 1}/{len(batched_ids)} generation took: {batch_end - batch_start:.2f} seconds")
         all_data.append(sample_data)
 
     sample_data = torch.cat(all_data, dim=0)
+    oversampling_end = time.time()
+    print(f"[TIMING] Total oversampling took: {oversampling_end - oversampling_start:.2f} seconds")
 
     sample_data = sample_data.cpu().numpy()
     sample_data = data_wrapper.Reverse(sample_data)
@@ -262,6 +282,13 @@ def main(args: argparse.Namespace):
         doublequote=False,
         escapechar="\\",
     )
+
+    total_end = time.time()
+    total_time = total_end - total_start
+    print("=" * 80)
+    print(f"[TIMING] Data generation pipeline completed at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[TIMING] Total execution time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
+    print("=" * 80)
 
 
 if __name__ == "__main__":
