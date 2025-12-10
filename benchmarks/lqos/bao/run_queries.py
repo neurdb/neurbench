@@ -8,7 +8,7 @@ import argparse
 import glob
 
 USE_BAO = True
-TIMEOUT_LIMIT = 3 * 60 * 1000
+TIMEOUT_LIMIT = 6 * 60 * 1000
 NUM_EXECUTIONS = 3
 
 

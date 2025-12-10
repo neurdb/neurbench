@@ -5,9 +5,7 @@ This script manages the Bao server lifecycle and delegates query execution to ru
 """
 
 import os
-import sys
 import time
-import subprocess
 import psutil
 from pathlib import Path
 
@@ -62,8 +60,7 @@ class BaoTester:
                 print("Dependencies already installed")
             except ImportError:
                 print("Installing requirements...")
-                subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)],
-                             check=True, cwd=self.bao_dir)
+                os.system(f"cd {self.bao_dir} && python3 -m pip install -r {requirements_file}")
 
     def start_server(self):
         """Start the Bao server"""
@@ -143,25 +140,6 @@ class BaoTester:
             print(f"Error: run_test_queries.py not found at {run_test_script}")
             return False
 
-        cmd = [
-            sys.executable,
-            str(run_test_script),
-            "--query_dir", self.query_dir,
-            "--database_name", self.database_name,
-            "--output_file", str(output_path),
-            "--db-port", str(self.db_port)
-        ]
-
-        # Add mode flags
-        if self.use_bao:
-            cmd.append("--use_bao")
-        elif self.use_postgres:
-            cmd.append("--use_postgres")
-
-        # Add GEQO flag
-        if not self.use_geqo:
-            cmd.append("--disable_geqo")
-
         print(f"Calling run_test_queries.py with:")
         print(f"  query_dir: {self.query_dir}")
         print(f"  database: {self.database_name}")
@@ -171,30 +149,32 @@ class BaoTester:
         print(f"  geqo: {'enabled' if self.use_geqo else 'disabled'}")
         print(flush=True)
 
+        # Build command string
+        cmd = f"cd {self.bao_dir} && python3 run_test_queries.py --query_dir {self.query_dir} --database_name {self.database_name} --output_file {output_path} --db-port {self.db_port}"
+
+        # Add mode flags
+        if self.use_bao:
+            cmd += " --use_bao"
+        elif self.use_postgres:
+            cmd += " --use_postgres"
+
+        # Add GEQO flag
+        if not self.use_geqo:
+            cmd += " --disable_geqo"
+
         # Run the test script
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.bao_dir,
-                check=False,
-                stdout=sys.stdout,
-                stderr=sys.stderr
-            )
+        result = os.system(cmd)
 
-            if result.returncode == 0:
-                print("\n" + "="*80)
-                print("✓ Testing completed successfully!")
-                print(f"Results saved to: {output_path}")
-                print("="*80)
-                return True
-            else:
-                print("\n" + "="*80)
-                print(f"✗ Testing failed with exit code {result.returncode}")
-                print("="*80)
-                return False
-
-        except Exception as e:
-            print(f"\n✗ Error running run_test_queries.py: {e}")
+        if result == 0:
+            print("\n" + "="*80)
+            print("✓ Testing completed successfully!")
+            print(f"Results saved to: {output_path}")
+            print("="*80)
+            return True
+        else:
+            print("\n" + "="*80)
+            print(f"✗ Testing failed with exit code {result}")
+            print("="*80)
             return False
 
     def cleanup(self):

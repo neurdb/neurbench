@@ -5,9 +5,7 @@ This script manages the Bao server lifecycle and delegates query execution to ru
 """
 
 import os
-import sys
 import time
-import subprocess
 import psutil
 from pathlib import Path
 
@@ -57,8 +55,7 @@ class BaoTrainer:
                 print("Dependencies already installed")
             except ImportError:
                 print("Installing requirements...")
-                subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(requirements_file)], 
-                             check=True, cwd=self.bao_dir)
+                os.system(f"cd {self.bao_dir} && python3 -m pip install -r {requirements_file}")
         
     def start_server(self):
         """Start the Bao server"""
@@ -139,15 +136,6 @@ class BaoTrainer:
             print(f"Error: run_queries.py not found at {run_queries_script}")
             return False
 
-        cmd = [
-            sys.executable,
-            str(run_queries_script),
-            "--query_dir", self.query_dir,
-            "--database_name", self.database_name,
-            "--output_file", str(output_path),
-            "--db-port", str(self.db_port)
-        ]
-
         print(f"Calling run_queries.py with:")
         print(f"  query_dir: {self.query_dir}")
         print(f"  database: {self.database_name}")
@@ -156,29 +144,19 @@ class BaoTrainer:
         print(flush=True)
 
         # Run the training script
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.bao_dir,
-                check=False,
-                stdout=sys.stdout,
-                stderr=sys.stderr
-            )
+        cmd = f"cd {self.bao_dir} && python3 run_queries.py --query_dir {self.query_dir} --database_name {self.database_name} --output_file {output_path} --db-port {self.db_port}"
+        result = os.system(cmd)
 
-            if result.returncode == 0:
-                print("\n" + "="*80)
-                print("✓ Training completed successfully!")
-                print(f"Results saved to: {output_path}")
-                print("="*80)
-                return True
-            else:
-                print("\n" + "="*80)
-                print(f"✗ Training failed with exit code {result.returncode}")
-                print("="*80)
-                return False
-
-        except Exception as e:
-            print(f"\n✗ Error running run_queries.py: {e}")
+        if result == 0:
+            print("\n" + "="*80)
+            print("✓ Training completed successfully!")
+            print(f"Results saved to: {output_path}")
+            print("="*80)
+            return True
+        else:
+            print("\n" + "="*80)
+            print(f"✗ Training failed with exit code {result}")
+            print("="*80)
             return False
     
     def cleanup(self):

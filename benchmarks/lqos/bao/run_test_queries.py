@@ -7,7 +7,7 @@ import datetime
 import argparse
 import glob
 
-TIMEOUT_LIMIT = 3 * 60 * 1000
+TIMEOUT_LIMIT = 6 * 60 * 1000
 NUM_EXECUTIONS = 3
 
 

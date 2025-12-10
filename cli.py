@@ -146,7 +146,7 @@ def handle_generate_data(tokens: List[str]):
         )
 
         os.system(
-            f"python dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift} --scale={scale}"
+            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift} --scale={scale}"
         )
     else:
         # run on all tables
@@ -164,7 +164,7 @@ def handle_generate_data(tokens: List[str]):
         for t in table_names:
             print(f"Generating data for {dataset_name}.{t}...")
             os.system(
-                f"python dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift} --scale={scale}"
+                f"python3 dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift} --scale={scale}"
             )
             print(f"Data generation complete for {dataset_name}.{t}")
 
@@ -284,26 +284,33 @@ def handle_tqo(tokens: List[str]):
             query_dir = os.path.join("queries", dataset, "train")
             db_name = dataset
         else:
-            query_dir = None
-            db_name = "imdb"
+            print("Error: Please set dataset first using 'set dataset [DATASET_NAME]'")
+            return
 
         # Check if query directory exists
-        if query_dir and not os.path.exists(query_dir):
-            print(f"Warning: Query directory not found: {query_dir}")
-            print("Using traditional training approach without queries")
-            query_dir = None
+        if not os.path.exists(query_dir):
+            print(f"Error: Query directory not found: {query_dir}")
+            return
 
-        # Build command with parameters
-        cmd = f"cd {bao_dir} && python train_bao.py"
-        if query_dir:
-            cmd += f" --query-dir ../../../{query_dir}"
-            cmd += f" --database-name {db_name}"
-            cmd += f" --db-port {GLOBAL_CONFIG['pg_port']}"
-            print(f"Using query-based training with {query_dir}")
-            print(f"Database: {db_name}")
-            print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
-        else:
-            print("Using traditional training approach")
+        # Generate output file name in bao_logs_all directory
+        import time as time_module
+        timestamp = time_module.strftime("%Y%m%d_%H%M%S")
+        query_set_name = query_set if query_set else dataset
+        log_dir = "bao_logs_all"
+        os.makedirs(log_dir, exist_ok=True)
+        output_file = os.path.join(log_dir, f"train_{query_set_name}_{timestamp}.txt")
+
+        # Build command with parameters for train_bao.py
+        cmd = f"cd {bao_dir} && python3 train_bao.py"
+        cmd += f" --query-dir ../../../{query_dir}"
+        cmd += f" --database-name {db_name}"
+        cmd += f" --output-file ../../../{output_file}"
+        cmd += f" --db-port {GLOBAL_CONFIG['pg_port']}"
+
+        print(f"Using query-based training with {query_dir}")
+        print(f"Database: {db_name}")
+        print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+        print(f"Output file: {output_file}")
 
         # Run the training script
         print("Starting Bao training pipeline...")
@@ -311,6 +318,7 @@ def handle_tqo(tokens: List[str]):
 
         if result == 0:
             print("[SUCCESS] Bao training completed successfully!")
+            print(f"Results saved to: {output_file}")
         else:
             print(f"[FAILED] Bao training failed with exit code {result}")
             sys.exit(1)
@@ -332,7 +340,7 @@ def handle_tqo(tokens: List[str]):
         
         # Run the training script
         print("Starting Balsa training pipeline...")
-        result = os.system(f"cd {balsa_dir} && python train_balsa.py")
+        result = os.system(f"cd {balsa_dir} && python3 train_balsa.py")
         
         if result == 0:
             print("[SUCCESS] Balsa training completed successfully!")
@@ -356,7 +364,7 @@ def handle_tqo(tokens: List[str]):
         
         # Run the training script
         print("Starting HybridQO training pipeline...")
-        result = os.system(f"cd {hybridqo_dir} && python train_hybridqo.py")
+        result = os.system(f"cd {hybridqo_dir} && python3 train_hybridqo.py")
         
         if result == 0:
             print("[SUCCESS] HybridQO training completed successfully!")
@@ -380,7 +388,7 @@ def handle_tqo(tokens: List[str]):
         
         # Run the training script
         print("Starting Lero training pipeline...")
-        result = os.system(f"cd {lero_dir} && python train_lero.py")
+        result = os.system(f"cd {lero_dir} && python3 train_lero.py")
         
         if result == 0:
             print("[SUCCESS] Lero training completed successfully!")
@@ -474,10 +482,19 @@ def handle_iqo(tokens: List[str]):
             print(f"Error: Query directory not found: {query_dir}")
             return
 
-        # Build command with parameters based on test mode
-        cmd = f"cd {bao_dir} && python test_bao.py"
+        # Generate output file name in bao_logs_all directory
+        import time as time_module
+        timestamp = time_module.strftime("%Y%m%d_%H%M%S")
+        query_set_name = query_set if query_set else dataset
+        log_dir = "bao_logs_all"
+        os.makedirs(log_dir, exist_ok=True)
+        output_file = os.path.join(log_dir, f"test_{test_mode}_{query_set_name}_{timestamp}.txt")
+
+        # Build command with parameters for test_bao.py
+        cmd = f"cd {bao_dir} && python3 test_bao.py"
         cmd += f" --query-dir ../../../{query_dir}"
         cmd += f" --database-name {db_name}"
+        cmd += f" --output-file ../../../{output_file}"
         cmd += f" --db-port {GLOBAL_CONFIG['pg_port']}"
 
         if test_mode == "bao":
@@ -485,11 +502,13 @@ def handle_iqo(tokens: List[str]):
             print(f"Using Bao optimizer for testing with {query_dir}")
             print(f"Database: {db_name}")
             print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+            print(f"Output file: {output_file}")
         else:  # pg
             cmd += " --use-postgres"
             print(f"Using PostgreSQL optimizer for testing with {query_dir}")
             print(f"Database: {db_name}")
             print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+            print(f"Output file: {output_file}")
 
         # Run the test script
         print(f"Starting {mode_name} testing pipeline...")
@@ -497,6 +516,7 @@ def handle_iqo(tokens: List[str]):
 
         if result == 0:
             print(f"[SUCCESS] {mode_name} testing completed successfully!")
+            print(f"Results saved to: {output_file}")
         else:
             print(f"[FAILED] {mode_name} testing failed with exit code {result}")
             sys.exit(1)
@@ -519,7 +539,7 @@ def handle_iqo(tokens: List[str]):
         
         # Run the inference script
         print("Starting Balsa inference...")
-        result = os.system(f"cd {balsa_dir} && python inference_balsa.py")
+        result = os.system(f"cd {balsa_dir} && python3 inference_balsa.py")
         
         if result == 0:
             print("[SUCCESS] Balsa inference completed successfully!")
@@ -544,7 +564,7 @@ def handle_iqo(tokens: List[str]):
         
         # Run the inference script
         print("Starting HybridQO inference...")
-        result = os.system(f"cd {hybridqo_dir} && python inference_hybridqo.py")
+        result = os.system(f"cd {hybridqo_dir} && python3 inference_hybridqo.py")
         
         if result == 0:
             print("[SUCCESS] HybridQO inference completed successfully!")
@@ -569,7 +589,7 @@ def handle_iqo(tokens: List[str]):
         
         # Run the inference script
         print("Starting Lero inference...")
-        result = os.system(f"cd {lero_dir} && python inference_lero.py")
+        result = os.system(f"cd {lero_dir} && python3 inference_lero.py")
         
         if result == 0:
             print("[SUCCESS] Lero inference completed successfully!")
@@ -698,7 +718,7 @@ def handle_idx(tokens: List[str]):
     
     # Run the benchmark script with global configuration
     print("Starting LIDX benchmark...")
-    cmd = f"cd {lidx_dir} && python run_lidx_benchmark.py --drift {drift} --dataset {dataset} --size {size} --index {index_name} --operations {operations} --threads {threads} --verbose"
+    cmd = f"cd {lidx_dir} && python3 run_lidx_benchmark.py --drift {drift} --dataset {dataset} --size {size} --index {index_name} --operations {operations} --threads {threads} --verbose"
     result = os.system(cmd)
     
     if result == 0:
@@ -747,7 +767,7 @@ def handle_lcc(tokens: List[str]):
     print(f"Scale factor: {scale_factor}")
     
     # Run the ERL training script with minimal parameters
-    cmd = f"cd {training_dir} && python ERL_main.py --workload-type tpcc --scale-factor {scale_factor} --nworkers 8 --eval-time 1.0 --max-iterations 10 --samples-per-distribution 8 --psize 4"
+    cmd = f"cd {training_dir} && python3 ERL_main.py --workload-type tpcc --scale-factor {scale_factor} --nworkers 8 --eval-time 1.0 --max-iterations 10 --samples-per-distribution 8 --psize 4"
     result = os.system(cmd)
     
     if result == 0:
