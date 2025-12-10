@@ -54,10 +54,9 @@ echo "[DEBUG] Database: $DATASET"
 echo "[DEBUG] Port: 5430"
 TRAIN_START=$(date +%s)
 
-BAO_FORCE_CPU=1 python3 << EOF 2>&1 | tee $LOG_DIR/${TODAY}_train_${DATASET}_${QUERY_SET}.log
+python3 -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_train_${DATASET}_${QUERY_SET}.log
 import sys
 import os
-os.environ['BAO_FORCE_CPU'] = '1'  # Force CPU to avoid CUDA multiprocessing issues
 print("[DEBUG] Python script started")
 sys.path.insert(0, '.')
 print("[DEBUG] Importing cli module...")
@@ -96,10 +95,9 @@ echo "[2/4] Testing with Bao optimizer..."
 echo "----------------------------------------------------------------"
 TEST_BAO_START=$(date +%s)
 
-BAO_FORCE_CPU=1 python3 << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_bao_${DATASET}_${QUERY_SET}.log
+python3 -u  -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_bao_${DATASET}_${QUERY_SET}.log
 import sys
 import os
-os.environ['BAO_FORCE_CPU'] = '1'  # Force CPU to avoid CUDA multiprocessing issues
 sys.path.insert(0, '.')
 from cli import GLOBAL_CONFIG, handle_iqo
 
@@ -133,7 +131,7 @@ echo "[3/4] Testing with PostgreSQL optimizer..."
 echo "----------------------------------------------------------------"
 TEST_PG_START=$(date +%s)
 
-python3 << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_pg_${DATASET}_${QUERY_SET}.log
+python3 -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_pg_${DATASET}_${QUERY_SET}.log
 import sys
 sys.path.insert(0, '.')
 from cli import GLOBAL_CONFIG, handle_iqo

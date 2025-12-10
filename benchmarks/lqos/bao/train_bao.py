@@ -63,32 +63,47 @@ class BaoTrainer:
     def start_server(self):
         """Start the Bao server"""
         print("Starting Bao server...")
-        
+
         # Kill any existing Bao server processes
         self.kill_existing_servers()
-        
-        # Start new server
+
+        # Check if main.py exists
         server_script = self.bao_server_dir / "main.py"
         if not server_script.exists():
             raise RuntimeError(f"Server script not found: {server_script}")
-        
-        # Start server in background
-        self.server_process = subprocess.Popen(
-            [sys.executable, str(server_script)],
-            cwd=self.bao_server_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        
+
+        # Use output_file's directory for server log
+        output_path = Path(self.output_file)
+        if output_path.is_absolute():
+            log_dir = output_path.parent
+        else:
+            log_dir = self.bao_dir / output_path.parent
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        # Server log file
+        timestamp = time.strftime('%Y%m%d_%H%M%S')
+        log_file = log_dir / f"server_bao_train_{timestamp}.log"
+        pid_file = self.bao_server_dir / "server.pid"
+
+        # Start server with nohup
+        cmd = f"cd {self.bao_server_dir} && nohup python3 -u main.py >> {log_file} 2>&1 & echo $! > server.pid"
+        print(f"Server log: {log_file}")
+
+        result = os.system(cmd)
+        if result != 0:
+            raise RuntimeError(f"Failed to start Bao server, exit code: {result}")
+
         # Wait for server to start
         print(f"Waiting {self.server_startup_delay} seconds for server to start...")
         time.sleep(self.server_startup_delay)
-        
-        # Check if server is running
-        if self.server_process.poll() is not None:
-            raise RuntimeError("Failed to start Bao server")
-        
-        print(f"Bao server started with PID: {self.server_process.pid}")
+
+        # Read PID from file
+        if pid_file.exists():
+            with open(pid_file) as f:
+                pid = f.read().strip()
+            print(f"Bao server started with PID: {pid}")
+        else:
+            print("Warning: Could not find server.pid file")
         
     def kill_existing_servers(self):
         """Kill any existing Bao server processes"""
@@ -168,15 +183,25 @@ class BaoTrainer:
     
     def cleanup(self):
         """Clean up resources"""
-        if self.server_process:
-            print("Stopping Bao server...")
+        print("Stopping Bao server...")
+        pid_file = self.bao_server_dir / "server.pid"
+
+        if pid_file.exists():
             try:
-                self.server_process.terminate()
-                self.server_process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.server_process.kill()
-            finally:
-                self.server_process = None
+                with open(pid_file) as f:
+                    pid = f.read().strip()
+                print(f"Killing server with PID: {pid}")
+                os.system(f"kill {pid} 2>/dev/null || true")
+                time.sleep(2)
+                # Try harder if still running
+                os.system(f"kill -9 {pid} 2>/dev/null || true")
+                pid_file.unlink()
+                print("Bao server stopped")
+            except Exception as e:
+                print(f"Error stopping server: {e}")
+        else:
+            print("No server.pid file found, using pkill")
+            os.system("pkill -f 'bao_server.*main.py' || true")
     
     def run_training_pipeline(self):
         """Run the complete training pipeline"""
