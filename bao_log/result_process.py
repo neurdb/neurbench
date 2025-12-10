@@ -97,9 +97,9 @@ def calculate_ratio(bao_log_path, pg_log_path, delimiter=','):
     print("Processing log files (filtering column 1 == 2)...")
     print("="*80)
 
-    # Parse BAO log file (only rows where column 1 equals 2, use third-to-last column)
-    print(f"\nReading: {bao_log_path} (using column -3)")
-    bao_values = parse_log_file(bao_log_path, delimiter, filter_column=1, filter_value=2, target_column=-3)
+    # Parse BAO log file (only rows where column 1 equals 2, use column -2 for Bao execution time)
+    print(f"\nReading: {bao_log_path} (using column -2 for Bao execution time)")
+    bao_values = parse_log_file(bao_log_path, delimiter, filter_column=1, filter_value=2, target_column=-2)
 
     if not bao_values:
         print(f"Error: No valid data found in {bao_log_path}")
@@ -107,10 +107,10 @@ def calculate_ratio(bao_log_path, pg_log_path, delimiter=','):
 
     bao_sum = sum(bao_values)
     print(f"  Found {len(bao_values)} values")
-    print(f"  Sum of third-to-last column: {bao_sum:.2f}")
+    print(f"  Sum of Bao execution time (column -2): {bao_sum:.2f}")
 
-    # Parse PG log file (only rows where column 1 equals 2, use second-to-last column)
-    print(f"\nReading: {pg_log_path} (using column -2)")
+    # Parse PG log file (only rows where column 1 equals 2, use column -2 for PG execution time)
+    print(f"\nReading: {pg_log_path} (using column -2 for PG execution time)")
     pg_values = parse_log_file(pg_log_path, delimiter, filter_column=1, filter_value=2, target_column=-2)
 
     if not pg_values:
@@ -119,7 +119,7 @@ def calculate_ratio(bao_log_path, pg_log_path, delimiter=','):
 
     pg_sum = sum(pg_values)
     print(f"  Found {len(pg_values)} values")
-    print(f"  Sum of second-to-last column: {pg_sum:.2f}")
+    print(f"  Sum of PG execution time (column -2): {pg_sum:.2f}")
 
     # Calculate ratio
     if pg_sum == 0:
