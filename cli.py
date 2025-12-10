@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import shutil
 import time
 from typing import List
@@ -11,7 +12,10 @@ from prompt_toolkit.shortcuts import button_dialog
 # Global configuration for all components
 GLOBAL_CONFIG = {
     "dataset": "imdb",
-    "drift": 0.3
+    "drift": 0.0,
+    "query_set": None,  # Optional: if None, uses queries/{dataset}/train|test
+                        # if set, uses queries/{query_set}/train|test
+    "pg_port": 5430     # PostgreSQL port (default: 5430)
 }
 
 
@@ -76,15 +80,28 @@ Core Commands:
   h, help                            Show this help message
   q, quit                            Exit the interactive shell
   set [KEY] [VALUE]                  Set global configuration parameters
+                                       - dataset: imdb, books, fb, osm, wiki
+                                       - drift: 0.0-1.0
+                                       - query_set: query set name (e.g., join-order-benchmark)
   set                                Show current configuration
   gd DATASET [TABLE] DRIFT [SCALE]   Generate data that drifts DRIFT on DATASET
   gq DATASET DRIFT                   Generate query that drifts DRIFT on DATASET
   dd DATASET [TABLE]                 Delete data generator model for DATASET
   dq DATASET                         Delete query generator model for DATASET
   tqo [LQO_NAME]                     Train learned query optimizer
-  iqo [LQO_NAME]                     Test learned query optimizer
+                                       Uses queries/{query_set}/train or queries/{dataset}/train
+  iqo [LQO_NAME] [MODE]              Test learned query optimizer
+                                       Uses queries/{query_set}/test or queries/{dataset}/test
+                                     For bao: iqo bao [bao|pg]
+                                       - bao: Test with Bao optimizer (default)
+                                       - pg:  Test with PostgreSQL optimizer
   idx [INDEX_NAME]                   Test learned index
   lcc                                Test learned concurrency control
+
+Configuration Tips:
+  set dataset imdb_ori               # Set database to use
+  set query_set join-order-benchmark # Set query set (overrides dataset queries)
+  set query_set none                 # Use default queries/{dataset}/train|test
 
 """
     )
@@ -228,41 +245,75 @@ def handle_tqo(tokens: List[str]):
         return
     
     lqo_name = tokens[0].lower()
-    
+
     # Use global configuration
     dataset = GLOBAL_CONFIG["dataset"]
     drift = GLOBAL_CONFIG["drift"]
-    
+    query_set = GLOBAL_CONFIG.get("query_set", None)
+
     print("Training learned query optimizer...")
     print_args(
         lqo_name=lqo_name,
         dataset=dataset,
-        drift=drift
+        drift=drift,
+        query_set=query_set if query_set else "(using dataset default)"
     )
     
     if lqo_name == "bao":
         print("Training Bao learned query optimizer...")
-        
+
         # Check if bao directory exists
         bao_dir = os.path.join("benchmarks", "lqos", "bao")
         if not os.path.exists(bao_dir):
             print(f"Error: Bao directory not found at {bao_dir}")
             return
-        
+
         # Check if train_bao.py script exists
         train_script = os.path.join(bao_dir, "train_bao.py")
         if not os.path.exists(train_script):
             print(f"Error: Bao training script not found at {train_script}")
             return
-        
+
+        # Determine query directory based on query_set or dataset
+        if query_set:
+            # Use specified query set
+            query_dir = os.path.join("queries", query_set, "train")
+            db_name = dataset if dataset else "imdb"
+        elif dataset:
+            # Use default dataset queries
+            query_dir = os.path.join("queries", dataset, "train")
+            db_name = dataset
+        else:
+            query_dir = None
+            db_name = "imdb"
+
+        # Check if query directory exists
+        if query_dir and not os.path.exists(query_dir):
+            print(f"Warning: Query directory not found: {query_dir}")
+            print("Using traditional training approach without queries")
+            query_dir = None
+
+        # Build command with parameters
+        cmd = f"cd {bao_dir} && python train_bao.py"
+        if query_dir:
+            cmd += f" --query-dir ../../../{query_dir}"
+            cmd += f" --database-name {db_name}"
+            cmd += f" --db-port {GLOBAL_CONFIG['pg_port']}"
+            print(f"Using query-based training with {query_dir}")
+            print(f"Database: {db_name}")
+            print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+        else:
+            print("Using traditional training approach")
+
         # Run the training script
         print("Starting Bao training pipeline...")
-        result = os.system(f"cd {bao_dir} && python train_bao.py")
-        
+        result = os.system(cmd)
+
         if result == 0:
             print("[SUCCESS] Bao training completed successfully!")
         else:
             print(f"[FAILED] Bao training failed with exit code {result}")
+            sys.exit(1)
     
     elif lqo_name == "balsa":
         print("Training Balsa learned query optimizer...")
@@ -345,55 +396,110 @@ def handle_tqo(tokens: List[str]):
 def handle_iqo(tokens: List[str]):
     """Handle inference learned query optimizer command"""
     tokens = tokens[1:]
-    
+
     if len(tokens) < 1:
         print("Error: Please specify LQO_NAME")
-        print("Usage: iqo [LQO_NAME]")
+        print("Usage: iqo [LQO_NAME] [MODE]")
         print("Available LQO: bao, balsa, hybridqo, lero")
+        print("For bao: iqo bao [bao|pg]  (default: bao)")
+        print("  - bao: Test with Bao optimizer")
+        print("  - pg:  Test with PostgreSQL optimizer")
         print("Current global settings:")
         print(f"  Dataset: {GLOBAL_CONFIG['dataset']}")
         print(f"  Drift: {GLOBAL_CONFIG['drift']}")
         print("Use 'set' command to change global settings")
         print("Example: set drift 0.5")
         return
-    
+
     lqo_name = tokens[0].lower()
+
+    # Check for additional mode parameter (for bao)
+    test_mode = "bao"  # default to bao
+    if len(tokens) > 1:
+        test_mode = tokens[1].lower()
     
     # Use global configuration
     dataset = GLOBAL_CONFIG["dataset"]
     drift = GLOBAL_CONFIG["drift"]
-    
+    query_set = GLOBAL_CONFIG.get("query_set", None)
+
     print("Running learned query optimizer inference...")
     print_args(
         lqo_name=lqo_name,
         dataset=dataset,
-        drift=drift
+        drift=drift,
+        query_set=query_set if query_set else "(using dataset default)"
     )
     
     if lqo_name == "bao":
-        print("Running Bao learned query optimizer inference...")
-        print_args(lqo_name=lqo_name)
-        
+        # Validate test mode
+        if test_mode not in ["bao", "pg"]:
+            print(f"Error: Invalid test mode '{test_mode}'")
+            print("Usage: iqo bao [bao|pg]")
+            print("  - bao: Test with Bao optimizer (default)")
+            print("  - pg:  Test with PostgreSQL optimizer")
+            return
+
+        mode_name = "Bao" if test_mode == "bao" else "PostgreSQL"
+        print(f"Testing with {mode_name} optimizer...")
+        print_args(lqo_name=lqo_name, test_mode=test_mode)
+
         # Check if bao directory exists
         bao_dir = os.path.join("benchmarks", "lqos", "bao")
         if not os.path.exists(bao_dir):
             print(f"Error: Bao directory not found at {bao_dir}")
             return
-        
-        # Check if inference script exists
-        inference_script = os.path.join(bao_dir, "inference_bao.py")
-        if not os.path.exists(inference_script):
-            print(f"Error: Bao inference script not found at {inference_script}")
+
+        # Check if test script exists
+        test_script = os.path.join(bao_dir, "test_bao.py")
+        if not os.path.exists(test_script):
+            print(f"Error: Bao test script not found at {test_script}")
             return
-        
-        # Run the inference script
-        print("Starting Bao inference...")
-        result = os.system(f"cd {bao_dir} && python inference_bao.py")
-        
-        if result == 0:
-            print("[SUCCESS] Bao inference completed successfully!")
+
+        # Determine query directory based on query_set or dataset
+        if query_set:
+            # Use specified query set
+            query_dir = os.path.join("queries", query_set, "test")
+            db_name = dataset if dataset else "imdb"
+        elif dataset:
+            # Use default dataset queries
+            query_dir = os.path.join("queries", dataset, "test")
+            db_name = dataset
         else:
-            print(f"[FAILED] Bao inference failed with exit code {result}")
+            print("Error: Please set dataset first using 'set dataset [DATASET_NAME]'")
+            return
+
+        # Check if query directory exists
+        if not os.path.exists(query_dir):
+            print(f"Error: Query directory not found: {query_dir}")
+            return
+
+        # Build command with parameters based on test mode
+        cmd = f"cd {bao_dir} && python test_bao.py"
+        cmd += f" --query-dir ../../../{query_dir}"
+        cmd += f" --database-name {db_name}"
+        cmd += f" --db-port {GLOBAL_CONFIG['pg_port']}"
+
+        if test_mode == "bao":
+            cmd += " --use-bao"
+            print(f"Using Bao optimizer for testing with {query_dir}")
+            print(f"Database: {db_name}")
+            print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+        else:  # pg
+            cmd += " --use-postgres"
+            print(f"Using PostgreSQL optimizer for testing with {query_dir}")
+            print(f"Database: {db_name}")
+            print(f"PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
+
+        # Run the test script
+        print(f"Starting {mode_name} testing pipeline...")
+        result = os.system(cmd)
+
+        if result == 0:
+            print(f"[SUCCESS] {mode_name} testing completed successfully!")
+        else:
+            print(f"[FAILED] {mode_name} testing failed with exit code {result}")
+            sys.exit(1)
     
     elif lqo_name == "balsa":
         print("Running Balsa learned query optimizer inference...")
@@ -494,9 +600,12 @@ def handle_set(tokens: List[str]):
         print("Available keys:")
         print("  dataset: imdb, books, fb, osm, wiki")
         print("  drift: 0.0-1.0")
+        print("  query_set: any query set name (or 'none' to use default)")
         print("Examples:")
         print("  set dataset books")
         print("  set drift 0.5")
+        print("  set query_set join-order-benchmark")
+        print("  set query_set none  # Use default queries/{dataset}/train|test")
         return
     
     key = tokens[0].lower()
@@ -523,10 +632,19 @@ def handle_set(tokens: List[str]):
         except ValueError:
             print("Error: Drift must be a valid number")
             return
-            
+
+    elif key == "query_set":
+        if value.lower() == "none":
+            GLOBAL_CONFIG[key] = None
+            print(f"[SUCCESS] Set {key} = None (using default queries/{{dataset}}/train|test)")
+        else:
+            GLOBAL_CONFIG[key] = value
+            print(f"[SUCCESS] Set {key} = {value}")
+            print(f"Query paths will be: queries/{value}/train and queries/{value}/test")
+
     else:
         print(f"Error: Unknown configuration key '{key}'")
-        print("Available keys: dataset, drift")
+        print("Available keys: dataset, drift, query_set")
         return
 
 

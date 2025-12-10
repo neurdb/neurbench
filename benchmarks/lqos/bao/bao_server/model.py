@@ -11,7 +11,10 @@ from torch.utils.data import DataLoader
 import net
 from featurize import TreeFeaturizer
 
-CUDA = torch.cuda.is_available()
+# Force CPU if BAO_FORCE_CPU is set, otherwise auto-detect CUDA
+CUDA = torch.cuda.is_available() and os.environ.get('BAO_FORCE_CPU', '0') != '1'
+if os.environ.get('BAO_FORCE_CPU', '0') == '1':
+    print("BAO_FORCE_CPU=1 detected, using CPU only")
 
 def _nn_path(base):
     return os.path.join(base, "nn_weights")
@@ -87,7 +90,8 @@ class BaoRegression:
             self.__in_channels = joblib.load(f)
             
         self.__net = net.BaoNet(self.__in_channels)
-        self.__net.load_state_dict(torch.load(_nn_path(path)))
+        # Force loading to CPU to avoid CUDA multiprocessing issues
+        self.__net.load_state_dict(torch.load(_nn_path(path), map_location='cpu'))
         self.__net.eval()
         print(f"Model device: {next(self.__net.parameters()).device}")
         
