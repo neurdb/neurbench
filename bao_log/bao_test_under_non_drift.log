@@ -1,339 +1,339 @@
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:02:11.373674, 10a.sql, 303.677, 243.322, 395.755, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:02:11.374016, 10a.sql, 302.027, 209.56, 395.755, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:02:11.374128, 10a.sql, 251.204, 286.715, 395.755, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:02:13.920697, 10b.sql, 301.128, 143.674, 395.538, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:02:13.920931, 10b.sql, 256.888, 117.34, 395.538, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:02:13.921017, 10b.sql, 249.175, 194.775, 395.538, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:02:25.983819, 10c.sql, 290.224, 3319.208, 2289.943, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:02:25.984072, 10c.sql, 252.136, 3221.562, 2289.943, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:02:25.984172, 10c.sql, 254.271, 3332.87, 2289.943, Bao
-(no hint), 0, 2025-12-17 17:02:28.585628, 11a.sql, 346.609, 80.841, 236.659, Bao
-(no hint), 1, 2025-12-17 17:02:28.585883, 11a.sql, 278.439, 66.062, 236.659, Bao
-(no hint), 2, 2025-12-17 17:02:28.585983, 11a.sql, 276.707, 147.36, 236.659, Bao
-(no hint), 0, 2025-12-17 17:02:31.098860, 11b.sql, 350.767, 49.536, 236.659, Bao
-(no hint), 1, 2025-12-17 17:02:31.099091, 11b.sql, 282.039, 35.048, 236.659, Bao
-(no hint), 2, 2025-12-17 17:02:31.099176, 11b.sql, 276.419, 116.509, 236.659, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:02:33.998562, 11c.sql, 341.65, 184.498, 490.383, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:02:33.998813, 11c.sql, 271.491, 175.434, 490.383, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:02:33.998907, 11c.sql, 273.592, 259.532, 490.383, Bao
-(no hint), 0, 2025-12-17 17:02:36.805626, 11d.sql, 343.71, 156.894, 417.999, Bao
-(no hint), 1, 2025-12-17 17:02:36.805885, 11d.sql, 272.333, 144.704, 417.999, Bao
-(no hint), 2, 2025-12-17 17:02:36.805983, 11d.sql, 272.333, 222.765, 417.999, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:02:39.775202, 12a.sql, 346.248, 196.514, 425.017, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:02:39.775480, 12a.sql, 284.073, 174.628, 425.017, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:02:39.775583, 12a.sql, 281.376, 262.146, 425.017, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:02:42.199200, 12b.sql, 351.791, 2.411, 12.588, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:02:42.199364, 12b.sql, 280.716, 0.875, 12.588, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:02:42.199417, 12b.sql, 277.363, 82.821, 12.588, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:02:48.209187, 12c.sql, 337.44, 1318.801, 477.91, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:02:48.209459, 12c.sql, 277.86, 1163.476, 477.91, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:02:48.209655, 12c.sql, 277.421, 1245.921, 477.91, Bao
-(no hint), 0, 2025-12-17 17:02:54.883063, 13a.sql, 400.002, 1358.931, 1375.149, Bao
-(no hint), 1, 2025-12-17 17:02:54.883326, 13a.sql, 328.53, 1305.775, 1375.149, Bao
-(no hint), 2, 2025-12-17 17:02:54.883430, 13a.sql, 328.666, 1397.152, 1375.149, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-12-17 17:02:58.513777, 13b.sql, 399.76, 207.703, 312.033, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-12-17 17:02:58.514038, 13b.sql, 346.903, 217.637, 312.033, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-12-17 17:02:58.514137, 13b.sql, 357.442, 277.001, 312.033, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-12-17 17:03:01.737981, 13c.sql, 400.318, 169.868, 312.033, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-12-17 17:03:01.738241, 13c.sql, 333.95, 158.426, 312.033, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-12-17 17:03:01.738340, 13c.sql, 333.814, 240.423, 312.033, Bao
-(no hint), 0, 2025-12-17 17:03:10.275835, 13d.sql, 384.592, 1976.632, 1443.735, Bao
-(no hint), 1, 2025-12-17 17:03:10.276096, 13d.sql, 338.887, 1897.157, 1443.735, Bao
-(no hint), 2, 2025-12-17 17:03:10.276200, 13d.sql, 331.204, 1982.754, 1443.735, Bao
-(no hint), 0, 2025-12-17 17:03:13.493610, 14a.sql, 333.687, 346.28, 997.296, Bao
-(no hint), 1, 2025-12-17 17:03:13.493867, 14a.sql, 289.321, 240.624, 997.296, Bao
-(no hint), 2, 2025-12-17 17:03:13.493966, 14a.sql, 265.168, 321.108, 997.296, Bao
-(no hint), 0, 2025-12-17 17:03:16.354044, 14b.sql, 334.229, 152.157, 201.744, Bao
-(no hint), 1, 2025-12-17 17:03:16.354310, 14b.sql, 258.662, 99.832, 201.744, Bao
-(no hint), 2, 2025-12-17 17:03:16.354411, 14b.sql, 336.172, 182.611, 201.744, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:20.552445, 14c.sql, 331.1, 610.11, 1393.679, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:20.552712, 14c.sql, 256.161, 556.045, 1393.679, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:20.552813, 14c.sql, 301.066, 622.7, 1393.679, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:24.487639, 15a.sql, 470.925, 293.323, 435.185, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:24.487881, 15a.sql, 387.86, 271.465, 435.185, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:24.487980, 15a.sql, 391.177, 344.758, 435.185, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:27.650318, 15b.sql, 446.907, 51.125, 150.998, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:27.650559, 15b.sql, 380.836, 43.697, 150.998, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:27.650663, 15b.sql, 380.102, 127.792, 150.998, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:32.930701, 15c.sql, 439.004, 762.559, 655.758, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:32.931044, 15c.sql, 428.482, 601.787, 655.758, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:32.931147, 15c.sql, 388.574, 693.859, 655.758, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:38.810039, 15d.sql, 472.738, 918.201, 2079.143, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:38.810304, 15d.sql, 382.53, 782.652, 2079.143, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:38.810402, 15d.sql, 449.657, 868.218, 2079.143, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:03:41.899319, 16a.sql, 360.195, 259.22, 551.25, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:03:41.899580, 16a.sql, 306.869, 155.345, 551.25, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:03:41.899709, 16a.sql, 281.875, 236.952, 551.25, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:03:56.466517, 16b.sql, 348.304, 4068.222, 3566.433, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:03:56.466771, 16b.sql, 304.095, 4004.946, 3566.433, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:03:56.466872, 16b.sql, 296.152, 4047.503, 3566.433, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:04:08.766454, 16c.sql, 353.741, 3366.271, 3419.251, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:04:08.766717, 16c.sql, 304.229, 3146.415, 3419.251, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:04:08.766820, 16c.sql, 296.484, 3324.197, 3419.251, Bao
-(no hint), 0, 2025-12-17 17:04:14.885164, 16d.sql, 354.332, 1303.289, 2761.035, Bao
-(no hint), 1, 2025-12-17 17:04:14.885439, 16d.sql, 308.241, 1101.61, 2761.035, Bao
-(no hint), 2, 2025-12-17 17:04:14.885538, 16d.sql, 291.932, 1175.402, 2761.035, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:04:23.782122, 17a.sql, 310.466, 2268.124, 3098.863, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:04:23.782389, 17a.sql, 266.773, 2177.693, 3098.863, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:04:23.782525, 17a.sql, 261.42, 2224.986, 3098.863, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:04:39.493491, 17b.sql, 311.227, 4468.241, 4012.177, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:04:39.493741, 17b.sql, 278.704, 4444.35, 4012.177, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:04:39.493839, 17b.sql, 258.602, 4397.544, 4012.177, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:04:48.923168, 17c.sql, 311.728, 2411.175, 3750.71, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:04:48.923424, 17c.sql, 275.196, 2321.981, 3750.71, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:04:48.923523, 17c.sql, 260.558, 2357.01, 3750.71, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:05:06.731832, 17d.sql, 309.424, 5039.268, 4012.177, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:05:06.732118, 17d.sql, 299.974, 5199.013, 4012.177, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:05:06.732223, 17d.sql, 260.894, 5234.879, 4012.177, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:05:18.627242, 17e.sql, 307.897, 3234.224, 3413.284, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:05:18.627589, 17e.sql, 247.594, 3154.257, 3413.284, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:05:18.627717, 17e.sql, 267.17, 3201.524, 3413.284, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:05:39.967850, 17f.sql, 308.475, 6594.121, 3543.391, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:05:39.968097, 17f.sql, 234.022, 6286.188, 3543.391, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:05:39.968200, 17f.sql, 246.75, 6382.953, 3543.391, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-12-17 17:05:43.271564, 18a.sql, 290.882, 411.85, 682.638, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-12-17 17:05:43.271852, 18a.sql, 250.694, 356.184, 682.638, Bao
-SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-12-17 17:05:43.271952, 18a.sql, 250.08, 431.932, 682.638, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:05:46.003233, 18b.sql, 288.854, 213.637, 461.629, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:05:46.003473, 18b.sql, 251.27, 186.77, 461.629, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:05:46.003571, 18b.sql, 248.825, 262.129, 461.629, Bao
-(no hint), 0, 2025-12-17 17:05:57.704071, 18c.sql, 276.82, 3268.12, 1818.194, Bao
-(no hint), 1, 2025-12-17 17:05:57.704340, 18c.sql, 250.457, 3135.477, 1818.194, Bao
-(no hint), 2, 2025-12-17 17:05:57.704442, 18c.sql, 254.787, 3220.572, 1818.194, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:02.209313, 19a.sql, 614.808, 206.151, 437.325, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:02.209561, 19a.sql, 519.466, 200.427, 437.325, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:02.209657, 19a.sql, 515.251, 280.459, 437.325, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:06.523094, 19b.sql, 599.97, 146.395, 302.203, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:06.523359, 19b.sql, 517.574, 134.237, 302.203, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:06.523463, 19b.sql, 518.192, 218.028, 302.203, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:11.647174, 19c.sql, 596.562, 461.708, 530.577, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:11.647422, 19c.sql, 528.641, 367.991, 530.577, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:11.647520, 19c.sql, 517.122, 462.673, 530.577, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:06:28.907990, 19d.sql, 600.777, 4395.606, 6362.333, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:06:28.908254, 19d.sql, 612.528, 4277.824, 6362.333, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:06:28.908354, 19d.sql, 522.697, 4341.187, 6362.333, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:31.074069, 1a.sql, 270.208, 23.785, 84.322, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:31.074233, 1a.sql, 210.319, 8.257, 84.322, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:31.074279, 1a.sql, 237.279, 91.832, 84.322, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:33.013374, 1b.sql, 271.411, 1.068, 13.205, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:33.013549, 1b.sql, 205.228, 0.493, 13.205, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:33.013597, 1b.sql, 215.605, 81.753, 13.205, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:34.979646, 1c.sql, 247.266, 20.928, 75.222, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:34.979818, 1c.sql, 204.444, 12.112, 75.222, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:34.979873, 1c.sql, 205.517, 92.915, 75.222, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:36.917482, 1d.sql, 248.268, 1.031, 14.033, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:36.917744, 1d.sql, 202.99, 0.536, 14.033, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:36.917878, 1d.sql, 211.642, 81.784, 14.033, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:06:48.288235, 20a.sql, 475.452, 2776.699, 3069.288, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:06:48.288498, 20a.sql, 410.574, 2627.782, 3069.288, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:06:48.288604, 20a.sql, 411.298, 2693.971, 3069.288, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:06:54.899510, 20b.sql, 483.781, 1278.817, 2124.388, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:06:54.899775, 20b.sql, 393.412, 1080.617, 2124.388, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:06:54.899876, 20b.sql, 400.255, 1159.37, 2124.388, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:07:00.043351, 20c.sql, 478.633, 788.685, 2105.261, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:07:00.043594, 20c.sql, 397.745, 605.883, 2105.261, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:07:00.043721, 20c.sql, 384.915, 688.607, 2105.261, Bao
-(no hint), 0, 2025-12-17 17:07:03.233974, 21a.sql, 444.071, 89.85, 237.698, Bao
-(no hint), 1, 2025-12-17 17:07:03.234213, 21a.sql, 365.732, 81.132, 237.698, Bao
-(no hint), 2, 2025-12-17 17:07:03.234318, 21a.sql, 364.614, 159.059, 237.698, Bao
-(no hint), 0, 2025-12-17 17:07:06.408366, 21b.sql, 441.166, 85.021, 237.824, Bao
-(no hint), 1, 2025-12-17 17:07:06.408599, 21b.sql, 363.983, 76.527, 237.824, Bao
-(no hint), 2, 2025-12-17 17:07:06.408697, 21b.sql, 365.621, 154.548, 237.824, Bao
-(no hint), 0, 2025-12-17 17:07:09.613174, 21c.sql, 440.345, 92.931, 235.471, Bao
-(no hint), 1, 2025-12-17 17:07:09.613399, 21c.sql, 365.532, 68.473, 235.471, Bao
-(no hint), 2, 2025-12-17 17:07:09.613491, 21c.sql, 364.818, 159.351, 235.471, Bao
-(no hint), 0, 2025-12-17 17:07:15.714948, 22a.sql, 819.188, 413.01, 1246.913, Bao
-(no hint), 1, 2025-12-17 17:07:15.715189, 22a.sql, 693.696, 330.758, 1246.913, Bao
-(no hint), 2, 2025-12-17 17:07:15.715291, 22a.sql, 699.984, 411.652, 1246.913, Bao
-(no hint), 0, 2025-12-17 17:07:21.432626, 22b.sql, 824.821, 258.761, 1186.757, Bao
-(no hint), 1, 2025-12-17 17:07:21.432861, 22b.sql, 703.63, 176.521, 1186.757, Bao
-(no hint), 2, 2025-12-17 17:07:21.432962, 22b.sql, 692.153, 274.253, 1186.757, Bao
-(no hint), 0, 2025-12-17 17:07:31.862351, 22c.sql, 817.402, 1857.051, 1402.101, Bao
-(no hint), 1, 2025-12-17 17:07:31.862596, 22c.sql, 691.914, 1762.825, 1402.101, Bao
-(no hint), 2, 2025-12-17 17:07:31.862696, 22c.sql, 690.338, 1860.234, 1402.101, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2025-12-17 17:07:39.156425, 22d.sql, 831.319, 801.274, 1867.935, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 1, 2025-12-17 17:07:39.156668, 22d.sql, 702.993, 688.633, 1867.935, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 2, 2025-12-17 17:07:39.156768, 22d.sql, 709.641, 765.339, 1867.935, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:07:44.702027, 23a.sql, 821.86, 211.202, 335.343, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:07:44.702270, 23a.sql, 699.547, 139.346, 335.343, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:07:44.702370, 23a.sql, 689.67, 220.87, 335.343, Bao
-(no hint), 0, 2025-12-17 17:07:49.996117, 23b.sql, 823.594, 77.59, 318.771, Bao
-(no hint), 1, 2025-12-17 17:07:49.996359, 23b.sql, 694.874, 61.189, 318.771, Bao
-(no hint), 2, 2025-12-17 17:07:49.996460, 23b.sql, 700.903, 140.623, 318.771, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:07:56.573167, 23c.sql, 843.815, 368.122, 595.515, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:07:56.573405, 23c.sql, 724.989, 264.928, 595.515, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:07:56.573504, 23c.sql, 822.263, 349.899, 595.515, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:08:08.708764, 24a.sql, 1870.55, 557.411, 1186.806, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:08:08.709018, 24a.sql, 1605.552, 414.779, 1186.806, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:08:08.709120, 24a.sql, 1592.216, 499.905, 1186.806, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:08:21.512433, 24b.sql, 1854.192, 299.946, 345.886, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:08:21.512697, 24b.sql, 1817.701, 307.523, 345.886, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:08:21.512799, 24b.sql, 1762.316, 382.863, 345.886, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:08:33.265606, 25a.sql, 452.551, 2913.245, 3479.702, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:08:33.265862, 25a.sql, 385.581, 2769.503, 3479.702, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:08:33.265961, 25a.sql, 452.486, 2839.033, 3479.702, Bao
-(no hint), 0, 2025-12-17 17:08:37.122596, 25b.sql, 458.62, 348.299, 626.218, Bao
-(no hint), 1, 2025-12-17 17:08:37.122859, 25b.sql, 365.801, 263.586, 626.218, Bao
-(no hint), 2, 2025-12-17 17:08:37.122966, 25b.sql, 366.491, 340.994, 626.218, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:08:49.678089, 25c.sql, 453.895, 3174.946, 3370.422, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:08:49.678434, 25c.sql, 377.879, 3057.859, 3370.422, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:08:49.678534, 25c.sql, 415.687, 3158.178, 3370.422, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:09:01.437069, 26a.sql, 1329.69, 1327.398, 1620.582, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:09:01.437317, 26a.sql, 1216.427, 1153.066, 1620.582, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:09:01.437417, 26a.sql, 1084.05, 1216.578, 1620.582, Bao
-(no hint), 0, 2025-12-17 17:09:09.613967, 26b.sql, 1335.529, 188.467, 425.979, Bao
-(no hint), 1, 2025-12-17 17:09:09.614223, 26b.sql, 1103.913, 119.555, 425.979, Bao
-(no hint), 2, 2025-12-17 17:09:09.614324, 26b.sql, 1123.818, 213.366, 425.979, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-12-17 17:09:20.719257, 26c.sql, 1311.037, 1156.347, 2001.307, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-12-17 17:09:20.719508, 26c.sql, 1111.747, 919.127, 2001.307, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-12-17 17:09:20.719608, 26c.sql, 1109.176, 915.737, 2001.307, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:09:32.474492, 27a.sql, 1936.59, 41.528, 55.945, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:09:32.474751, 27a.sql, 1812.951, 38.168, 55.945, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:09:32.474852, 27a.sql, 1620.636, 120.319, 55.945, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:09:45.182765, 27b.sql, 1956.984, 29.895, 58.895, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:09:45.183002, 27b.sql, 1859.578, 25.535, 58.895, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:09:45.183101, 27b.sql, 1919.756, 107.473, 58.895, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2025-12-17 17:09:56.804252, 27c.sql, 1939.235, 28.886, 71.235, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 1, 2025-12-17 17:09:56.804485, 27c.sql, 1803.113, 37.495, 71.235, Bao
-SET enable_mergejoin TO off; SET enable_seqscan TO off; , 2, 2025-12-17 17:09:56.804585, 27c.sql, 1632.018, 119.436, 71.235, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:10:31.142161, 28a.sql, 5431.796, 942.544, 1360.598, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:10:31.142408, 28a.sql, 5052.641, 857.694, 1360.598, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:10:31.142507, 28a.sql, 4506.444, 938.723, 1360.598, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-12-17 17:11:02.734301, 28b.sql, 5501.285, 467.39, 1075.564, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-12-17 17:11:02.734565, 28b.sql, 4625.868, 427.43, 1075.564, Bao
-SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-12-17 17:11:02.734699, 28b.sql, 4642.488, 485.686, 1075.564, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:11:36.250197, 28c.sql, 5529.173, 1183.388, 1327.193, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:11:36.250456, 28c.sql, 4666.808, 1028.268, 1327.193, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:11:36.250645, 28c.sql, 4585.692, 1113.34, 1327.193, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:17:43.551752, 29a.sql, 61538.031, 389.533, 622.58, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:17:43.552024, 29a.sql, 60703.581, 405.801, 622.58, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:17:43.552127, 29a.sql, 59109.124, 479.597, 622.58, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:23:44.596134, 29b.sql, 60974.646, 328.613, 622.587, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:23:44.596372, 29b.sql, 58018.024, 321.641, 622.587, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:23:44.596470, 29b.sql, 58098.141, 401.423, 622.587, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:29:48.924964, 29c.sql, 62180.806, 565.215, 981.037, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:29:48.925218, 29c.sql, 57704.686, 540.395, 981.037, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:29:48.925319, 29c.sql, 60180.3, 639.879, 981.037, Bao
-(no hint), 0, 2025-12-17 17:29:52.322939, 2a.sql, 274.202, 532.394, 1602.646, Bao
-(no hint), 1, 2025-12-17 17:29:52.323195, 2a.sql, 210.454, 445.096, 1602.646, Bao
-(no hint), 2, 2025-12-17 17:29:52.323295, 2a.sql, 208.304, 524.036, 1602.646, Bao
-(no hint), 0, 2025-12-17 17:29:55.694050, 2b.sql, 263.4, 522.908, 1355.279, Bao
-(no hint), 1, 2025-12-17 17:29:55.694310, 2b.sql, 210.846, 439.525, 1355.279, Bao
-(no hint), 2, 2025-12-17 17:29:55.694412, 2b.sql, 210.733, 523.857, 1355.279, Bao
-(no hint), 0, 2025-12-17 17:29:59.005720, 2c.sql, 261.283, 486.816, 1259.979, Bao
-(no hint), 1, 2025-12-17 17:29:59.005974, 2c.sql, 209.4, 419.719, 1259.979, Bao
-(no hint), 2, 2025-12-17 17:29:59.006072, 2c.sql, 211.088, 509.618, 1259.979, Bao
-(no hint), 0, 2025-12-17 17:30:02.802133, 2d.sql, 260.693, 683.776, 869.09, Bao
-(no hint), 1, 2025-12-17 17:30:02.802389, 2d.sql, 208.743, 556.636, 869.09, Bao
-(no hint), 2, 2025-12-17 17:30:02.802489, 2d.sql, 211.178, 654.915, 869.09, Bao
-(no hint), 0, 2025-12-17 17:30:18.672206, 30a.sql, 1789.052, 1999.047, 2247.732, Bao
-(no hint), 1, 2025-12-17 17:30:18.672463, 30a.sql, 1516.328, 1757.827, 2247.732, Bao
-(no hint), 2, 2025-12-17 17:30:18.672565, 30a.sql, 1517.645, 1838.523, 2247.732, Bao
-(no hint), 0, 2025-12-17 17:30:30.250009, 30b.sql, 1854.44, 377.406, 725.182, Bao
-(no hint), 1, 2025-12-17 17:30:30.250246, 30b.sql, 1555.15, 301.063, 725.182, Bao
-(no hint), 2, 2025-12-17 17:30:30.250346, 30b.sql, 1509.543, 396.185, 725.182, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:30:51.667720, 30c.sql, 1767.45, 3382.869, 3389.752, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:30:51.667974, 30c.sql, 1513.007, 3203.398, 3389.752, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:30:51.668073, 30c.sql, 1763.207, 3298.773, 3389.752, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:30:58.937642, 31a.sql, 1096.508, 284.876, 410.993, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:30:58.937825, 31a.sql, 933.374, 230.508, 410.993, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:30:58.937881, 31a.sql, 928.299, 310.247, 410.993, Bao
-(no hint), 0, 2025-12-17 17:31:06.321452, 31b.sql, 1107.475, 176.605, 228.526, Bao
-(no hint), 1, 2025-12-17 17:31:06.321704, 31b.sql, 1009.079, 141.587, 228.526, Bao
-(no hint), 2, 2025-12-17 17:31:06.321806, 31b.sql, 934.906, 221.619, 228.526, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:31:14.599044, 31c.sql, 1099.148, 372.162, 452.212, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:31:14.599299, 31c.sql, 1032.697, 352.536, 452.212, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:31:14.599399, 31c.sql, 1002.769, 401.089, 452.212, Bao
-(no hint), 0, 2025-12-17 17:31:16.664728, 32a.sql, 282.63, 19.819, 163.444, Bao
-(no hint), 1, 2025-12-17 17:31:16.664897, 32a.sql, 220.003, 13.915, 163.444, Bao
-(no hint), 2, 2025-12-17 17:31:16.664951, 32a.sql, 215.071, 96.874, 163.444, Bao
-(no hint), 0, 2025-12-17 17:31:19.111719, 32b.sql, 272.83, 145.845, 163.444, Bao
-(no hint), 1, 2025-12-17 17:31:19.111972, 32b.sql, 218.42, 104.792, 163.444, Bao
-(no hint), 2, 2025-12-17 17:31:19.112073, 32b.sql, 222.549, 194.96, 163.444, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:31:56.890908, 33a.sql, 6533.742, 24.566, 42.967, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:31:56.891152, 33a.sql, 6052.18, 19.561, 42.967, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:31:56.891270, 33a.sql, 5349.177, 99.312, 42.967, Bao
-SET enable_mergejoin TO off; , 0, 2025-12-17 17:32:32.521280, 33b.sql, 6518.27, 16.307, 43.339, Bao
-SET enable_mergejoin TO off; , 1, 2025-12-17 17:32:32.521533, 33b.sql, 5442.16, 10.26, 43.339, Bao
-SET enable_mergejoin TO off; , 2, 2025-12-17 17:32:32.521631, 33b.sql, 5446.043, 95.336, 43.339, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:32:56.863685, 33c.sql, 4386.888, 18.779, 74.695, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:32:56.863924, 33c.sql, 3693.812, 16.466, 74.695, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:32:56.864026, 33c.sql, 3683.996, 101.568, 74.695, Bao
-(no hint), 0, 2025-12-17 17:32:59.310905, 3a.sql, 267.76, 181.751, 446.995, Bao
-(no hint), 1, 2025-12-17 17:32:59.311141, 3a.sql, 217.21, 120.031, 446.995, Bao
-(no hint), 2, 2025-12-17 17:32:59.311244, 3a.sql, 212.77, 197.613, 446.995, Bao
-(no hint), 0, 2025-12-17 17:33:01.499675, 3b.sql, 263.459, 120.374, 374.323, Bao
-(no hint), 1, 2025-12-17 17:33:01.499913, 3b.sql, 195.117, 72.978, 374.323, Bao
-(no hint), 2, 2025-12-17 17:33:01.500012, 3b.sql, 219.342, 154.715, 374.323, Bao
-(no hint), 0, 2025-12-17 17:33:04.258279, 3c.sql, 265.876, 302.017, 458.207, Bao
-(no hint), 1, 2025-12-17 17:33:04.258520, 3c.sql, 244.61, 210.2, 458.207, Bao
-(no hint), 2, 2025-12-17 17:33:04.258709, 3c.sql, 196.664, 301.965, 458.207, Bao
-(no hint), 0, 2025-12-17 17:33:06.510855, 4a.sql, 267.851, 125.118, 462.557, Bao
-(no hint), 1, 2025-12-17 17:33:06.511090, 4a.sql, 201.854, 80.711, 462.557, Bao
-(no hint), 2, 2025-12-17 17:33:06.511190, 4a.sql, 226.166, 160.088, 462.557, Bao
-(no hint), 0, 2025-12-17 17:33:08.720331, 4b.sql, 266.482, 78.077, 300.891, Bao
-(no hint), 1, 2025-12-17 17:33:08.720585, 4b.sql, 200.059, 85.095, 300.891, Bao
-(no hint), 2, 2025-12-17 17:33:08.720680, 4b.sql, 229.615, 158.811, 300.891, Bao
-(no hint), 0, 2025-12-17 17:33:11.037152, 4c.sql, 268.322, 147.928, 497.028, Bao
-(no hint), 1, 2025-12-17 17:33:11.037433, 4c.sql, 209.242, 103.274, 497.028, Bao
-(no hint), 2, 2025-12-17 17:33:11.037534, 4c.sql, 215.385, 182.821, 497.028, Bao
-(no hint), 0, 2025-12-17 17:33:13.461033, 5a.sql, 275.74, 144.04, 369.919, Bao
-(no hint), 1, 2025-12-17 17:33:13.461286, 5a.sql, 218.335, 140.676, 369.919, Bao
-(no hint), 2, 2025-12-17 17:33:13.461384, 5a.sql, 218.036, 219.205, 369.919, Bao
-(no hint), 0, 2025-12-17 17:33:15.953904, 5b.sql, 272.119, 136.635, 198.428, Bao
-(no hint), 1, 2025-12-17 17:33:15.954073, 5b.sql, 216.586, 137.854, 198.428, Bao
-(no hint), 2, 2025-12-17 17:33:15.954105, 5b.sql, 285.537, 212.499, 198.428, Bao
-(no hint), 0, 2025-12-17 17:33:18.498227, 5c.sql, 271.507, 177.966, 508.96, Bao
-(no hint), 1, 2025-12-17 17:33:18.498394, 5c.sql, 223.592, 173.858, 508.96, Bao
-(no hint), 2, 2025-12-17 17:33:18.498426, 5c.sql, 222.56, 252.468, 508.96, Bao
-(no hint), 0, 2025-12-17 17:33:20.550945, 6a.sql, 262.247, 40.287, 217.819, Bao
-(no hint), 1, 2025-12-17 17:33:20.551192, 6a.sql, 212.419, 21.179, 217.819, Bao
-(no hint), 2, 2025-12-17 17:33:20.551291, 6a.sql, 209.317, 107.06, 217.819, Bao
-(no hint), 0, 2025-12-17 17:33:23.139345, 6b.sql, 273.269, 258.143, 473.673, Bao
-(no hint), 1, 2025-12-17 17:33:23.139594, 6b.sql, 210.207, 174.743, 473.673, Bao
-(no hint), 2, 2025-12-17 17:33:23.139729, 6b.sql, 213.878, 255.221, 473.673, Bao
-(no hint), 0, 2025-12-17 17:33:25.155861, 6c.sql, 279.29, 18.995, 179.542, Bao
-(no hint), 1, 2025-12-17 17:33:25.156053, 6c.sql, 210.618, 15.484, 179.542, Bao
-(no hint), 2, 2025-12-17 17:33:25.156127, 6c.sql, 209.478, 98.001, 179.542, Bao
-(no hint), 0, 2025-12-17 17:33:39.011372, 6d.sql, 268.594, 4147.582, 2184.965, Bao
-(no hint), 1, 2025-12-17 17:33:39.011667, 6d.sql, 213.927, 3863.503, 2184.965, Bao
-(no hint), 2, 2025-12-17 17:33:39.011777, 6d.sql, 214.88, 3948.957, 2184.965, Bao
-(no hint), 0, 2025-12-17 17:33:41.066039, 6e.sql, 276.426, 39.124, 301.992, Bao
-(no hint), 1, 2025-12-17 17:33:41.066222, 6e.sql, 208.216, 21.841, 301.992, Bao
-(no hint), 2, 2025-12-17 17:33:41.066279, 6e.sql, 213.069, 101.967, 301.992, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:33:51.511338, 6f.sql, 273.668, 2820.021, 2714.551, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:33:51.511600, 6f.sql, 224.324, 2701.546, 2714.551, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:33:51.511735, 6f.sql, 242.676, 2807.73, 2714.551, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:33:55.733496, 7a.sql, 348.828, 701.672, 1049.85, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:33:55.733740, 7a.sql, 288.7, 500.884, 1049.85, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:33:55.733841, 7a.sql, 263.554, 594.7, 1049.85, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:33:58.721368, 7b.sql, 348.299, 247.354, 651.929, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:33:58.721602, 7b.sql, 289.917, 146.757, 651.929, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:33:58.721704, 7b.sql, 263.301, 229.612, 651.929, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:34:10.187472, 7c.sql, 346.481, 3138.244, 3785.212, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:34:10.187749, 7c.sql, 281.701, 2963.824, 3785.212, Bao
-SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:34:10.187846, 7c.sql, 274.693, 3052.055, 3785.212, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:34:14.908539, 8a.sql, 309.178, 778.582, 659.971, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:34:14.908804, 8a.sql, 282.397, 750.41, 659.971, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:34:14.908904, 8a.sql, 271.239, 831.573, 659.971, Bao
-(no hint), 0, 2025-12-17 17:34:17.673234, 8b.sql, 308.762, 169.32, 331.311, Bao
-(no hint), 1, 2025-12-17 17:34:17.673487, 8b.sql, 259.955, 160.85, 331.311, Bao
-(no hint), 2, 2025-12-17 17:34:17.673588, 8b.sql, 254.362, 242.678, 331.311, Bao
-(no hint), 0, 2025-12-17 17:34:29.203532, 8c.sql, 292.76, 3013.004, 2183.998, Bao
-(no hint), 1, 2025-12-17 17:34:29.203829, 8c.sql, 276.287, 3017.698, 2183.998, Bao
-(no hint), 2, 2025-12-17 17:34:29.203948, 8c.sql, 244.862, 3146.035, 2183.998, Bao
-(no hint), 0, 2025-12-17 17:34:36.158584, 8d.sql, 304.174, 1566.376, 2183.998, Bao
-(no hint), 1, 2025-12-17 17:34:36.158843, 8d.sql, 252.058, 1479.14, 2183.998, Bao
-(no hint), 2, 2025-12-17 17:34:36.158946, 8d.sql, 291.27, 1583.58, 2183.998, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:34:39.461912, 9a.sql, 362.22, 226.55, 392.694, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:34:39.462166, 9a.sql, 299.386, 217.0, 392.694, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:34:39.462267, 9a.sql, 284.883, 288.987, 392.694, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-12-17 17:34:42.649841, 9b.sql, 363.207, 236.225, 401.979, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-12-17 17:34:42.650093, 9b.sql, 305.256, 229.276, 401.979, Bao
-SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-12-17 17:34:42.650196, 9b.sql, 302.728, 294.177, 401.979, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-12-17 17:34:46.526593, 9c.sql, 341.486, 465.193, 552.994, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-12-17 17:34:46.526847, 9c.sql, 304.329, 400.268, 552.994, Bao
-SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-12-17 17:34:46.526951, 9c.sql, 307.306, 484.961, 552.994, Bao
-SET enable_nestloop TO off; , 0, 2025-12-17 17:34:58.635176, 9d.sql, 346.005, 3286.111, 3432.389, Bao
-SET enable_nestloop TO off; , 1, 2025-12-17 17:34:58.635428, 9d.sql, 294.883, 3147.075, 3432.389, Bao
-SET enable_nestloop TO off; , 2, 2025-12-17 17:34:58.635528, 9d.sql, 287.406, 3249.828, 3432.389, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:02:11.373674, 10a.sql, 303.677, 243.322, 395.755, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:02:11.374016, 10a.sql, 302.027, 209.56, 395.755, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:02:11.374128, 10a.sql, 251.204, 286.715, 395.755, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:02:13.920697, 10b.sql, 301.128, 143.674, 395.538, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:02:13.920931, 10b.sql, 256.888, 117.34, 395.538, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:02:13.921017, 10b.sql, 249.175, 194.775, 395.538, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:02:25.983819, 10c.sql, 290.224, 3319.208, 2289.943, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:02:25.984072, 10c.sql, 252.136, 3221.562, 2289.943, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:02:25.984172, 10c.sql, 254.271, 3332.87, 2289.943, Bao
+(no hint), 0, 2025-10-17 17:02:28.585628, 11a.sql, 346.609, 80.841, 236.659, Bao
+(no hint), 1, 2025-10-17 17:02:28.585883, 11a.sql, 278.439, 66.062, 236.659, Bao
+(no hint), 2, 2025-10-17 17:02:28.585983, 11a.sql, 276.707, 147.36, 236.659, Bao
+(no hint), 0, 2025-10-17 17:02:31.098860, 11b.sql, 350.767, 49.536, 236.659, Bao
+(no hint), 1, 2025-10-17 17:02:31.099091, 11b.sql, 282.039, 35.048, 236.659, Bao
+(no hint), 2, 2025-10-17 17:02:31.099176, 11b.sql, 276.419, 116.509, 236.659, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:02:33.998562, 11c.sql, 341.65, 184.498, 490.383, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:02:33.998813, 11c.sql, 271.491, 175.434, 490.383, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:02:33.998907, 11c.sql, 273.592, 259.532, 490.383, Bao
+(no hint), 0, 2025-10-17 17:02:36.805626, 11d.sql, 343.71, 156.894, 417.999, Bao
+(no hint), 1, 2025-10-17 17:02:36.805885, 11d.sql, 272.333, 144.704, 417.999, Bao
+(no hint), 2, 2025-10-17 17:02:36.805983, 11d.sql, 272.333, 222.765, 417.999, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:02:39.775202, 12a.sql, 346.248, 196.514, 425.017, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:02:39.775480, 12a.sql, 284.073, 174.628, 425.017, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:02:39.775583, 12a.sql, 281.376, 262.146, 425.017, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:02:42.199200, 12b.sql, 351.791, 2.411, 12.588, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:02:42.199364, 12b.sql, 280.716, 0.875, 12.588, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:02:42.199417, 12b.sql, 277.363, 82.821, 12.588, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:02:48.209187, 12c.sql, 337.44, 1318.801, 477.91, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:02:48.209459, 12c.sql, 277.86, 1163.476, 477.91, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:02:48.209655, 12c.sql, 277.421, 1245.921, 477.91, Bao
+(no hint), 0, 2025-10-17 17:02:54.883063, 13a.sql, 400.002, 1358.931, 1375.149, Bao
+(no hint), 1, 2025-10-17 17:02:54.883326, 13a.sql, 328.53, 1305.775, 1375.149, Bao
+(no hint), 2, 2025-10-17 17:02:54.883430, 13a.sql, 328.666, 1397.152, 1375.149, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-10-17 17:02:58.513777, 13b.sql, 399.76, 207.703, 312.033, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-10-17 17:02:58.514038, 13b.sql, 346.903, 217.637, 312.033, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-10-17 17:02:58.514137, 13b.sql, 357.442, 277.001, 312.033, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-10-17 17:03:01.737981, 13c.sql, 400.318, 169.868, 312.033, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-10-17 17:03:01.738241, 13c.sql, 333.95, 158.426, 312.033, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-10-17 17:03:01.738340, 13c.sql, 333.814, 240.423, 312.033, Bao
+(no hint), 0, 2025-10-17 17:03:10.275835, 13d.sql, 384.592, 1976.632, 1443.735, Bao
+(no hint), 1, 2025-10-17 17:03:10.276096, 13d.sql, 338.887, 1897.157, 1443.735, Bao
+(no hint), 2, 2025-10-17 17:03:10.276200, 13d.sql, 331.204, 1982.754, 1443.735, Bao
+(no hint), 0, 2025-10-17 17:03:13.493610, 14a.sql, 333.687, 346.28, 997.296, Bao
+(no hint), 1, 2025-10-17 17:03:13.493867, 14a.sql, 289.321, 240.624, 997.296, Bao
+(no hint), 2, 2025-10-17 17:03:13.493966, 14a.sql, 265.168, 321.108, 997.296, Bao
+(no hint), 0, 2025-10-17 17:03:16.354044, 14b.sql, 334.229, 152.157, 201.744, Bao
+(no hint), 1, 2025-10-17 17:03:16.354310, 14b.sql, 258.662, 99.832, 201.744, Bao
+(no hint), 2, 2025-10-17 17:03:16.354411, 14b.sql, 336.172, 182.611, 201.744, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:20.552445, 14c.sql, 331.1, 610.11, 1393.679, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:20.552712, 14c.sql, 256.161, 556.045, 1393.679, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:20.552813, 14c.sql, 301.066, 622.7, 1393.679, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:24.487639, 15a.sql, 470.925, 293.323, 435.185, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:24.487881, 15a.sql, 387.86, 271.465, 435.185, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:24.487980, 15a.sql, 391.177, 344.758, 435.185, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:27.650318, 15b.sql, 446.907, 51.125, 150.998, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:27.650559, 15b.sql, 380.836, 43.697, 150.998, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:27.650663, 15b.sql, 380.102, 127.792, 150.998, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:32.930701, 15c.sql, 439.004, 762.559, 655.758, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:32.931044, 15c.sql, 428.482, 601.787, 655.758, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:32.931147, 15c.sql, 388.574, 693.859, 655.758, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:38.810039, 15d.sql, 472.738, 918.201, 2079.143, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:38.810304, 15d.sql, 382.53, 782.652, 2079.143, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:38.810402, 15d.sql, 449.657, 868.218, 2079.143, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:03:41.899319, 16a.sql, 360.195, 259.22, 551.25, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:03:41.899580, 16a.sql, 306.869, 155.345, 551.25, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:03:41.899709, 16a.sql, 281.875, 236.952, 551.25, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:03:56.466517, 16b.sql, 348.304, 4068.222, 3566.433, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:03:56.466771, 16b.sql, 304.095, 4004.946, 3566.433, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:03:56.466872, 16b.sql, 296.152, 4047.503, 3566.433, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:04:08.766454, 16c.sql, 353.741, 3366.271, 3419.251, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:04:08.766717, 16c.sql, 304.229, 3146.415, 3419.251, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:04:08.766820, 16c.sql, 296.484, 3324.197, 3419.251, Bao
+(no hint), 0, 2025-10-17 17:04:14.885164, 16d.sql, 354.332, 1303.289, 2761.035, Bao
+(no hint), 1, 2025-10-17 17:04:14.885439, 16d.sql, 308.241, 1101.61, 2761.035, Bao
+(no hint), 2, 2025-10-17 17:04:14.885538, 16d.sql, 291.932, 1175.402, 2761.035, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:04:23.782122, 17a.sql, 310.466, 2268.124, 3098.863, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:04:23.782389, 17a.sql, 266.773, 2177.693, 3098.863, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:04:23.782525, 17a.sql, 261.42, 2224.986, 3098.863, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:04:39.493491, 17b.sql, 311.227, 4468.241, 4012.177, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:04:39.493741, 17b.sql, 278.704, 4444.35, 4012.177, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:04:39.493839, 17b.sql, 258.602, 4397.544, 4012.177, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:04:48.923168, 17c.sql, 311.728, 2411.175, 3750.71, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:04:48.923424, 17c.sql, 275.196, 2321.981, 3750.71, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:04:48.923523, 17c.sql, 260.558, 2357.01, 3750.71, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:05:06.731832, 17d.sql, 309.424, 5039.268, 4012.177, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:05:06.732118, 17d.sql, 299.974, 5199.013, 4012.177, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:05:06.732223, 17d.sql, 260.894, 5234.879, 4012.177, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:05:18.627242, 17e.sql, 307.897, 3234.224, 3413.284, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:05:18.627589, 17e.sql, 247.594, 3154.257, 3413.284, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:05:18.627717, 17e.sql, 267.17, 3201.524, 3413.284, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:05:39.967850, 17f.sql, 308.475, 6594.121, 3543.391, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:05:39.968097, 17f.sql, 234.022, 6286.188, 3543.391, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:05:39.968200, 17f.sql, 246.75, 6382.953, 3543.391, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2025-10-17 17:05:43.271564, 18a.sql, 290.882, 411.85, 682.638, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 1, 2025-10-17 17:05:43.271852, 18a.sql, 250.694, 356.184, 682.638, Bao
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 2, 2025-10-17 17:05:43.271952, 18a.sql, 250.08, 431.932, 682.638, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:05:46.003233, 18b.sql, 288.854, 213.637, 461.629, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:05:46.003473, 18b.sql, 251.27, 186.77, 461.629, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:05:46.003571, 18b.sql, 248.825, 262.129, 461.629, Bao
+(no hint), 0, 2025-10-17 17:05:57.704071, 18c.sql, 276.82, 3268.12, 1818.194, Bao
+(no hint), 1, 2025-10-17 17:05:57.704340, 18c.sql, 250.457, 3135.477, 1818.194, Bao
+(no hint), 2, 2025-10-17 17:05:57.704442, 18c.sql, 254.787, 3220.572, 1818.194, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:02.209313, 19a.sql, 614.808, 206.151, 437.325, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:02.209561, 19a.sql, 519.466, 200.427, 437.325, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:02.209657, 19a.sql, 515.251, 280.459, 437.325, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:06.523094, 19b.sql, 599.97, 146.395, 302.203, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:06.523359, 19b.sql, 517.574, 134.237, 302.203, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:06.523463, 19b.sql, 518.192, 218.028, 302.203, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:11.647174, 19c.sql, 596.562, 461.708, 530.577, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:11.647422, 19c.sql, 528.641, 367.991, 530.577, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:11.647520, 19c.sql, 517.122, 462.673, 530.577, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:06:28.907990, 19d.sql, 600.777, 4395.606, 6362.333, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:06:28.908254, 19d.sql, 612.528, 4277.824, 6362.333, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:06:28.908354, 19d.sql, 522.697, 4341.187, 6362.333, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:31.074069, 1a.sql, 270.208, 23.785, 84.322, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:31.074233, 1a.sql, 210.319, 8.257, 84.322, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:31.074279, 1a.sql, 237.279, 91.832, 84.322, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:33.013374, 1b.sql, 271.411, 1.068, 13.205, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:33.013549, 1b.sql, 205.228, 0.493, 13.205, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:33.013597, 1b.sql, 215.605, 81.753, 13.205, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:34.979646, 1c.sql, 247.266, 20.928, 75.222, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:34.979818, 1c.sql, 204.444, 12.112, 75.222, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:34.979873, 1c.sql, 205.517, 92.915, 75.222, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:36.917482, 1d.sql, 248.268, 1.031, 14.033, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:36.917744, 1d.sql, 202.99, 0.536, 14.033, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:36.917878, 1d.sql, 211.642, 81.784, 14.033, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:06:48.288235, 20a.sql, 475.452, 2776.699, 3069.288, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:06:48.288498, 20a.sql, 410.574, 2627.782, 3069.288, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:06:48.288604, 20a.sql, 411.298, 2693.971, 3069.288, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:06:54.899510, 20b.sql, 483.781, 1278.817, 2124.388, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:06:54.899775, 20b.sql, 393.412, 1080.617, 2124.388, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:06:54.899876, 20b.sql, 400.255, 1159.37, 2124.388, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:07:00.043351, 20c.sql, 478.633, 788.685, 2105.261, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:07:00.043594, 20c.sql, 397.745, 605.883, 2105.261, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:07:00.043721, 20c.sql, 384.915, 688.607, 2105.261, Bao
+(no hint), 0, 2025-10-17 17:07:03.233974, 21a.sql, 444.071, 89.85, 237.698, Bao
+(no hint), 1, 2025-10-17 17:07:03.234213, 21a.sql, 365.732, 81.132, 237.698, Bao
+(no hint), 2, 2025-10-17 17:07:03.234318, 21a.sql, 364.614, 159.059, 237.698, Bao
+(no hint), 0, 2025-10-17 17:07:06.408366, 21b.sql, 441.166, 85.021, 237.824, Bao
+(no hint), 1, 2025-10-17 17:07:06.408599, 21b.sql, 363.983, 76.527, 237.824, Bao
+(no hint), 2, 2025-10-17 17:07:06.408697, 21b.sql, 365.621, 154.548, 237.824, Bao
+(no hint), 0, 2025-10-17 17:07:09.613174, 21c.sql, 440.345, 92.931, 235.471, Bao
+(no hint), 1, 2025-10-17 17:07:09.613399, 21c.sql, 365.532, 68.473, 235.471, Bao
+(no hint), 2, 2025-10-17 17:07:09.613491, 21c.sql, 364.818, 159.351, 235.471, Bao
+(no hint), 0, 2025-10-17 17:07:15.714948, 22a.sql, 819.188, 413.01, 1246.913, Bao
+(no hint), 1, 2025-10-17 17:07:15.715189, 22a.sql, 693.696, 330.758, 1246.913, Bao
+(no hint), 2, 2025-10-17 17:07:15.715291, 22a.sql, 699.984, 411.652, 1246.913, Bao
+(no hint), 0, 2025-10-17 17:07:21.432626, 22b.sql, 824.821, 258.761, 1186.757, Bao
+(no hint), 1, 2025-10-17 17:07:21.432861, 22b.sql, 703.63, 176.521, 1186.757, Bao
+(no hint), 2, 2025-10-17 17:07:21.432962, 22b.sql, 692.153, 274.253, 1186.757, Bao
+(no hint), 0, 2025-10-17 17:07:31.862351, 22c.sql, 817.402, 1857.051, 1402.101, Bao
+(no hint), 1, 2025-10-17 17:07:31.862596, 22c.sql, 691.914, 1762.825, 1402.101, Bao
+(no hint), 2, 2025-10-17 17:07:31.862696, 22c.sql, 690.338, 1860.234, 1402.101, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2025-10-17 17:07:39.156425, 22d.sql, 831.319, 801.274, 1867.935, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 1, 2025-10-17 17:07:39.156668, 22d.sql, 702.993, 688.633, 1867.935, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 2, 2025-10-17 17:07:39.156768, 22d.sql, 709.641, 765.339, 1867.935, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:07:44.702027, 23a.sql, 821.86, 211.202, 335.343, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:07:44.702270, 23a.sql, 699.547, 139.346, 335.343, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:07:44.702370, 23a.sql, 689.67, 220.87, 335.343, Bao
+(no hint), 0, 2025-10-17 17:07:49.996117, 23b.sql, 823.594, 77.59, 318.771, Bao
+(no hint), 1, 2025-10-17 17:07:49.996359, 23b.sql, 694.874, 61.189, 318.771, Bao
+(no hint), 2, 2025-10-17 17:07:49.996460, 23b.sql, 700.903, 140.623, 318.771, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:07:56.573167, 23c.sql, 843.815, 368.122, 595.515, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:07:56.573405, 23c.sql, 724.989, 264.928, 595.515, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:07:56.573504, 23c.sql, 822.263, 349.899, 595.515, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:08:08.708764, 24a.sql, 1870.55, 557.411, 1186.806, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:08:08.709018, 24a.sql, 1605.552, 414.779, 1186.806, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:08:08.709120, 24a.sql, 1592.216, 499.905, 1186.806, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:08:21.512433, 24b.sql, 1854.192, 299.946, 345.886, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:08:21.512697, 24b.sql, 1817.701, 307.523, 345.886, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:08:21.512799, 24b.sql, 1762.316, 382.863, 345.886, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:08:33.265606, 25a.sql, 452.551, 2913.245, 3479.702, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:08:33.265862, 25a.sql, 385.581, 2769.503, 3479.702, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:08:33.265961, 25a.sql, 452.486, 2839.033, 3479.702, Bao
+(no hint), 0, 2025-10-17 17:08:37.122596, 25b.sql, 458.62, 348.299, 626.218, Bao
+(no hint), 1, 2025-10-17 17:08:37.122859, 25b.sql, 365.801, 263.586, 626.218, Bao
+(no hint), 2, 2025-10-17 17:08:37.122966, 25b.sql, 366.491, 340.994, 626.218, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:08:49.678089, 25c.sql, 453.895, 3174.946, 3370.422, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:08:49.678434, 25c.sql, 377.879, 3057.859, 3370.422, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:08:49.678534, 25c.sql, 415.687, 3158.178, 3370.422, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:09:01.437069, 26a.sql, 1329.69, 1327.398, 1620.582, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:09:01.437317, 26a.sql, 1216.427, 1153.066, 1620.582, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:09:01.437417, 26a.sql, 1084.05, 1216.578, 1620.582, Bao
+(no hint), 0, 2025-10-17 17:09:09.613967, 26b.sql, 1335.529, 188.467, 425.979, Bao
+(no hint), 1, 2025-10-17 17:09:09.614223, 26b.sql, 1103.913, 119.555, 425.979, Bao
+(no hint), 2, 2025-10-17 17:09:09.614324, 26b.sql, 1123.818, 213.366, 425.979, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-10-17 17:09:20.719257, 26c.sql, 1311.037, 1156.347, 2001.307, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-10-17 17:09:20.719508, 26c.sql, 1111.747, 919.127, 2001.307, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-10-17 17:09:20.719608, 26c.sql, 1109.176, 915.737, 2001.307, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:09:32.474492, 27a.sql, 1936.59, 41.528, 55.945, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:09:32.474751, 27a.sql, 1812.951, 38.168, 55.945, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:09:32.474852, 27a.sql, 1620.636, 120.319, 55.945, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:09:45.182765, 27b.sql, 1956.984, 29.895, 58.895, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:09:45.183002, 27b.sql, 1859.578, 25.535, 58.895, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:09:45.183101, 27b.sql, 1919.756, 107.473, 58.895, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2025-10-17 17:09:56.804252, 27c.sql, 1939.235, 28.886, 71.235, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 1, 2025-10-17 17:09:56.804485, 27c.sql, 1803.113, 37.495, 71.235, Bao
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 2, 2025-10-17 17:09:56.804585, 27c.sql, 1632.018, 119.436, 71.235, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:10:31.142161, 28a.sql, 5431.796, 942.544, 1360.598, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:10:31.142408, 28a.sql, 5052.641, 857.694, 1360.598, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:10:31.142507, 28a.sql, 4506.444, 938.723, 1360.598, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2025-10-17 17:11:02.734301, 28b.sql, 5501.285, 467.39, 1075.564, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 1, 2025-10-17 17:11:02.734565, 28b.sql, 4625.868, 427.43, 1075.564, Bao
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 2, 2025-10-17 17:11:02.734699, 28b.sql, 4642.488, 485.686, 1075.564, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:11:36.250197, 28c.sql, 5529.173, 1183.388, 1327.193, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:11:36.250456, 28c.sql, 4666.808, 1028.268, 1327.193, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:11:36.250645, 28c.sql, 4585.692, 1113.34, 1327.193, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:17:43.551752, 29a.sql, 61538.031, 389.533, 622.58, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:17:43.552024, 29a.sql, 60703.581, 405.801, 622.58, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:17:43.552127, 29a.sql, 59109.124, 479.597, 622.58, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:23:44.596134, 29b.sql, 60974.646, 328.613, 622.587, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:23:44.596372, 29b.sql, 58018.024, 321.641, 622.587, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:23:44.596470, 29b.sql, 58098.141, 401.423, 622.587, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:29:48.924964, 29c.sql, 62180.806, 565.215, 981.037, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:29:48.925218, 29c.sql, 57704.686, 540.395, 981.037, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:29:48.925319, 29c.sql, 60180.3, 639.879, 981.037, Bao
+(no hint), 0, 2025-10-17 17:29:52.322939, 2a.sql, 274.202, 532.394, 1602.646, Bao
+(no hint), 1, 2025-10-17 17:29:52.323195, 2a.sql, 210.454, 445.096, 1602.646, Bao
+(no hint), 2, 2025-10-17 17:29:52.323295, 2a.sql, 208.304, 524.036, 1602.646, Bao
+(no hint), 0, 2025-10-17 17:29:55.694050, 2b.sql, 263.4, 522.908, 1355.279, Bao
+(no hint), 1, 2025-10-17 17:29:55.694310, 2b.sql, 210.846, 439.525, 1355.279, Bao
+(no hint), 2, 2025-10-17 17:29:55.694412, 2b.sql, 210.733, 523.857, 1355.279, Bao
+(no hint), 0, 2025-10-17 17:29:59.005720, 2c.sql, 261.283, 486.816, 1259.979, Bao
+(no hint), 1, 2025-10-17 17:29:59.005974, 2c.sql, 209.4, 419.719, 1259.979, Bao
+(no hint), 2, 2025-10-17 17:29:59.006072, 2c.sql, 211.088, 509.618, 1259.979, Bao
+(no hint), 0, 2025-10-17 17:30:02.802133, 2d.sql, 260.693, 683.776, 869.09, Bao
+(no hint), 1, 2025-10-17 17:30:02.802389, 2d.sql, 208.743, 556.636, 869.09, Bao
+(no hint), 2, 2025-10-17 17:30:02.802489, 2d.sql, 211.178, 654.915, 869.09, Bao
+(no hint), 0, 2025-10-17 17:30:18.672206, 30a.sql, 1789.052, 1999.047, 2247.732, Bao
+(no hint), 1, 2025-10-17 17:30:18.672463, 30a.sql, 1516.328, 1757.827, 2247.732, Bao
+(no hint), 2, 2025-10-17 17:30:18.672565, 30a.sql, 1517.645, 1838.523, 2247.732, Bao
+(no hint), 0, 2025-10-17 17:30:30.250009, 30b.sql, 1854.44, 377.406, 725.182, Bao
+(no hint), 1, 2025-10-17 17:30:30.250246, 30b.sql, 1555.15, 301.063, 725.182, Bao
+(no hint), 2, 2025-10-17 17:30:30.250346, 30b.sql, 1509.543, 396.185, 725.182, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:30:51.667720, 30c.sql, 1767.45, 3382.869, 3389.752, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:30:51.667974, 30c.sql, 1513.007, 3203.398, 3389.752, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:30:51.668073, 30c.sql, 1763.207, 3298.773, 3389.752, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:30:58.937642, 31a.sql, 1096.508, 284.876, 410.993, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:30:58.937825, 31a.sql, 933.374, 230.508, 410.993, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:30:58.937881, 31a.sql, 928.299, 310.247, 410.993, Bao
+(no hint), 0, 2025-10-17 17:31:06.321452, 31b.sql, 1107.475, 176.605, 228.526, Bao
+(no hint), 1, 2025-10-17 17:31:06.321704, 31b.sql, 1009.079, 141.587, 228.526, Bao
+(no hint), 2, 2025-10-17 17:31:06.321806, 31b.sql, 934.906, 221.619, 228.526, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:31:14.599044, 31c.sql, 1099.148, 372.162, 452.212, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:31:14.599299, 31c.sql, 1032.697, 352.536, 452.212, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:31:14.599399, 31c.sql, 1002.769, 401.089, 452.212, Bao
+(no hint), 0, 2025-10-17 17:31:16.664728, 32a.sql, 282.63, 19.819, 163.444, Bao
+(no hint), 1, 2025-10-17 17:31:16.664897, 32a.sql, 220.003, 13.915, 163.444, Bao
+(no hint), 2, 2025-10-17 17:31:16.664951, 32a.sql, 215.071, 96.874, 163.444, Bao
+(no hint), 0, 2025-10-17 17:31:19.111719, 32b.sql, 272.83, 145.845, 163.444, Bao
+(no hint), 1, 2025-10-17 17:31:19.111972, 32b.sql, 218.42, 104.792, 163.444, Bao
+(no hint), 2, 2025-10-17 17:31:19.112073, 32b.sql, 222.549, 194.96, 163.444, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:31:56.890908, 33a.sql, 6533.742, 24.566, 42.967, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:31:56.891152, 33a.sql, 6052.18, 19.561, 42.967, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:31:56.891270, 33a.sql, 5349.177, 99.312, 42.967, Bao
+SET enable_mergejoin TO off; , 0, 2025-10-17 17:32:32.521280, 33b.sql, 6518.27, 16.307, 43.339, Bao
+SET enable_mergejoin TO off; , 1, 2025-10-17 17:32:32.521533, 33b.sql, 5442.16, 10.26, 43.339, Bao
+SET enable_mergejoin TO off; , 2, 2025-10-17 17:32:32.521631, 33b.sql, 5446.043, 95.336, 43.339, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:32:56.863685, 33c.sql, 4386.888, 18.779, 74.695, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:32:56.863924, 33c.sql, 3693.812, 16.466, 74.695, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:32:56.864026, 33c.sql, 3683.996, 101.568, 74.695, Bao
+(no hint), 0, 2025-10-17 17:32:59.310905, 3a.sql, 267.76, 181.751, 446.995, Bao
+(no hint), 1, 2025-10-17 17:32:59.311141, 3a.sql, 217.21, 120.031, 446.995, Bao
+(no hint), 2, 2025-10-17 17:32:59.311244, 3a.sql, 212.77, 197.613, 446.995, Bao
+(no hint), 0, 2025-10-17 17:33:01.499675, 3b.sql, 263.459, 120.374, 374.323, Bao
+(no hint), 1, 2025-10-17 17:33:01.499913, 3b.sql, 195.117, 72.978, 374.323, Bao
+(no hint), 2, 2025-10-17 17:33:01.500012, 3b.sql, 219.342, 154.715, 374.323, Bao
+(no hint), 0, 2025-10-17 17:33:04.258279, 3c.sql, 265.876, 302.017, 458.207, Bao
+(no hint), 1, 2025-10-17 17:33:04.258520, 3c.sql, 244.61, 210.2, 458.207, Bao
+(no hint), 2, 2025-10-17 17:33:04.258709, 3c.sql, 196.664, 301.965, 458.207, Bao
+(no hint), 0, 2025-10-17 17:33:06.510855, 4a.sql, 267.851, 125.118, 462.557, Bao
+(no hint), 1, 2025-10-17 17:33:06.511090, 4a.sql, 201.854, 80.711, 462.557, Bao
+(no hint), 2, 2025-10-17 17:33:06.511190, 4a.sql, 226.166, 160.088, 462.557, Bao
+(no hint), 0, 2025-10-17 17:33:08.720331, 4b.sql, 266.482, 78.077, 300.891, Bao
+(no hint), 1, 2025-10-17 17:33:08.720585, 4b.sql, 200.059, 85.095, 300.891, Bao
+(no hint), 2, 2025-10-17 17:33:08.720680, 4b.sql, 229.615, 158.811, 300.891, Bao
+(no hint), 0, 2025-10-17 17:33:11.037152, 4c.sql, 268.322, 147.928, 497.028, Bao
+(no hint), 1, 2025-10-17 17:33:11.037433, 4c.sql, 209.242, 103.274, 497.028, Bao
+(no hint), 2, 2025-10-17 17:33:11.037534, 4c.sql, 215.385, 182.821, 497.028, Bao
+(no hint), 0, 2025-10-17 17:33:13.461033, 5a.sql, 275.74, 144.04, 369.919, Bao
+(no hint), 1, 2025-10-17 17:33:13.461286, 5a.sql, 218.335, 140.676, 369.919, Bao
+(no hint), 2, 2025-10-17 17:33:13.461384, 5a.sql, 218.036, 219.205, 369.919, Bao
+(no hint), 0, 2025-10-17 17:33:15.953904, 5b.sql, 272.119, 136.635, 198.428, Bao
+(no hint), 1, 2025-10-17 17:33:15.954073, 5b.sql, 216.586, 137.854, 198.428, Bao
+(no hint), 2, 2025-10-17 17:33:15.954105, 5b.sql, 285.537, 212.499, 198.428, Bao
+(no hint), 0, 2025-10-17 17:33:18.498227, 5c.sql, 271.507, 177.966, 508.96, Bao
+(no hint), 1, 2025-10-17 17:33:18.498394, 5c.sql, 223.592, 173.858, 508.96, Bao
+(no hint), 2, 2025-10-17 17:33:18.498426, 5c.sql, 222.56, 252.468, 508.96, Bao
+(no hint), 0, 2025-10-17 17:33:20.550945, 6a.sql, 262.247, 40.287, 217.819, Bao
+(no hint), 1, 2025-10-17 17:33:20.551192, 6a.sql, 212.419, 21.179, 217.819, Bao
+(no hint), 2, 2025-10-17 17:33:20.551291, 6a.sql, 209.317, 107.06, 217.819, Bao
+(no hint), 0, 2025-10-17 17:33:23.139345, 6b.sql, 273.269, 258.143, 473.673, Bao
+(no hint), 1, 2025-10-17 17:33:23.139594, 6b.sql, 210.207, 174.743, 473.673, Bao
+(no hint), 2, 2025-10-17 17:33:23.139729, 6b.sql, 213.878, 255.221, 473.673, Bao
+(no hint), 0, 2025-10-17 17:33:25.155861, 6c.sql, 279.29, 18.995, 179.542, Bao
+(no hint), 1, 2025-10-17 17:33:25.156053, 6c.sql, 210.618, 15.484, 179.542, Bao
+(no hint), 2, 2025-10-17 17:33:25.156127, 6c.sql, 209.478, 98.001, 179.542, Bao
+(no hint), 0, 2025-10-17 17:33:39.011372, 6d.sql, 268.594, 4147.582, 2184.965, Bao
+(no hint), 1, 2025-10-17 17:33:39.011667, 6d.sql, 213.927, 3863.503, 2184.965, Bao
+(no hint), 2, 2025-10-17 17:33:39.011777, 6d.sql, 214.88, 3948.957, 2184.965, Bao
+(no hint), 0, 2025-10-17 17:33:41.066039, 6e.sql, 276.426, 39.124, 301.992, Bao
+(no hint), 1, 2025-10-17 17:33:41.066222, 6e.sql, 208.216, 21.841, 301.992, Bao
+(no hint), 2, 2025-10-17 17:33:41.066279, 6e.sql, 213.069, 101.967, 301.992, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:33:51.511338, 6f.sql, 273.668, 2820.021, 2714.551, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:33:51.511600, 6f.sql, 224.324, 2701.546, 2714.551, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:33:51.511735, 6f.sql, 242.676, 2807.73, 2714.551, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:33:55.733496, 7a.sql, 348.828, 701.672, 1049.85, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:33:55.733740, 7a.sql, 288.7, 500.884, 1049.85, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:33:55.733841, 7a.sql, 263.554, 594.7, 1049.85, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:33:58.721368, 7b.sql, 348.299, 247.354, 651.929, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:33:58.721602, 7b.sql, 289.917, 146.757, 651.929, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:33:58.721704, 7b.sql, 263.301, 229.612, 651.929, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:34:10.187472, 7c.sql, 346.481, 3138.244, 3785.212, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:34:10.187749, 7c.sql, 281.701, 2963.824, 3785.212, Bao
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:34:10.187846, 7c.sql, 274.693, 3052.055, 3785.212, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:34:14.908539, 8a.sql, 309.178, 778.582, 659.971, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:34:14.908804, 8a.sql, 282.397, 750.41, 659.971, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:34:14.908904, 8a.sql, 271.239, 831.573, 659.971, Bao
+(no hint), 0, 2025-10-17 17:34:17.673234, 8b.sql, 308.762, 169.32, 331.311, Bao
+(no hint), 1, 2025-10-17 17:34:17.673487, 8b.sql, 259.955, 160.85, 331.311, Bao
+(no hint), 2, 2025-10-17 17:34:17.673588, 8b.sql, 254.362, 242.678, 331.311, Bao
+(no hint), 0, 2025-10-17 17:34:29.203532, 8c.sql, 292.76, 3013.004, 2183.998, Bao
+(no hint), 1, 2025-10-17 17:34:29.203829, 8c.sql, 276.287, 3017.698, 2183.998, Bao
+(no hint), 2, 2025-10-17 17:34:29.203948, 8c.sql, 244.862, 3146.035, 2183.998, Bao
+(no hint), 0, 2025-10-17 17:34:36.158584, 8d.sql, 304.174, 1566.376, 2183.998, Bao
+(no hint), 1, 2025-10-17 17:34:36.158843, 8d.sql, 252.058, 1479.14, 2183.998, Bao
+(no hint), 2, 2025-10-17 17:34:36.158946, 8d.sql, 291.27, 1583.58, 2183.998, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:34:39.461912, 9a.sql, 362.22, 226.55, 392.694, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:34:39.462166, 9a.sql, 299.386, 217.0, 392.694, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:34:39.462267, 9a.sql, 284.883, 288.987, 392.694, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2025-10-17 17:34:42.649841, 9b.sql, 363.207, 236.225, 401.979, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 1, 2025-10-17 17:34:42.650093, 9b.sql, 305.256, 229.276, 401.979, Bao
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 2, 2025-10-17 17:34:42.650196, 9b.sql, 302.728, 294.177, 401.979, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2025-10-17 17:34:46.526593, 9c.sql, 341.486, 465.193, 552.994, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 1, 2025-10-17 17:34:46.526847, 9c.sql, 304.329, 400.268, 552.994, Bao
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 2, 2025-10-17 17:34:46.526951, 9c.sql, 307.306, 484.961, 552.994, Bao
+SET enable_nestloop TO off; , 0, 2025-10-17 17:34:58.635176, 9d.sql, 346.005, 3286.111, 3432.389, Bao
+SET enable_nestloop TO off; , 1, 2025-10-17 17:34:58.635428, 9d.sql, 294.883, 3147.075, 3432.389, Bao
+SET enable_nestloop TO off; , 2, 2025-10-17 17:34:58.635528, 9d.sql, 287.406, 3249.828, 3432.389, Bao
