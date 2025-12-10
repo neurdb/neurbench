@@ -10,6 +10,20 @@
 
 set -e  # Exit on error
 
+# Detect script location and find project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# Change to project root directory
+cd "$PROJECT_ROOT"
+echo "[INFO] Working directory: $(pwd)"
+
+# Verify cli.py exists
+if [ ! -f "cli.py" ]; then
+    echo "ERROR: cli.py not found in project root: $PROJECT_ROOT"
+    exit 1
+fi
+
 # Configuration
 DATASET="imdb_ori"
 QUERY_SET="${1:-join-order-benchmark}"  # Use first argument or default

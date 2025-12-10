@@ -126,87 +126,118 @@ class BaoTester:
         else:
             return []
 
-    def run_query(self, sql):
-        """Execute a single query and measure performance"""
+    def run_query(self, sql, max_retries=3):
+        """Execute a single query and measure performance with retry logic"""
         measurements = []
         conn = None
-        try:
-            conn = psycopg2.connect(self.pg_connection_string())
-            cur = conn.cursor()
+        last_error = None
 
-            # Configure Bao settings
-            cur.execute("SET bao_host TO '172.17.0.1'")
-            cur.execute(f"SET enable_bao TO {self.use_bao}")
-            cur.execute(f"SET enable_bao_selection TO {self.use_bao}")
-            cur.execute(f"SET enable_bao_rewards TO False")
-            cur.execute("SET bao_num_arms TO 25")
-            cur.execute(f"SET statement_timeout TO {self.timeout_limit}")
+        for attempt in range(max_retries):
+            try:
+                # Add connection timeout to prevent hanging
+                conn = psycopg2.connect(
+                    self.pg_connection_string(),
+                    connect_timeout=30  # 30 seconds connection timeout
+                )
+                cur = conn.cursor()
 
-            # Disable certain operations
-            cur.execute("SET enable_mergejoin TO off")
-            cur.execute("SET enable_seqscan TO off")
-            cur.execute("SET enable_indexonlyscan TO off")
+                # Configure Bao settings
+                cur.execute("SET bao_host TO '172.17.0.1'")
+                cur.execute(f"SET enable_bao TO {self.use_bao}")
+                cur.execute(f"SET enable_bao_selection TO {self.use_bao}")
+                cur.execute(f"SET enable_bao_rewards TO False")
+                cur.execute("SET bao_num_arms TO 25")
+                cur.execute(f"SET statement_timeout TO {self.timeout_limit}")
 
-            # GEQO configuration
-            if not self.use_geqo:
-                print("disable geqo")
-                cur.execute("SET geqo TO off")
+                # Disable certain operations
+                cur.execute("SET enable_mergejoin TO off")
+                cur.execute("SET enable_seqscan TO off")
+                cur.execute("SET enable_indexonlyscan TO off")
 
-            # Execute query multiple times
-            for i in range(self.num_executions):
-                cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}")
-                result = cur.fetchall()[0][0]
+                # GEQO configuration
+                if not self.use_geqo:
+                    print("disable geqo")
+                    cur.execute("SET geqo TO off")
 
-                q_errors = []
-                if not self.use_bao:
-                    q_errors = self.extract_q_errors(result[0]['Plan'])
+                # Execute query multiple times
+                for i in range(self.num_executions):
+                    cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}")
+                    result = cur.fetchall()[0][0]
 
-                # Get actual execution time
-                actual_time = result[-1]['Execution Time']
+                    q_errors = []
+                    if not self.use_bao:
+                        q_errors = self.extract_q_errors(result[0]['Plan'])
 
-                # Get Bao's predicted time if using Bao
-                if self.use_bao:
-                    bao_hint = result[0]['Bao']['Bao recommended hint']
-                    predicted_time = result[0]['Bao']['Bao prediction']
-                    if predicted_time == 'NaN':
-                        predicted_time = float('nan')
+                    # Get actual execution time
+                    actual_time = result[-1]['Execution Time']
+
+                    # Get Bao's predicted time if using Bao
+                    if self.use_bao:
+                        bao_hint = result[0]['Bao']['Bao recommended hint']
+                        predicted_time = result[0]['Bao']['Bao prediction']
+                        if predicted_time == 'NaN':
+                            predicted_time = float('nan')
+                        else:
+                            predicted_time = float(predicted_time)
                     else:
-                        predicted_time = float(predicted_time)
-                else:
-                    bao_hint = None
-                    predicted_time = None
+                        bao_hint = None
+                        predicted_time = None
 
-                measurements.append({
-                    'execution_time': actual_time,
-                    'planning_time': result[-1]['Planning Time'],
-                    'hint': bao_hint,
-                    'predicted_time': predicted_time,
-                    'q_errors': q_errors
-                })
+                    measurements.append({
+                        'execution_time': actual_time,
+                        'planning_time': result[-1]['Planning Time'],
+                        'hint': bao_hint,
+                        'predicted_time': predicted_time,
+                        'q_errors': q_errors
+                    })
 
-                print(
-                    f"\t{i}: Execution Time: {measurements[-1]['execution_time']:.4f}\t"
-                    f"Planning Time: {measurements[-1]['planning_time']:.4f}\t"
-                    f"Predicted Time: {measurements[-1]['predicted_time'] if measurements[-1]['predicted_time'] is not None else 'N/A'}")
+                    print(
+                        f"\t{i}: Execution Time: {measurements[-1]['execution_time']:.4f}\t"
+                        f"Planning Time: {measurements[-1]['planning_time']:.4f}\t"
+                        f"Predicted Time: {measurements[-1]['predicted_time'] if measurements[-1]['predicted_time'] is not None else 'N/A'}")
 
-            conn.close()
-        except Exception as e:
-            print(f"Query error: {e}")
-            if conn is not None:
                 conn.close()
+                return measurements
 
-            tmp = []
-            for _ in range(self.num_executions):
-                tmp.append({
-                    'execution_time': 2 * self.timeout_limit,
-                    'planning_time': 2 * self.timeout_limit,
-                    'hint': None,
-                    'predicted_time': None,
-                    'q_errors': []
-                })
-            return tmp
+            except psycopg2.OperationalError as e:
+                # Database connection errors (e.g., DB restart)
+                last_error = e
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except:
+                        pass
 
-        return measurements
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                    print(f"⚠ Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                    print(f"  Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"✗ Database connection failed after {max_retries} attempts: {e}")
+
+            except Exception as e:
+                # Other errors (e.g., query timeout, syntax error)
+                print(f"Query error: {e}")
+                last_error = e
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except:
+                        pass
+                break  # Don't retry for non-connection errors
+
+        # All retries failed
+        tmp = []
+        for _ in range(self.num_executions):
+            tmp.append({
+                'execution_time': 2 * self.timeout_limit,
+                'planning_time': 2 * self.timeout_limit,
+                'hint': None,
+                'predicted_time': None,
+                'q_errors': []
+            })
+        return tmp
 
     def current_timestamp_str(self):
         """Get current timestamp string"""

@@ -115,12 +115,18 @@ class BaoTrainer:
         """Generate PostgreSQL connection string"""
         return f"dbname={self.database_name} user=postgres password=postgres host=172.17.0.1 port={self.db_port}"
 
-    def run_query(self, sql, bao_select=False, bao_reward=False):
-        """Execute a single query and measure performance"""
-        while True:
-            conn = None
+    def run_query(self, sql, bao_select=False, bao_reward=False, max_retries=3):
+        """Execute a single query and measure performance with retry logic"""
+        conn = None
+        last_error = None
+
+        for attempt in range(max_retries):
             try:
-                conn = psycopg2.connect(self.pg_connection_string())
+                # Add connection timeout to prevent hanging
+                conn = psycopg2.connect(
+                    self.pg_connection_string(),
+                    connect_timeout=30  # 30 seconds connection timeout
+                )
                 cur = conn.cursor()
 
                 # Configure Bao settings
@@ -146,17 +152,41 @@ class BaoTrainer:
                 }
 
                 conn.close()
-                break
-            except Exception as e:
-                print(f"Query error: {e}")
-                if conn is not None:
-                    conn.close()
-                return {
-                    'execution_time': 2 * self.timeout_limit,
-                    'planning_time': 2 * self.timeout_limit
-                }
+                return measurement
 
-        return measurement
+            except psycopg2.OperationalError as e:
+                # Database connection errors (e.g., DB restart)
+                last_error = e
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except:
+                        pass
+
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                    print(f"⚠ Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                    print(f"  Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"✗ Database connection failed after {max_retries} attempts: {e}")
+
+            except Exception as e:
+                # Other errors (e.g., query timeout, syntax error)
+                print(f"Query error: {e}")
+                last_error = e
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except:
+                        pass
+                break  # Don't retry for non-connection errors
+
+        # All retries failed
+        return {
+            'execution_time': 2 * self.timeout_limit,
+            'planning_time': 2 * self.timeout_limit
+        }
 
     def current_timestamp_str(self):
         """Get current timestamp string"""
