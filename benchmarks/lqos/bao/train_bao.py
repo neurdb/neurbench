@@ -115,12 +115,10 @@ class BaoTrainer:
         """Generate PostgreSQL connection string"""
         return f"dbname={self.database_name} user=postgres password=postgres host=172.17.0.1 port={self.db_port}"
 
-    def run_query(self, sql, bao_select=False, bao_reward=False, max_retries=3):
-        """Execute a single query and measure performance with retry logic"""
-        conn = None
-        last_error = None
-
-        for attempt in range(max_retries):
+    def run_query(self, sql, bao_select=False, bao_reward=False):
+        """Execute a single query and measure performance - matches run_queries.py logic"""
+        while True:
+            conn = None
             try:
                 # Add connection timeout to prevent hanging
                 conn = psycopg2.connect(
@@ -152,41 +150,21 @@ class BaoTrainer:
                 }
 
                 conn.close()
-                return measurement
-
-            except psycopg2.OperationalError as e:
-                # Database connection errors (e.g., DB restart)
-                last_error = e
-                if conn is not None:
-                    try:
-                        conn.close()
-                    except:
-                        pass
-
-                if attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
-                    print(f"⚠ Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
-                    print(f"  Waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                else:
-                    print(f"✗ Database connection failed after {max_retries} attempts: {e}")
+                break
 
             except Exception as e:
-                # Other errors (e.g., query timeout, syntax error)
-                print(f"Query error: {e}")
-                last_error = e
+                print(f"An unexpected exception OR timeout occured during database querying: {e}")
                 if conn is not None:
                     try:
                         conn.close()
                     except:
                         pass
-                break  # Don't retry for non-connection errors
+                return {
+                    'execution_time': 2 * self.timeout_limit,
+                    'planning_time': 2 * self.timeout_limit
+                }
 
-        # All retries failed
-        return {
-            'execution_time': 2 * self.timeout_limit,
-            'planning_time': 2 * self.timeout_limit
-        }
+        return measurement
 
     def current_timestamp_str(self):
         """Get current timestamp string"""
@@ -301,29 +279,15 @@ class BaoTrainer:
         consecutive_failures = 0
 
         for c_idx, chunk in enumerate(bao_chunks):
-            print("\n" + "==="*30)
-            print(f"Chunk {c_idx + 1}/{len(bao_chunks)}")
-            print("==="*30)
-
+            print("===" * 30, flush=True)
+            print(f"Iteration over chunk {c_idx + 1}/{len(bao_chunks)}...")
             if self.use_bao:
-                print(f"[{self.current_timestamp_str()}] Retraining Bao...")
-                # Retrain the model
-                try:
-                    result = subprocess.run(
-                        [sys.executable, "baoctl.py", "--retrain"],
-                        cwd=self.bao_server_dir,
-                        capture_output=True,
-                        text=True,
-                        timeout=self.training_timeout
-                    )
-                    if result.returncode == 0:
-                        print(f"[{self.current_timestamp_str()}] ✓ Retraining completed")
-                    else:
-                        print(f"[{self.current_timestamp_str()}] ✗ Retraining failed: {result.stderr}")
-                        print("⚠ Warning: Continuing with old model")
-                except Exception as e:
-                    print(f"[{self.current_timestamp_str()}] ✗ Retraining error: {e}")
-                    print("⚠ Warning: Continuing with old model")
+                print(f"[{self.current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining Bao...", flush=True)
+                # Retrain the model - using os.system to match run_queries.py exactly
+                retrain_cmd = f"cd {self.bao_server_dir} && {sys.executable} baoctl.py --retrain"
+                return_code = os.system(retrain_cmd)
+                os.system("sync")
+                print(f"[{self.current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining done.", flush=True)
 
             # Execute chunk queries
             for q_idx, (fp, q) in enumerate(chunk):
