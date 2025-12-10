@@ -19,15 +19,15 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-def pg_connection_string(db_name):
-    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1 port=5430"
+def pg_connection_string(db_name, port=5430):
+    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1 port={port}"
 
 
-def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload'):
+def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', port=5430):
     while True:
         conn = None
         try:
-            conn = psycopg2.connect(pg_connection_string(db_name=db_name))
+            conn = psycopg2.connect(pg_connection_string(db_name=db_name, port=port))
             cur = conn.cursor()
 
             # Hardcode bao_host to fixed IP given in docker-compose
@@ -60,7 +60,7 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload'):
             conn.close()
             break
         except Exception as e:
-            print("An unexpected exception OR timeout occured during database querying:", e)
+            print("An unexpected exception OR timeout occured during database querying:", e, flush=True)
             if conn is not None:
                 conn.close()
             return {
@@ -76,7 +76,7 @@ def current_timestamp_str():
 
 
 def write_to_file(file_path, output_string):
-    print(output_string)
+    print(output_string, flush=True)
     with open(file_path, 'a') as f:
         f.write(output_string)
         f.write(os.linesep)
@@ -86,17 +86,17 @@ def main(args):
     # Look for .sql files
     pattern = os.path.join(args.query_dir, '**/*.sql')
     query_paths = sorted(glob.glob(pattern, recursive=True))
-    print(f"Found {len(query_paths)} queries in {args.query_dir} and its subdirectories.")
+    print(f"Found {len(query_paths)} queries in {args.query_dir} and its subdirectories.", flush=True)
 
     queries = []
     for fp in query_paths:
         with open(fp) as f:
             query = f.read()
         queries.append((fp, query))
-    print("Using Bao:", USE_BAO)
+    print("Using Bao:", USE_BAO, flush=True)
 
     db_name = args.database_name
-    print("Running against DB:", db_name)
+    print("Running against DB:", db_name, flush=True)
 
     random.seed(42)
 
@@ -104,7 +104,7 @@ def main(args):
     query_sequence = random.choices(queries, k=queries_to_run)
     pg_chunks, *bao_chunks = list(chunks(query_sequence, 25))
 
-    print("Executing queries using PG optimizer for initial training")
+    print("Executing queries using PG optimizer for initial training", flush=True)
 
     if os.path.exists(args.output_file):
         raise FileExistsError(f"The file {args.output_file} already exists, stopping.")
@@ -112,33 +112,32 @@ def main(args):
     for q_idx, (fp, q) in enumerate(pg_chunks):
         # Warm up the cache
         for iteration in range(NUM_EXECUTIONS - 1):
-            measurement = run_query(q, db_name=db_name)
+            measurement = run_query(q, db_name=db_name, port=args.db_port)
             output_string = f"x, {q_idx}, {iteration}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
             write_to_file(args.output_file, output_string)
 
-        measurement = run_query(q, bao_reward=True, db_name=db_name)
+        measurement = run_query(q, bao_reward=True, db_name=db_name, port=args.db_port)
         output_string = f"x, {q_idx}, {NUM_EXECUTIONS - 1}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
         write_to_file(args.output_file, output_string)
 
     for c_idx, chunk in enumerate(bao_chunks):
         print("===" * 30, flush=True)
-        print(f"Iteration over chunk {c_idx + 1}/{len(bao_chunks)}...")
+        print(f"Iteration over chunk {c_idx + 1}/{len(bao_chunks)}...", flush=True)
         if USE_BAO:
             print(f"[{current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining Bao...", flush=True)
+            os.system("cd bao_server && CUDA_VISIBLE_DEVICES="" python3 baoctl.py --retrain")
             # os.system("cd bao_server && python3 baoctl.py --retrain")
-            os.system(
-                'cd /app/AI4QueryOptimizer/baseline/lqo_ml_perspective/bao/bao_server && CUDA_VISIBLE_DEVICES="" python3 baoctl.py --retrain >> /app/AI4QueryOptimizer/experiment_setup/vldb_revision/job/res_bao/data_shift/retrain/retrain.log 2>&1')
             os.system("sync")
             print(f"[{current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining done.", flush=True)
 
         for q_idx, (fp, q) in enumerate(chunk):
             # Warm up the cache
             for iteration in range(NUM_EXECUTIONS - 1):
-                measurement = run_query(q, bao_reward=False, bao_select=USE_BAO, db_name=db_name)
+                measurement = run_query(q, bao_reward=False, bao_select=USE_BAO, db_name=db_name, port=args.db_port)
                 output_string = f"{c_idx}, {q_idx}, {iteration}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
                 write_to_file(args.output_file, output_string)
 
-            measurement = run_query(q, bao_reward=USE_BAO, bao_select=USE_BAO, db_name=db_name)
+            measurement = run_query(q, bao_reward=USE_BAO, bao_select=USE_BAO, db_name=db_name, port=args.db_port)
             output_string = f"{c_idx}, {q_idx}, {NUM_EXECUTIONS - 1}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
             write_to_file(args.output_file, output_string)
 
@@ -153,6 +152,7 @@ if __name__ == '__main__':
     parser.add_argument('--query_dir', type=str, required=True,
                         help='Directory which contains all the *training* queries')
     parser.add_argument('--output_file', type=str, required=True, help='File in which to store the results')
+    parser.add_argument('--db-port', type=int, default=5430, help='PostgreSQL port (default: 5430)')
 
     args = parser.parse_args()
     main(args)

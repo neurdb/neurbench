@@ -172,7 +172,8 @@ class BaoRegression:
 
             loss_accum /= len(dataset)
             losses.append(loss_accum)
-            self.__log("Epoch", epoch, "training loss:", loss_accum)
+            if epoch % 15 == 0:
+                self.__log("Epoch", epoch, "training loss:", loss_accum)
 
             # stopping condition
             if len(losses) > 10 and losses[-1] < 0.1:

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Bao Learned Query Optimizer Testing Script
-This script tests the trained Bao model on test queries
-Replicates the functionality of run_test_queries.py
+This script manages the Bao server lifecycle and delegates query execution to run_test_queries.py
 """
 
 import os
@@ -10,10 +9,6 @@ import sys
 import time
 import subprocess
 import psutil
-import glob
-import random
-import psycopg2
-import datetime
 from pathlib import Path
 
 class BaoTester:
@@ -32,8 +27,6 @@ class BaoTester:
         self.database_name = database_name
         self.db_port = db_port
         self.output_file = output_file
-        self.num_executions = 3
-        self.timeout_limit = 3 * 60 * 1000  # 3 minutes in milliseconds
 
         # Test mode configuration
         self.use_bao = use_bao and (not use_postgres)
@@ -113,237 +106,81 @@ class BaoTester:
             except (psutil.NoSuchProcess, psutil.TimeoutExpired):
                 pass
 
-    def pg_connection_string(self):
-        """Generate PostgreSQL connection string"""
-        return f"dbname={self.database_name} user=postgres password=postgres host=172.17.0.1 port={self.db_port}"
+    def execute_test_queries(self):
+        """Execute test queries by calling run_test_queries.py"""
+        print("="*80)
+        print(f"Testing {'Bao' if self.use_bao else 'PostgreSQL'} with run_test_queries.py...")
+        print("="*80)
 
-    def extract_q_errors(self, plan):
-        """Extract Q-errors from query plan"""
-        est = plan.get('Plan Rows')
-        act = plan.get('Actual Rows')
-        if est is not None and act not in (None, 0):
-            return [max(est / act, act / est)]
-        else:
-            return []
-
-    def run_query(self, sql, max_retries=3):
-        """Execute a single query and measure performance with retry logic"""
-        measurements = []
-        conn = None
-        last_error = None
-
-        for attempt in range(max_retries):
-            try:
-                # Add connection timeout to prevent hanging
-                conn = psycopg2.connect(
-                    self.pg_connection_string(),
-                    connect_timeout=30  # 30 seconds connection timeout
-                )
-                cur = conn.cursor()
-
-                # Configure Bao settings
-                cur.execute("SET bao_host TO '172.17.0.1'")
-                cur.execute(f"SET enable_bao TO {self.use_bao}")
-                cur.execute(f"SET enable_bao_selection TO {self.use_bao}")
-                cur.execute(f"SET enable_bao_rewards TO False")
-                cur.execute("SET bao_num_arms TO 25")
-                cur.execute(f"SET statement_timeout TO {self.timeout_limit}")
-
-                # Disable certain operations
-                cur.execute("SET enable_mergejoin TO off")
-                cur.execute("SET enable_seqscan TO off")
-                cur.execute("SET enable_indexonlyscan TO off")
-
-                # GEQO configuration
-                if not self.use_geqo:
-                    print("disable geqo")
-                    cur.execute("SET geqo TO off")
-
-                # Execute query multiple times
-                for i in range(self.num_executions):
-                    cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}")
-                    result = cur.fetchall()[0][0]
-
-                    q_errors = []
-                    if not self.use_bao:
-                        q_errors = self.extract_q_errors(result[0]['Plan'])
-
-                    # Get actual execution time
-                    actual_time = result[-1]['Execution Time']
-
-                    # Get Bao's predicted time if using Bao
-                    if self.use_bao:
-                        bao_hint = result[0]['Bao']['Bao recommended hint']
-                        predicted_time = result[0]['Bao']['Bao prediction']
-                        if predicted_time == 'NaN':
-                            predicted_time = float('nan')
-                        else:
-                            predicted_time = float(predicted_time)
-                    else:
-                        bao_hint = None
-                        predicted_time = None
-
-                    measurements.append({
-                        'execution_time': actual_time,
-                        'planning_time': result[-1]['Planning Time'],
-                        'hint': bao_hint,
-                        'predicted_time': predicted_time,
-                        'q_errors': q_errors
-                    })
-
-                    print(
-                        f"\t{i}: Execution Time: {measurements[-1]['execution_time']:.4f}\t"
-                        f"Planning Time: {measurements[-1]['planning_time']:.4f}\t"
-                        f"Predicted Time: {measurements[-1]['predicted_time'] if measurements[-1]['predicted_time'] is not None else 'N/A'}")
-
-                conn.close()
-                return measurements
-
-            except psycopg2.OperationalError as e:
-                # Database connection errors (e.g., DB restart)
-                last_error = e
-                if conn is not None:
-                    try:
-                        conn.close()
-                    except:
-                        pass
-
-                if attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
-                    print(f"⚠ Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
-                    print(f"  Waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                else:
-                    print(f"✗ Database connection failed after {max_retries} attempts: {e}")
-
-            except Exception as e:
-                # Other errors (e.g., query timeout, syntax error)
-                print(f"Query error: {e}")
-                last_error = e
-                if conn is not None:
-                    try:
-                        conn.close()
-                    except:
-                        pass
-                break  # Don't retry for non-connection errors
-
-        # All retries failed
-        tmp = []
-        for _ in range(self.num_executions):
-            tmp.append({
-                'execution_time': 2 * self.timeout_limit,
-                'planning_time': 2 * self.timeout_limit,
-                'hint': None,
-                'predicted_time': None,
-                'q_errors': []
-            })
-        return tmp
-
-    def current_timestamp_str(self):
-        """Get current timestamp string"""
-        return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-
-    def load_queries(self):
-        """Load queries from query directory"""
         if not self.query_dir:
             print("No query directory specified")
-            return []
-
-        pattern = os.path.join(self.query_dir, '**/*.sql')
-        query_paths = sorted(glob.glob(pattern, recursive=True))
-        print(f"Found {len(query_paths)} queries in {self.query_dir}")
-
-        queries = []
-        for fp in query_paths:
-            with open(fp) as f:
-                query = f.read()
-            queries.append((fp, query))
-
-        return queries
-
-    def execute_test_queries(self):
-        """Execute test queries following run_test_queries.py pattern"""
-        print("="*80)
-        print(f"Testing {'Bao' if self.use_bao else 'PostgreSQL'} on test queries...")
-        print("="*80)
-
-        # Load queries
-        queries = self.load_queries()
-        if not queries:
-            print("No queries found")
             return False
 
-        print(f"Start running {len(queries)} queries for evaluation...")
-
-        # Check if output file exists
+        # Prepare output file path
         output_path = self.bao_dir / self.output_file
         if output_path.exists():
             print(f"Removing existing output file: {output_path}")
             output_path.unlink()
 
-        # Track failures
-        failed_queries = 0
-        consecutive_failures = 0
-        max_consecutive_failures = 5  # Exit if 5 consecutive queries fail
-        max_failure_rate = 0.5  # Exit if >50% queries fail
+        # Build command to call run_test_queries.py
+        run_test_script = self.bao_dir / "run_test_queries.py"
+        if not run_test_script.exists():
+            print(f"Error: run_test_queries.py not found at {run_test_script}")
+            return False
 
-        # Execute all test queries
-        for query_idx, (fp, q) in enumerate(queries):
-            print(f"\nExecuting query: {fp}")
-            measurements = self.run_query(q)
+        cmd = [
+            sys.executable,
+            str(run_test_script),
+            "--query_dir", self.query_dir,
+            "--database_name", self.database_name,
+            "--output_file", str(output_path),
+            "--db-port", str(self.db_port)
+        ]
 
-            # Check if query failed (execution time is timeout value)
-            query_failed = measurements[0]['execution_time'] >= 2 * self.timeout_limit
+        # Add mode flags
+        if self.use_bao:
+            cmd.append("--use_bao")
+        elif self.use_postgres:
+            cmd.append("--use_postgres")
 
-            if query_failed:
-                failed_queries += 1
-                consecutive_failures += 1
-                print(f"⚠ Query failed: {fp}")
+        # Add GEQO flag
+        if not self.use_geqo:
+            cmd.append("--disable_geqo")
 
-                # Check consecutive failures
-                if consecutive_failures >= max_consecutive_failures:
-                    print(f"\n✗ ERROR: {consecutive_failures} consecutive queries failed!")
-                    print("This usually indicates a database connection problem.")
-                    print("Aborting test to prevent further issues.")
-                    return False
+        print(f"Calling run_test_queries.py with:")
+        print(f"  query_dir: {self.query_dir}")
+        print(f"  database: {self.database_name}")
+        print(f"  output: {output_path}")
+        print(f"  port: {self.db_port}")
+        print(f"  mode: {'Bao' if self.use_bao else 'PostgreSQL'}")
+        print(f"  geqo: {'enabled' if self.use_geqo else 'disabled'}")
+        print(flush=True)
+
+        # Run the test script
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=self.bao_dir,
+                check=False,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
+
+            if result.returncode == 0:
+                print("\n" + "="*80)
+                print("✓ Testing completed successfully!")
+                print(f"Results saved to: {output_path}")
+                print("="*80)
+                return True
             else:
-                consecutive_failures = 0  # Reset on success
-
-            for i, measurement in enumerate(measurements):
-                # Format: hint, iteration, timestamp, filepath, planning_time, execution_time, Bao/PG
-                output_string = (
-                    f"{'x' if measurement['hint'] is None else measurement['hint']}, "
-                    f"{i}, {self.current_timestamp_str()}, {fp}, "
-                    f"{measurement['planning_time']}, {measurement['execution_time']}, "
-                    f"{'Bao' if self.use_bao else 'PG'}"
-                )
-
-                with open(output_path, 'a') as f:
-                    f.write(output_string)
-                    f.write(os.linesep)
-
-            # Check overall failure rate
-            failure_rate = failed_queries / (query_idx + 1)
-            if query_idx >= 10 and failure_rate > max_failure_rate:
-                print(f"\n✗ ERROR: Failure rate too high ({failure_rate:.1%})")
-                print(f"Failed {failed_queries} out of {query_idx + 1} queries")
-                print("Aborting test to prevent wasting resources.")
+                print("\n" + "="*80)
+                print(f"✗ Testing failed with exit code {result.returncode}")
+                print("="*80)
                 return False
 
-        # Final statistics
-        total_queries = len(queries)
-        success_rate = (total_queries - failed_queries) / total_queries if total_queries > 0 else 0
-
-        print("\n" + "="*80)
-        if failed_queries > 0:
-            print(f"⚠ Testing completed with {failed_queries} failed queries ({success_rate:.1%} success rate)")
-        else:
-            print(f"✓ Testing completed successfully! All queries passed.")
-        print(f"Results saved to: {output_path}")
-        print("="*80)
-
-        # Return False if too many failures
-        return success_rate >= 0.5  # At least 50% must succeed
+        except Exception as e:
+            print(f"\n✗ Error running run_test_queries.py: {e}")
+            return False
 
     def cleanup(self):
         """Clean up resources"""
@@ -371,15 +208,16 @@ class BaoTester:
                 self.start_server()
 
             print("\n" + "="*80)
-            print(f"Using {'Bao' if self.use_bao else 'PostgreSQL'} for testing")
+            print(f"Delegating query execution to run_test_queries.py")
+            print(f"Mode: {'Bao' if self.use_bao else 'PostgreSQL'}")
             print(f"GEQO: {'enabled' if self.use_geqo else 'disabled'}")
             print("="*80)
 
-            # Execute test queries
+            # Execute test queries via run_test_queries.py
             if not self.execute_test_queries():
                 raise RuntimeError("Testing failed")
 
-            print("[DONE] Bao testing completed successfully!")
+            print("[DONE] Testing completed successfully!")
             return True
 
         except Exception as e:
@@ -397,7 +235,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Test Bao Learned Query Optimizer on test queries",
+        description="Test Bao Learned Query Optimizer - manages server lifecycle and calls run_test_queries.py",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -414,10 +252,10 @@ Examples:
   python test_bao.py --query-dir ./queries/job/test --use-bao --disable-geqo
 
 How it works:
-  - Loads all queries from the query directory
-  - Executes each query 3 times for evaluation
-  - Records execution time, planning time, predicted time, and Q-errors
-  - Can test with either Bao or PostgreSQL optimizer
+  - Starts Bao server (if using Bao mode)
+  - Calls run_test_queries.py to execute test queries
+  - run_test_queries.py handles all query execution logic
+  - Stops Bao server and cleans up when done
         """
     )
 

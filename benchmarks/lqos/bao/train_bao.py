@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
 """
 Bao Learned Query Optimizer Training Script
-This script automates the training process for Bao LQO
-Replicates the functionality of run_queries.py with sample-based query execution
+This script manages the Bao server lifecycle and delegates query execution to run_queries.py
 """
 
 import os
 import sys
 import time
 import subprocess
-import signal
 import psutil
-import json
-import glob
-import random
-import psycopg2
-import datetime
 from pathlib import Path
 
 class BaoTrainer:
@@ -33,9 +26,6 @@ class BaoTrainer:
         self.database_name = database_name
         self.db_port = db_port
         self.output_file = output_file
-        self.num_executions = 3
-        self.timeout_limit = 3 * 60 * 1000  # 3 minutes in milliseconds
-        self.use_bao = True
 
         # Configurable parameters
         self.training_timeout = 300
@@ -111,230 +101,70 @@ class BaoTrainer:
             except (psutil.NoSuchProcess, psutil.TimeoutExpired):
                 pass
 
-    def pg_connection_string(self):
-        """Generate PostgreSQL connection string"""
-        return f"dbname={self.database_name} user=postgres password=postgres host=172.17.0.1 port={self.db_port}"
-
-    def run_query(self, sql, bao_select=False, bao_reward=False):
-        """Execute a single query and measure performance - matches run_queries.py logic"""
-        while True:
-            conn = None
-            try:
-                # Add connection timeout to prevent hanging
-                conn = psycopg2.connect(
-                    self.pg_connection_string(),
-                    connect_timeout=30  # 30 seconds connection timeout
-                )
-                cur = conn.cursor()
-
-                # Configure Bao settings
-                cur.execute("SET bao_host TO '172.17.0.1'")
-                cur.execute(f"SET enable_bao TO {bao_select or bao_reward}")
-                cur.execute(f"SET enable_bao_selection TO {bao_select}")
-                cur.execute(f"SET enable_bao_rewards TO {bao_reward}")
-                cur.execute("SET bao_num_arms TO 25")
-                cur.execute(f"SET statement_timeout TO {self.timeout_limit}")
-
-                # Execute query for reward collection
-                if bao_reward:
-                    cur.execute(sql)
-                    cur.fetchall()
-
-                # Execute with EXPLAIN ANALYZE to get timing
-                cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}")
-                result = cur.fetchall()[0][0][-1]
-
-                measurement = {
-                    'execution_time': result['Execution Time'],
-                    'planning_time': result['Planning Time']
-                }
-
-                conn.close()
-                break
-
-            except Exception as e:
-                print(f"An unexpected exception OR timeout occured during database querying: {e}")
-                if conn is not None:
-                    try:
-                        conn.close()
-                    except:
-                        pass
-                return {
-                    'execution_time': 2 * self.timeout_limit,
-                    'planning_time': 2 * self.timeout_limit
-                }
-
-        return measurement
-
-    def current_timestamp_str(self):
-        """Get current timestamp string"""
-        return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-
-    def write_to_file(self, file_path, output_string):
-        """Write output to file and print"""
-        print(output_string)
-        with open(file_path, 'a') as f:
-            f.write(output_string)
-            f.write(os.linesep)
-
-    def chunks(self, lst, n):
-        """Yield successive n-sized chunks from lst"""
-        for i in range(0, len(lst), n):
-            yield lst[i:i + n]
-
-    def load_queries(self):
-        """Load queries from query directory"""
-        if not self.query_dir:
-            print("No query directory specified, skipping query execution")
-            return []
-
-        pattern = os.path.join(self.query_dir, '**/*.sql')
-        query_paths = sorted(glob.glob(pattern, recursive=True))
-        print(f"Found {len(query_paths)} queries in {self.query_dir}")
-
-        queries = []
-        for fp in query_paths:
-            with open(fp) as f:
-                query = f.read()
-            queries.append((fp, query))
-
-        return queries
 
     def execute_training_queries(self):
-        """Execute queries following run_queries.py pattern"""
+        """Execute queries by calling run_queries.py"""
         print("="*80)
-        print("Executing training queries with sample-based approach...")
+        print("Executing training queries with run_queries.py...")
         print("="*80)
 
-        # Load queries
-        queries = self.load_queries()
-        if not queries:
-            print("No queries found")
+        if not self.query_dir:
+            print("No query directory specified")
             return False
 
-        # Sample 500 queries (or all if less than 500)
-        random.seed(42)
-        queries_to_run = 500 if len(queries) < 500 else len(queries)
-        query_sequence = random.choices(queries, k=queries_to_run)
-        print(f"Sampled {queries_to_run} queries for training")
-
-        # Split into chunks of 25
-        pg_chunks, *bao_chunks = list(self.chunks(query_sequence, 25))
-
-        # Check if output file exists
+        # Prepare output file path
         output_path = self.bao_dir / self.output_file
         if output_path.exists():
             print(f"Removing existing output file: {output_path}")
             output_path.unlink()
 
-        # Execute initial chunk with PG optimizer
-        print("\n" + "="*80)
-        print("Phase 1: Executing queries using PG optimizer for initial training")
-        print("="*80)
+        # Build command to call run_queries.py
+        run_queries_script = self.bao_dir / "run_queries.py"
+        if not run_queries_script.exists():
+            print(f"Error: run_queries.py not found at {run_queries_script}")
+            return False
 
-        # Track failures in Phase 1
-        phase1_failures = 0
-        consecutive_failures = 0
+        cmd = [
+            sys.executable,
+            str(run_queries_script),
+            "--query_dir", self.query_dir,
+            "--database_name", self.database_name,
+            "--output_file", str(output_path),
+            "--db-port", str(self.db_port)
+        ]
 
-        for q_idx, (fp, q) in enumerate(pg_chunks):
-            # Warm up the cache (first NUM_EXECUTIONS-1 runs)
-            for iteration in range(self.num_executions - 1):
-                measurement = self.run_query(q)
-                output_string = f"x, {q_idx}, {iteration}, {self.current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
-                self.write_to_file(output_path, output_string)
+        print(f"Calling run_queries.py with:")
+        print(f"  query_dir: {self.query_dir}")
+        print(f"  database: {self.database_name}")
+        print(f"  output: {output_path}")
+        print(f"  port: {self.db_port}")
+        print(flush=True)
 
-            # Final execution with reward collection
-            measurement = self.run_query(q, bao_reward=True)
-            output_string = f"x, {q_idx}, {self.num_executions - 1}, {self.current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
-            self.write_to_file(output_path, output_string)
+        # Run the training script
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=self.bao_dir,
+                check=False,
+                stdout=sys.stdout,
+                stderr=sys.stderr
+            )
 
-            # Check if query failed
-            query_failed = measurement['execution_time'] >= 2 * self.timeout_limit
-            if query_failed:
-                phase1_failures += 1
-                consecutive_failures += 1
-                print(f"⚠ Query failed: {fp}")
-
-                # Abort if too many consecutive failures
-                if consecutive_failures >= 5:
-                    print(f"\n✗ ERROR: {consecutive_failures} consecutive queries failed in Phase 1!")
-                    print("This usually indicates a database connection problem.")
-                    print("Aborting training to prevent further issues.")
-                    return False
+            if result.returncode == 0:
+                print("\n" + "="*80)
+                print("✓ Training completed successfully!")
+                print(f"Results saved to: {output_path}")
+                print("="*80)
+                return True
             else:
-                consecutive_failures = 0
+                print("\n" + "="*80)
+                print(f"✗ Training failed with exit code {result.returncode}")
+                print("="*80)
+                return False
 
-        if phase1_failures > 0:
-            print(f"⚠ Phase 1 completed with {phase1_failures} failed queries")
-        else:
-            print(f"✓ Completed initial training with {len(pg_chunks)} queries")
-
-        # Execute subsequent chunks with Bao
-        print("\n" + "="*80)
-        print(f"Phase 2: Executing {len(bao_chunks)} chunks with Bao (25 queries each)")
-        print("="*80)
-
-        # Track failures in Phase 2
-        phase2_failures = 0
-        consecutive_failures = 0
-
-        for c_idx, chunk in enumerate(bao_chunks):
-            print("===" * 30, flush=True)
-            print(f"Iteration over chunk {c_idx + 1}/{len(bao_chunks)}...")
-            if self.use_bao:
-                print(f"[{self.current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining Bao...", flush=True)
-                # Retrain the model - using os.system to match run_queries.py exactly
-                retrain_cmd = f"cd {self.bao_server_dir} && {sys.executable} baoctl.py --retrain"
-                return_code = os.system(retrain_cmd)
-                os.system("sync")
-                print(f"[{self.current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining done.", flush=True)
-
-            # Execute chunk queries
-            for q_idx, (fp, q) in enumerate(chunk):
-                # Warm up the cache
-                for iteration in range(self.num_executions - 1):
-                    measurement = self.run_query(q, bao_reward=False, bao_select=self.use_bao)
-                    output_string = f"{c_idx}, {q_idx}, {iteration}, {self.current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
-                    self.write_to_file(output_path, output_string)
-
-                # Final execution with reward collection
-                measurement = self.run_query(q, bao_reward=self.use_bao, bao_select=self.use_bao)
-                output_string = f"{c_idx}, {q_idx}, {self.num_executions - 1}, {self.current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
-                self.write_to_file(output_path, output_string)
-
-                # Check if query failed
-                query_failed = measurement['execution_time'] >= 2 * self.timeout_limit
-                if query_failed:
-                    phase2_failures += 1
-                    consecutive_failures += 1
-                    print(f"⚠ Query failed: {fp}")
-
-                    # Abort if too many consecutive failures
-                    if consecutive_failures >= 5:
-                        print(f"\n✗ ERROR: {consecutive_failures} consecutive queries failed in Phase 2!")
-                        print("This usually indicates a database connection problem.")
-                        print("Aborting training to prevent further issues.")
-                        return False
-                else:
-                    consecutive_failures = 0
-
-        # Final statistics
-        total_failures = phase1_failures + phase2_failures
-        total_queries = len(pg_chunks) + sum(len(chunk) for chunk in bao_chunks)
-
-        print("\n" + "="*80)
-        if total_failures > 0:
-            print(f"⚠ Training completed with {total_failures} failed queries out of {total_queries}")
-            print(f"  Phase 1: {phase1_failures} failures")
-            print(f"  Phase 2: {phase2_failures} failures")
-        else:
-            print(f"✓ Training completed successfully! All queries passed.")
-        print(f"Results saved to: {output_path}")
-        print("="*80)
-
-        # Return False if too many failures (>50%)
-        success_rate = (total_queries - total_failures) / total_queries if total_queries > 0 else 0
-        return success_rate >= 0.5
+        except Exception as e:
+            print(f"\n✗ Error running run_queries.py: {e}")
+            return False
     
     def cleanup(self):
         """Clean up resources"""
@@ -361,14 +191,14 @@ class BaoTrainer:
             self.start_server()
 
             print("\n" + "="*80)
-            print("Using query-based training (run_queries.py approach)")
+            print("Delegating query execution to run_queries.py")
             print("="*80)
 
-            # Execute training queries
+            # Execute training queries via run_queries.py
             if not self.execute_training_queries():
-                raise RuntimeError("Query-based training failed")
+                raise RuntimeError("Training failed")
 
-            print("[DONE] Bao training with queries completed successfully!")
+            print("[DONE] Bao training completed successfully!")
             return True
 
         except Exception as e:
@@ -386,7 +216,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Train Bao Learned Query Optimizer using query-based approach (like run_queries.py)",
+        description="Train Bao Learned Query Optimizer - manages server lifecycle and calls run_queries.py",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -400,11 +230,10 @@ Examples:
   python train_bao.py --query-dir ./queries/job/train --training-timeout 600 --server-startup-delay 10
 
 How it works:
-  - Samples 500 queries from the query directory (or all if less than 500)
-  - Splits queries into 25-query chunks
-  - First chunk: executes with PG optimizer to collect initial training data
-  - Subsequent chunks: retrains Bao model every 25 queries
-  - Each query executes 3 times (2 for warm-up, 1 for reward collection)
+  - Starts Bao server
+  - Calls run_queries.py to execute training queries
+  - run_queries.py handles all query execution and Bao retraining logic
+  - Stops Bao server and cleans up when done
         """
     )
 
