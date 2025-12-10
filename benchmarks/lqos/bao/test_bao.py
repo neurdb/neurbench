@@ -279,13 +279,12 @@ class BaoTester:
                 consecutive_failures = 0  # Reset on success
 
             for i, measurement in enumerate(measurements):
-                avg_q_error = sum(measurement['q_errors']) / len(measurement['q_errors']) if measurement['q_errors'] else 'N/A'
+                # Format: hint, iteration, timestamp, filepath, planning_time, execution_time, Bao/PG
                 output_string = (
                     f"{'x' if measurement['hint'] is None else measurement['hint']}, "
                     f"{i}, {self.current_timestamp_str()}, {fp}, "
                     f"{measurement['planning_time']}, {measurement['execution_time']}, "
-                    f"{measurement['predicted_time'] if measurement['predicted_time'] is not None else 'N/A'}, "
-                    f"{'Bao' if self.use_bao else 'PG'}, {avg_q_error}"
+                    f"{'Bao' if self.use_bao else 'PG'}"
                 )
 
                 with open(output_path, 'a') as f:
