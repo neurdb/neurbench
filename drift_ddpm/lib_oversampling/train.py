@@ -98,6 +98,10 @@ def controller_training(
     steps=10000,
     drop_out=0.0,
     bs=1024,
+    # New parameters for better control
+    drift_range=(0.05, 0.75),  # Range for expected drift during training
+    loss_weight_corr=0.8,      # Weight for correlation loss
+    loss_weight_real=0.1,      # Weight for RealMSE loss
 ):
     """Train an MLP controller."""
     train_x = torch.from_numpy(train_x).float()
@@ -159,7 +163,7 @@ def controller_training(
 
         t, _ = schedule_sampler.sample(1, device)
 
-        expected_drift = torch.FloatTensor(1).uniform_(0.05, 0.75).to(device)
+        expected_drift = torch.FloatTensor(1).uniform_(drift_range[0], drift_range[1]).to(device)
         # expected_drift = expected_drift / t[0]
         # if (
         #     expected_drift < 1e-5
@@ -198,19 +202,19 @@ def controller_training(
         # logits_c, logits_x = controller(tcond, xt_prim_column, t)
         # cond_loss = F.mse_loss(logits_c, logits_x)
 
-        print(
-            f"{expected_drift.item():8.6f} "
-            f"{actual_drifts[0].item():8.6f} "
-            f"{abs(expected_drift.item() - actual_drifts[0].item()):8.6f} "
-            f"{p_loss_corr.item():8.6f} "
-            f"{mse_real.item():8.6f} "
-            # f"{cond_loss.item():8.6f}"
-            # f"{s_loss_corr.item():8.6f} "
-        )
+        # print(
+        #     f"{expected_drift.item():8.6f} "
+        #     f"{actual_drifts[0].item():8.6f} "
+        #     f"{abs(expected_drift.item() - actual_drifts[0].item()):8.6f} "
+        #     f"{p_loss_corr.item():8.6f} "
+        #     f"{mse_real.item():8.6f} "
+        #     # f"{cond_loss.item():8.6f}"
+        #     # f"{s_loss_corr.item():8.6f} "
+        # )
 
         # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real + 0.1 * cond_loss
         # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real
-        total_loss = loss + 0.8 * p_loss_corr + 0.1 * mse_real
+        total_loss = loss + loss_weight_corr * p_loss_corr + loss_weight_real * mse_real
 
         opt.zero_grad()
         # opt_cond.zero_grad()

@@ -46,12 +46,23 @@ def main(args: argparse.Namespace):
     config = config[args.table_name]
 
     train_data_path = os.path.join(base_dir, f"{args.table_name}.csv")
-    original_data = pd.read_csv(
-        ### imdb
-        train_data_path, doublequote=False, escapechar="\\", low_memory=False
-        ### stack
-        # train_data_path, doublequote=True, low_memory=False,
-    )
+    # Try different CSV parsing strategies (C engine only for speed)
+    original_data = None
+    for strategy in [
+        {"doublequote": True},                        # Standard CSV (most common)
+        {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+    ]:
+        try:
+            original_data = pd.read_csv(
+                train_data_path, low_memory=False, on_bad_lines='warn', **strategy
+            )
+            print(f"Loaded with strategy: {strategy}")
+            break
+        except Exception as e:
+            print(f"Strategy {strategy} failed: {e}")
+            continue
+    if original_data is None:
+        raise RuntimeError(f"Failed to load {train_data_path} - check CSV format")
     print("Original data")
     print(original_data)
 
@@ -59,20 +70,29 @@ def main(args: argparse.Namespace):
     print("Data with drifting columns")
     print(train_data)
 
-    real_base_dir = os.path.join("datasets", args.dataset_name + "_2014")
+    # Reference dataset: use specified reference or default to {dataset_name}
+    if args.reference_dataset:
+        real_base_dir = os.path.join("datasets", args.reference_dataset)
+    else:
+        real_base_dir = os.path.join("datasets", args.dataset_name)
+
+    print(f"Using reference dataset: {real_base_dir}")
 
     real_drift_data_path = os.path.join(real_base_dir, f"{args.table_name}.csv")
-    original_real_drift_data = pd.read_csv(
-        real_drift_data_path,
-        ### imdb
-        doublequote=True,
-        quotechar='"',
-        escapechar="\\",
-        low_memory=False,
-        ### stack
-        # doublequote=True,
-        # low_memory=False,
-    )
+    original_real_drift_data = None
+    for strategy in [
+        {"doublequote": True},
+        {"doublequote": False, "escapechar": "\\"},
+    ]:
+        try:
+            original_real_drift_data = pd.read_csv(
+                real_drift_data_path, low_memory=False, on_bad_lines='warn', **strategy
+            )
+            break
+        except:
+            continue
+    if original_real_drift_data is None:
+        raise RuntimeError(f"Failed to load {real_drift_data_path}")
     print("Real Drift data")
     print(original_real_drift_data)
 
@@ -83,17 +103,20 @@ def main(args: argparse.Namespace):
     real_cond_data_path = os.path.join(
         real_base_dir, f"{args.table_name}.csv"
     )  # {args.table_name}
-    original_real_cond_data = pd.read_csv(
-        real_cond_data_path,
-        ### imdb
-        doublequote=True,
-        quotechar='"',
-        escapechar="\\",
-        low_memory=False,
-        ### stack
-        # doublequote=True,
-        # low_memory=False,
-    )
+    original_real_cond_data = None
+    for strategy in [
+        {"doublequote": True},
+        {"doublequote": False, "escapechar": "\\"},
+    ]:
+        try:
+            original_real_cond_data = pd.read_csv(
+                real_cond_data_path, low_memory=False, on_bad_lines='warn', **strategy
+            )
+            break
+        except:
+            continue
+    if original_real_cond_data is None:
+        raise RuntimeError(f"Failed to load {real_cond_data_path}")
     print("Conditional data")
     print(original_real_cond_data)
 
@@ -217,6 +240,10 @@ def main(args: argparse.Namespace):
             steps=args.controller_steps,
             drop_out=0.0,
             bs=args.controller_bs,
+            # New parameters for better training
+            drift_range=(args.drift_range_min, args.drift_range_max),
+            loss_weight_corr=args.loss_weight_corr,
+            loss_weight_real=args.loss_weight_real,
         )
         controller_end = time.time()
         print(f"[TIMING] Controller training took: {controller_end - controller_start:.2f} seconds")
@@ -295,6 +322,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset-name", type=str, default="imdb")
     parser.add_argument("--table-name", type=str, default="nosuchtable")
+    parser.add_argument(
+        "--reference-dataset",
+        type=str,
+        default=None,
+        help="Reference dataset for drift direction (default: {dataset_name})"
+    )
 
     parser.add_argument(
         "--diffuser-dim", nargs="+", type=int, default=(512, 1024, 1024, 512)
@@ -329,7 +362,17 @@ if __name__ == "__main__":
 
     parser.add_argument("--random-state", type=int, default=42)
 
-    parser.add_argument("--fillna", action="store_true", default=False)
+    parser.add_argument("--fillna", action="store_true", default=True)
+
+    # Controller training improvement parameters
+    parser.add_argument("--drift-range-min", type=float, default=0.05,
+                        help="Min drift for controller training (default: 0.05)")
+    parser.add_argument("--drift-range-max", type=float, default=0.75,
+                        help="Max drift for controller training (default: 0.75)")
+    parser.add_argument("--loss-weight-corr", type=float, default=0.8,
+                        help="Weight for correlation loss (default: 0.8)")
+    parser.add_argument("--loss-weight-real", type=float, default=0.1,
+                        help="Weight for RealMSE loss (default: 0.1)")
 
     # parser.add_argument("--cond", action="store_true", default=False)
 
