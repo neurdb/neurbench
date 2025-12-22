@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--random-state", type=int, default=42)
 
-    parser.add_argument("--fillna", action="store_true", default=True)
+    parser.add_argument("--fillna", action="store_true", default=False)
 
     # Controller training improvement parameters
     parser.add_argument("--drift-range-min", type=float, default=0.05,

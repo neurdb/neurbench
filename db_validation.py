@@ -175,31 +175,52 @@ class DatabaseValidator:
 
     def _copy_table_data(self, src_db: str, dst_db: str, table_name: str) -> bool:
         """Copy table data from one database to another using psycopg2 copy_expert."""
+        import tempfile
+
         try:
-            # Export from source
+            # Use temp file for large tables
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as tmp:
+                tmp_path = tmp.name
+
+            # Export from source using psycopg2 copy_expert
             src_conn = self._get_connection(src_db)
             src_cur = src_conn.cursor()
-            buffer = io.StringIO()
-            copy_sql = f"COPY {table_name} TO STDOUT WITH CSV HEADER"
-            src_cur.copy_expert(copy_sql, buffer)
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                src_cur.copy_expert(f"COPY {table_name} TO STDOUT WITH CSV HEADER", f)
             src_cur.close()
             src_conn.close()
 
-            # Import to destination
-            buffer.seek(0)
+            # Truncate destination table
             dst_conn = self._get_connection(dst_db)
             dst_conn.autocommit = True
             dst_cur = dst_conn.cursor()
             dst_cur.execute(f"TRUNCATE TABLE {table_name} CASCADE")
-            buffer.seek(0)
-            copy_sql = f"COPY {table_name} FROM STDIN WITH CSV HEADER"
-            dst_cur.copy_expert(copy_sql, buffer)
+
+            # Import to destination using psycopg2 copy_expert
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                dst_cur.copy_expert(f"COPY {table_name} FROM STDIN WITH CSV HEADER", f)
             dst_cur.close()
             dst_conn.close()
+
+            # Clean up temp file
+            os.remove(tmp_path)
             return True
         except Exception as e:
             print(f"FAILED: {e}")
             return False
+
+    def _get_table_row_count(self, dbname: str, table_name: str) -> int:
+        """Get row count for a table."""
+        try:
+            conn = self._get_connection(dbname)
+            cur = conn.cursor()
+            cur.execute(f"SELECT COUNT(*) FROM {table_name}")
+            count = cur.fetchone()[0]
+            cur.close()
+            conn.close()
+            return count
+        except:
+            return -1
 
     def copy_all_tables(self, src_db: str, dst_db: str) -> bool:
         """Copy all tables from source to destination database using psycopg2."""
@@ -211,7 +232,9 @@ class DatabaseValidator:
             "movie_keyword", "movie_link", "name", "person_info", "role_type", "title"
         ]
         for table in all_tables:
-            print(f"  Copying {table}...", end=" ", flush=True)
+            row_count = self._get_table_row_count(src_db, table)
+            count_str = f"({row_count:,} rows)" if row_count >= 0 else ""
+            print(f"  Copying {table} {count_str}...", end=" ", flush=True)
             if self._copy_table_data(src_db, dst_db, table):
                 print("OK")
             else:
@@ -237,7 +260,48 @@ class DatabaseValidator:
             print(f"Warning: Could not get integer columns: {e}")
             return []
 
-    def _clean_csv_for_import(self, csv_path: str, int_columns: List[str]) -> str:
+    def _get_not_null_string_columns(self, dbname: str, table_name: str) -> List[str]:
+        """Get list of NOT NULL string columns for a table."""
+        try:
+            conn = self._get_connection(dbname)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = %s
+                AND is_nullable = 'NO'
+                AND data_type IN ('character varying', 'varchar', 'text', 'character', 'char')
+            """, (table_name,))
+            columns = [row[0] for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return columns
+        except Exception as e:
+            print(f"Warning: Could not get NOT NULL string columns: {e}")
+            return []
+
+    def _get_not_null_int_columns(self, dbname: str, table_name: str) -> List[str]:
+        """Get list of NOT NULL integer columns for a table."""
+        try:
+            conn = self._get_connection(dbname)
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = %s
+                AND is_nullable = 'NO'
+                AND data_type IN ('integer', 'bigint', 'smallint')
+            """, (table_name,))
+            columns = [row[0] for row in cur.fetchall()]
+            cur.close()
+            conn.close()
+            return columns
+        except Exception as e:
+            print(f"Warning: Could not get NOT NULL int columns: {e}")
+            return []
+
+    def _clean_csv_for_import(self, csv_path: str, int_columns: List[str],
+                               not_null_string_columns: List[str] = None) -> str:
         """Clean CSV file for PostgreSQL import.
 
         Handles:
@@ -246,7 +310,10 @@ class DatabaseValidator:
         3. Year columns with float artifacts (1966.499... → 1966)
         4. String columns with backslash-escaped quotes (\" → "")
         5. Proper UTF-8 encoding for strings
+        6. NOT NULL string columns with empty values (fill with placeholder)
         """
+        if not_null_string_columns is None:
+            not_null_string_columns = []
         import pandas as pd
         import numpy as np
 
@@ -293,14 +360,32 @@ class DatabaseValidator:
                 df[col] = df[col].apply(clean_year)
             else:
                 # Convert to nullable int, handling NaN/string/float values
+                # Also handle INT64_MIN/MAX which indicate NaN conversion errors
+                INT32_MIN = -2147483648
+                INT32_MAX = 2147483647
+                INT64_MIN = -9223372036854775808
+                INT64_MAX = 9223372036854775807
+                overflow_count = [0]  # Use list for closure
+
                 def to_int(x):
                     if pd.isna(x) or x == '' or x == 'None':
                         return None
                     try:
-                        return int(round(float(x)))
-                    except (ValueError, TypeError):
+                        val = int(round(float(x)))
+                        # INT64 extremes are artifacts from float->int conversion, convert to 0
+                        if val == INT64_MIN or val == INT64_MAX:
+                            overflow_count[0] += 1
+                            return 0
+                        # Values outside INT32 range also converted to 0
+                        if val < INT32_MIN or val > INT32_MAX:
+                            overflow_count[0] += 1
+                            return 0
+                        return val
+                    except (ValueError, TypeError, OverflowError):
                         return None
                 df[col] = df[col].apply(to_int)
+                if overflow_count[0] > 0:
+                    print(f"  Column '{col}': {overflow_count[0]} overflow values converted to 0")
 
         # Convert integer columns to proper format for CSV (avoid 2003.0 issue)
         # When a column has None values, pandas converts it to float64
@@ -309,6 +394,17 @@ class DatabaseValidator:
             if col in df.columns:
                 # Convert to string, replacing NaN with empty string
                 df[col] = df[col].apply(lambda x: '' if pd.isna(x) else str(int(x)))
+
+        # Fix NOT NULL string columns - fill empty/null values with placeholder
+        for col in not_null_string_columns:
+            if col in df.columns:
+                # Count how many we're fixing
+                null_count = df[col].isna().sum()
+                empty_count = (df[col] == '').sum() if df[col].dtype == object else 0
+                if null_count > 0 or empty_count > 0:
+                    print(f"  Fixing NOT NULL column '{col}': {null_count} null, {empty_count} empty -> '(unknown)'")
+                    df[col] = df[col].fillna('(unknown)')
+                    df[col] = df[col].replace('', '(unknown)')
 
         # Save to temp file with UTF-8 encoding
         clean_path = csv_path.replace('.temp.csv', '') + ".clean.csv"
@@ -332,10 +428,11 @@ class DatabaseValidator:
             conn.autocommit = True
             cur = conn.cursor()
 
-            # Get integer columns and clean CSV (always clean for string escape issues)
+            # Get integer columns and NOT NULL string columns, then clean CSV
             int_columns = self._get_integer_columns(dbname, table_name)
+            not_null_str_columns = self._get_not_null_string_columns(dbname, table_name)
             print(f"(int_columns={int_columns})...", end=" ", flush=True)
-            import_path = self._clean_csv_for_import(csv_path, int_columns)
+            import_path = self._clean_csv_for_import(csv_path, int_columns, not_null_str_columns)
             print(f"(cleaned: {import_path})...", end=" ", flush=True)
 
             # Debug: print first 3 lines of cleaned file
@@ -377,8 +474,26 @@ class DatabaseValidator:
             print("FAILED")
             return False
 
+    def analyze_database(self, dbname: str) -> bool:
+        """Run ANALYZE on the database to update statistics for query planner."""
+        print(f"Running ANALYZE VERBOSE on {dbname}...")
+        try:
+            conn = self._get_connection(dbname)
+            conn.autocommit = True
+            cur = conn.cursor()
+            cur.execute("ANALYZE VERBOSE")
+            cur.close()
+            conn.close()
+            print("ANALYZE complete.")
+            return True
+        except Exception as e:
+            print(f"ANALYZE FAILED: {e}")
+            return False
+
     def run_job_queries(self, dbname: str, output_file: str) -> bool:
         print(f"\nRunning JOB queries on {dbname}...")
+        # Always ANALYZE before running queries to ensure accurate statistics
+        self.analyze_database(dbname)
         if os.path.exists(output_file):
             os.remove(output_file)
         cmd = f"cd {self.BAO_DIR} && python3 run_test_queries.py " \
@@ -435,28 +550,34 @@ class DatabaseValidator:
         avg_ratio = sum(ratios) / len(ratios) if ratios else 1.0
         return total, passed, avg_ratio
 
-    def validate_single_table(self, dataset_name: str, table_name: str, threshold: float = 1.2) -> TableValidationResult:
+    def validate_single_table(self, dataset_name: str, table_name: str, threshold: float = 1.2, skip_real_queries: bool = False, dry_run: bool = False) -> TableValidationResult:
         print(f"\n{'='*60}")
-        print(f"Validating table: {table_name}")
+        print(f"Validating table: {table_name}" + (" [DRY RUN - no table replacement]" if dry_run else ""))
         print(f"{'='*60}")
-        if not self.import_generated_table(self.gen_db, dataset_name, table_name):
-            # Import failed - mark as import_failed so we don't retry auto-tune
-            return TableValidationResult(
-                table_name=table_name, queries_run=0, gen_total_time=0, real_total_time=0,
-                time_ratio=float('inf'), passed=False, threshold=threshold, import_failed=True
-            )
+
+        # In dry_run mode, skip table import - just compare current db state
+        if not dry_run:
+            if not self.import_generated_table(self.gen_db, dataset_name, table_name):
+                # Import failed - restore table and mark as import_failed
+                print(f"Import failed, restoring {table_name} from real database...")
+                self.restore_table(table_name)
+                return TableValidationResult(
+                    table_name=table_name, queries_run=0, gen_total_time=0, real_total_time=0,
+                    time_ratio=float('inf'), passed=False, threshold=threshold, import_failed=True
+                )
+
         gen_output = f"validation_logs/{dataset_name}_{table_name}_gen.log"
         os.makedirs("validation_logs", exist_ok=True)
         self.run_job_queries(self.gen_db, gen_output)
         real_output = f"validation_logs/{dataset_name}_real.log"
-        if not os.path.exists(real_output):
+        # Always re-run real queries (performance may vary over time)
+        if not skip_real_queries:
             print(f"\nRunning queries on real database {self.real_db}...")
             self.run_job_queries(self.real_db, real_output)
         gen_results = self.parse_query_results(gen_output)
         real_results = self.parse_query_results(real_output)
         print(f"\nComparing results for {table_name}:")
         total, passed_count, _ = self.compare_results(gen_results, real_results, threshold)
-        self.restore_table(table_name)
         gen_total = sum(gen_results.values())
         real_total = sum(real_results.values())
         # Use total time ratio (sum of all query times) for final judgment
@@ -468,16 +589,33 @@ class DatabaseValidator:
         result = TableValidationResult(table_name=table_name, queries_run=total, gen_total_time=gen_total, real_total_time=real_total, time_ratio=total_ratio, passed=is_passed, threshold=threshold)
         range_str = f"[{lower_bound:.2f}, {upper_bound:.2f}]"
         print(f"\nTable {table_name} result: gen_total={gen_total:.1f}ms, real_total={real_total:.1f}ms, ratio={total_ratio:.2f}x, range={range_str}, {'PASSED' if result.passed else 'FAILED'}")
+
+        # In dry_run mode, no table changes were made, so no restore needed
+        if not dry_run:
+            # Restore table only if validation failed (keep generated data if passed)
+            if not is_passed:
+                print(f"Validation failed, restoring {table_name} from real database...")
+                self.restore_table(table_name)
+            else:
+                print(f"Validation passed, keeping generated data for {table_name}")
         return result
 
-    def validate_all_tables(self, dataset_name: str, threshold: float = 1.2) -> Dict[str, TableValidationResult]:
+    def validate_all_tables(self, dataset_name: str, threshold: float = 1.2,
+                            force_reload: bool = False, dry_run: bool = False) -> Dict[str, TableValidationResult]:
         print(f"\n{'#'*60}")
-        print(f"Validating all generated tables for {dataset_name}")
+        print(f"Validating all generated tables for {dataset_name}" + (" [DRY RUN]" if dry_run else ""))
         print(f"{'#'*60}")
 
         # Check if gen_db already exists
         if self.database_exists(self.gen_db):
-            print(f"Database {self.gen_db} already exists, skipping setup.")
+            if force_reload:
+                print(f"Database {self.gen_db} already exists, force reloading...")
+                if not self.create_database(self.gen_db, force=True):
+                    return {}
+                if not self.copy_all_tables(self.real_db, self.gen_db):
+                    return {}
+            else:
+                print(f"Database {self.gen_db} already exists, skipping setup.")
         else:
             # Create database and copy tables
             if not self.create_database(self.gen_db):
@@ -488,13 +626,14 @@ class DatabaseValidator:
         print(f"\nGenerated tables: {generated_tables}")
         real_output = f"validation_logs/{dataset_name}_real.log"
         os.makedirs("validation_logs", exist_ok=True)
-        if not os.path.exists(real_output):
-            print(f"\nCaching real database query results...")
-            self.run_job_queries(self.real_db, real_output)
+        # Always re-run real queries (performance may vary over time)
+        print(f"\nRunning queries on real database {self.real_db}...")
+        self.run_job_queries(self.real_db, real_output)
         results = {}
         failed_tables = []
         for table_name in generated_tables:
-            result = self.validate_single_table(dataset_name, table_name, threshold)
+            # skip_real_queries=True since we already ran them above
+            result = self.validate_single_table(dataset_name, table_name, threshold, skip_real_queries=True, dry_run=dry_run)
             results[table_name] = result
             if not result.passed:
                 failed_tables.append(table_name)

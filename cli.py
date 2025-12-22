@@ -96,7 +96,8 @@ Core Commands:
                                                      (only when TABLE is not specified)
                                        --validate: Validate with DB after generation, re-tune if needed
                                                    (pass if ratio in [1/1.2, 1.2] = within ±20%)
-  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate]
+                                       --dry-run: Test validation without replacing tables
+  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate] [--dry-run]
                                      Generate data using drift reference file
                                        The reference file should contain per-table drift values
                                        (e.g., from calc_drift.py --src-dir X --dst-dir Y)
@@ -285,6 +286,7 @@ def handle_generate_data(tokens: List[str]):
     drift_ref_file = None  # Drift reference file path
     validate_after = False  # Whether to validate with DB after generation
     validate_threshold = 1.2  # 20% performance threshold
+    dry_run = False  # Dry run: test without replacing tables
 
     # Parse flags
     remaining_tokens = []
@@ -296,6 +298,9 @@ def handle_generate_data(tokens: List[str]):
             auto_tune = True  # quick implies auto
         elif t == "--validate":
             validate_after = True
+        elif t == "--dry-run":
+            dry_run = True
+            validate_after = True  # dry-run implies validate
         elif t.startswith("--validate-threshold="):
             validate_threshold = float(t[21:])
             validate_after = True
@@ -325,6 +330,7 @@ def handle_generate_data(tokens: List[str]):
             single_table=specified_table,
             validate_after=validate_after,
             validate_threshold=validate_threshold,
+            dry_run=dry_run,
         )
         return
 
@@ -601,6 +607,7 @@ def _validate_and_get_failed_tables(
     real_db: str = "imdb_17v2",
     drift_ref: dict = None,  # {table_name: (drift, corr_loss)} for saving validation status
     reference_dataset: str = None,
+    dry_run: bool = False,
 ) -> Tuple[List[str], List[str]]:
     """
     Validate generated tables against real database.
@@ -643,9 +650,10 @@ def _validate_and_get_failed_tables(
         print(f"\n--- Validating: {table_name} ---")
 
         # Ensure we have data generated with best cached params
-        regenerate_with_best_cached_params(dataset_name, table_name)
+        if not dry_run:
+            regenerate_with_best_cached_params(dataset_name, table_name)
 
-        result = validator.validate_single_table(dataset_name, table_name, threshold)
+        result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
 
         passed = result.passed
         ratio = result.time_ratio
@@ -686,6 +694,7 @@ def _generate_with_drift_reference(
     validate_after: bool = False,
     validate_threshold: float = 1.2,
     max_retries: int = 3,
+    dry_run: bool = False,
 ):
     """Generate data using drift reference file (per-table target drift and correlation)."""
     # Load drift reference, filtering by dataset_name (src) and reference_dataset (dst)
@@ -712,7 +721,10 @@ def _generate_with_drift_reference(
     print(f"Tables to generate: {list(drift_ref.keys())}")
     print(f"GPUs: {gpus if gpus else [0]}")
     if validate_after:
-        print(f"Validation: enabled (threshold={validate_threshold:.1%})")
+        if dry_run:
+            print(f"Validation: DRY RUN (no table replacement, threshold={validate_threshold:.1%})")
+        else:
+            print(f"Validation: enabled (threshold={validate_threshold:.1%})")
     print()
 
     # Print per-table drift and correlation targets
@@ -758,16 +770,16 @@ def _generate_with_drift_reference(
             for t, gpu_id, target_drift, target_corr in table_gpu_assignments:
                 cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
                 cmd += f" --target-drift={target_drift} --device={gpu_id}"
-                if target_corr is not None:
-                    cmd += f" --target-corr-loss={target_corr}"
+                # Note: Don't pass target_corr_loss - with new logic we directly compare
+                # generated vs reference correlation, so we want to minimize it (target=0)
                 if reference_dataset:
                     cmd += f" --reference-dataset={reference_dataset}"
                 if quick_tune:
                     cmd += " --quick"
                 if t in force_retrain_tables:
                     cmd += " --no-cache"  # Force retrain for validation-failed tables
-                if validate_after:
-                    cmd += " --require-validation"  # Only use cache if validation passed
+                # Note: --require-validation is deprecated, cache is used if it meets tolerance
+                # Validation happens later for tables without validation_passed=True
 
                 corr_str = f", corr={target_corr:.4f}" if target_corr is not None else ""
                 retry_str = f" [RETRY {retry_counts[t]}]" if t in force_retrain_tables else ""
@@ -875,9 +887,11 @@ def _generate_with_drift_reference(
                 # Force no-cache for validation-failed tables
                 no_cache = table_name in force_retrain_tables
 
+                # Note: Don't pass target_corr_loss anymore - with new logic we directly
+                # compare generated vs reference correlation, so we want to minimize it (target=0)
                 used_validated_cache = _generate_with_auto_tune(
                     dataset_name, table_name, target_drift, quick_tune, reference_dataset, device,
-                    target_corr_loss=target_corr, no_cache=no_cache, require_validation=validate_after
+                    target_corr_loss=None, no_cache=no_cache, require_validation=validate_after
                 )
                 generated_tables.add(table_name)
                 if used_validated_cache:
@@ -899,7 +913,8 @@ def _generate_with_drift_reference(
 
             failed_tables, import_failed_tables = _validate_and_get_failed_tables(
                 dataset_name, list(tables_to_validate), validate_threshold,
-                drift_ref=drift_ref, reference_dataset=reference_dataset
+                drift_ref=drift_ref, reference_dataset=reference_dataset,
+                dry_run=dry_run,
             )
 
             # Handle import failures (don't retry - data format error)
@@ -1682,14 +1697,18 @@ def handle_validate_data(tokens: List[str]):
 
     if len(tokens) < 1:
         print("Error: Not enough arguments")
-        print("Usage: vd DATASET [TABLE] [--gen-db=X] [--real-db=Y] [--threshold=N]")
+        print("Usage: vd DATASET [TABLE] [--gen-db=X] [--real-db=Y] [--threshold=N] [--force-reload] [--dry-run]")
         print("  --gen-db=X: Target database for generated data (default: imdb_17v2_gen)")
         print("  --real-db=Y: Reference real database (default: imdb_17v2)")
         print("  --threshold=N: Max execution time ratio (default: 1.2 = 20%)")
+        print("  --force-reload: Force reload database even if exists")
+        print("  --dry-run: Test without replacing tables (compare current db state)")
         print("Examples:")
         print("  vd imdb                           # Validate all tables")
         print("  vd imdb title                     # Validate only title table")
         print("  vd imdb --gen-db=imdb_gen --real-db=imdb_real")
+        print("  vd imdb --force-reload            # Force reload database")
+        print("  vd imdb --dry-run                 # Test current db state")
         return
 
     dataset_name = tokens[0]
@@ -1697,6 +1716,8 @@ def handle_validate_data(tokens: List[str]):
     gen_db = "imdb_17v2_gen"
     real_db = "imdb_17v2"
     threshold = 1.2  # 20% performance threshold (same as gd --validate)
+    force_reload = False
+    dry_run = False
 
     # Parse flags
     remaining_tokens = []
@@ -1707,6 +1728,10 @@ def handle_validate_data(tokens: List[str]):
             real_db = t[10:]
         elif t.startswith("--threshold="):
             threshold = float(t[12:])
+        elif t == "--force-reload":
+            force_reload = True
+        elif t == "--dry-run":
+            dry_run = True
         else:
             remaining_tokens.append(t)
 
@@ -1719,6 +1744,8 @@ def handle_validate_data(tokens: List[str]):
         gen_db=gen_db,
         real_db=real_db,
         threshold=f"{threshold}x",
+        force_reload=force_reload,
+        dry_run=dry_run,
         pg_port=GLOBAL_CONFIG["pg_port"],
     )
 
@@ -1733,29 +1760,37 @@ def handle_validate_data(tokens: List[str]):
 
     if table_name:
         # Check if we need to regenerate with best cached params
-        print(f"\nChecking for best cached params...")
-        regenerate_with_best_cached_params(dataset_name, table_name)
+        if not dry_run:
+            print(f"\nChecking for best cached params...")
+            regenerate_with_best_cached_params(dataset_name, table_name)
 
         # Validate single table - setup database if not exists
         if validator.database_exists(gen_db):
-            print(f"\nDatabase {gen_db} already exists, skipping setup.")
+            if force_reload:
+                print(f"\nDatabase {gen_db} exists, force reloading...")
+                validator.create_database(gen_db, force=True)
+                validator.copy_all_tables(real_db, gen_db)
+            else:
+                print(f"\nDatabase {gen_db} already exists, skipping setup.")
         else:
             print(f"\nSetting up {gen_db} database...")
             validator.create_database(gen_db)
             validator.copy_all_tables(real_db, gen_db)
 
-        result = validator.validate_single_table(dataset_name, table_name, threshold)
+        result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
 
         if result.passed:
             print(f"\n[SUCCESS] Table {table_name} passed validation!")
-            # Update cache with validation result
-            update_cache_validation(dataset_name, table_name, True, result.time_ratio)
+            # Update cache with validation result (skip in dry_run mode)
+            if not dry_run:
+                update_cache_validation(dataset_name, table_name, True, result.time_ratio)
         elif result.import_failed:
             print(f"\n[IMPORT FAILED] Table {table_name} - data import error, check CSV format")
         else:
             print(f"\n[FAILED] Table {table_name} failed validation (time_ratio={result.time_ratio:.2f}x)")
-            # Update cache with failed validation
-            update_cache_validation(dataset_name, table_name, False, result.time_ratio)
+            # Update cache with failed validation (skip in dry_run mode)
+            if not dry_run:
+                update_cache_validation(dataset_name, table_name, False, result.time_ratio)
     else:
         # Get list of driftable tables
         info_path = os.path.join("datasets", dataset_name, "dataset_info.json")
@@ -1765,21 +1800,23 @@ def handle_validate_data(tokens: List[str]):
                 dataset_info = json.load(f)
             driftable_tables = [k for k, v in dataset_info.items() if v is not None]
 
-            # Check and regenerate each table with best cached params
-            print(f"\nChecking for best cached params for {len(driftable_tables)} tables...")
-            for tbl in driftable_tables:
-                regenerate_with_best_cached_params(dataset_name, tbl)
+            # Check and regenerate each table with best cached params (skip in dry_run mode)
+            if not dry_run:
+                print(f"\nChecking for best cached params for {len(driftable_tables)} tables...")
+                for tbl in driftable_tables:
+                    regenerate_with_best_cached_params(dataset_name, tbl)
 
         # Validate all tables
-        results = validator.validate_all_tables(dataset_name, threshold)
+        results = validator.validate_all_tables(dataset_name, threshold, force_reload=force_reload, dry_run=dry_run)
         failed = [t for t, r in results.items() if not r.passed and not r.import_failed]
         import_failed = [t for t, r in results.items() if r.import_failed]
 
-        # Update cache for each table
-        print("\nUpdating tuning cache...")
-        for tbl, result in results.items():
-            if not result.import_failed:
-                update_cache_validation(dataset_name, tbl, result.passed, result.time_ratio)
+        # Update cache for each table (skip in dry_run mode)
+        if not dry_run:
+            print("\nUpdating tuning cache...")
+            for tbl, result in results.items():
+                if not result.import_failed:
+                    update_cache_validation(dataset_name, tbl, result.passed, result.time_ratio)
 
         if len(failed) == 0 and len(import_failed) == 0:
             print("\n[SUCCESS] All tables passed validation!")

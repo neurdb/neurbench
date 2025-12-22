@@ -548,7 +548,8 @@ class GaussianDiffusion(torch.nn.Module):
         b = x.shape[0]
         device = x.device
         for t in reversed(range(T)):
-            print(f"Sample timestep {t:4d}", end="\r")
+            if t % 100 == 0:
+                print(f"Sample timestep {t:4d}", end="\r")
             t_array = (torch.ones(b, device=device) * t).long()
             out_num = self._denoise_fn(x, t_array)
             x = self.gaussian_ddim_step(out_num, x, t_array)
@@ -618,7 +619,8 @@ class GaussianDiffusion(torch.nn.Module):
                 log_z = self.log_sample_categorical(uniform_logits)
 
         for i in reversed(range(0, self.num_timesteps)):
-            print(f"Sample timestep {i:4d}", end="\r")
+            if i % 100 == 0:
+                print(f"Sample timestep {i:4d}", end="\r")
             t = torch.full((b,), i, device=device, dtype=torch.long)
             model_out = self._denoise_fn(
                 torch.cat([z_norm, log_z], dim=1).float(),
@@ -647,7 +649,8 @@ class GaussianDiffusion(torch.nn.Module):
         z_norm = torch.randn((b, self.input_dim), device=device)
 
         for i in reversed(range(0, self.num_timesteps)):
-            print(f"Sample timestep {i:4d}", end="\r")
+            if i % 100 == 0:
+                print(f"Sample timestep {i:4d}", end="\r")
             t = torch.full((b,), i, device=device, dtype=torch.long)
 
             model_out = self._denoise_fn(z_norm.float(), t)

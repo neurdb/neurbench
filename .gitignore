@@ -173,8 +173,13 @@ cython_debug/
 /data/keys
 /data/workload
 
-# Datasets
-datasets/
+# Datasets (ignore all except dataset_info.json)
+datasets/*
+!datasets/*/
+datasets/*/*
+!datasets/*/dataset_info.json
+datasets/*/*/*
+datasets/*/*/*/*
 
 expdir/
 
