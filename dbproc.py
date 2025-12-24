@@ -304,21 +304,34 @@ def main(args: argparse.Namespace):
         'role_id': 'role_type',
     }
 
+    # Check if we have a real reference dataset (different from original)
+    has_real_reference = (args.reference_dataset and
+                          args.reference_dataset != args.dataset_name)
+
     for col in config["applicable_columns"]:
         if col in data_wrapper.num_normalizer:
             # Only use frequency preservation for foreign key columns
             if col in FK_TO_TABLE:
-                freq_shape_data = real_data[col].dropna().values
-                # Use the unique IDs from ref data directly as valid_ids
-                # This preserves:
-                # 1. Frequency distribution shape (hotspot effect)
-                # 2. Cross-table correlation (e.g., movie_keyword and movie_companies
-                #    share ~82% of movie_ids in real data, random sampling would break this)
-                # 3. Valid FK references
-                valid_ids = np.unique(freq_shape_data)
-                print(f"  {col}: FK column, using {len(valid_ids)} unique IDs from --ref "
-                      f"(total {len(freq_shape_data)} values)")
-                data_wrapper.set_reference_distribution(col, freq_shape_data, valid_ids)
+                if has_real_reference:
+                    # Use real reference data for frequency shape
+                    freq_shape_data = real_data[col].dropna().values
+                    # Use the unique IDs from ref data directly as valid_ids
+                    # This preserves:
+                    # 1. Frequency distribution shape (hotspot effect)
+                    # 2. Cross-table correlation (e.g., movie_keyword and movie_companies
+                    #    share ~82% of movie_ids in real data, random sampling would break this)
+                    # 3. Valid FK references
+                    valid_ids = np.unique(freq_shape_data)
+                    print(f"  {col}: FK column, using {len(valid_ids)} unique IDs from --ref "
+                          f"(total {len(freq_shape_data)} values)")
+                    data_wrapper.set_reference_distribution(col, freq_shape_data, valid_ids)
+                else:
+                    # No real reference: use temperature scaling to synthesize target distribution
+                    original_col_data = train_data[col].dropna().values
+                    print(f"  {col}: FK column, synthesizing target distribution with drift={args.drift}")
+                    data_wrapper.set_synthetic_reference_distribution(
+                        col, original_col_data, args.drift, mode='auto'
+                    )
             else:
                 # Non-FK columns (like production_year): skip frequency preservation
                 # Let the model's inverse_transform handle the drift naturally

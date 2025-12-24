@@ -31,6 +31,109 @@ def load_pickle(path):
     return data
 
 
+def solve_target_distribution(original_data: np.ndarray, target_drift: float,
+                               mode: str = 'sharpen') -> np.ndarray:
+    """
+    Generate a synthetic reference distribution with a specific JS divergence from original.
+
+    Uses temperature scaling: Q_i ∝ P_i^(1/τ)
+    - τ = 1.0: distribution unchanged (JS ≈ 0)
+    - τ < 1.0 (sharpen/cool): head effect stronger, rich get richer
+    - τ > 1.0 (flatten/heat): distribution flatter, long tail effect
+
+    Args:
+        original_data: 1D array of values from original dataset (e.g., movie_ids)
+        target_drift: Target JS divergence (e.g., 0.3)
+        mode: 'sharpen' (head more concentrated), 'flatten' (more uniform),
+              or 'auto' (try both, pick closer)
+
+    Returns:
+        synthetic_ref_data: Array that can be passed to set_reference_distribution
+    """
+    from scipy.spatial.distance import jensenshannon
+    from scipy.special import softmax
+
+    # 1. Get original probability distribution P
+    unique_vals, counts = np.unique(original_data, return_counts=True)
+    p_probs = counts / counts.sum()
+
+    # 2. Define function: input temperature T, return JS divergence
+    def get_js_dist(t):
+        if t <= 0:
+            return 1.0
+        # Temperature scaling: q_i = p_i^(1/t) / Z
+        # Compute in log domain for numerical stability
+        log_p = np.log(p_probs + 1e-10)
+        q_probs = softmax(log_p / t)
+        return jensenshannon(p_probs, q_probs)
+
+    # 3. Binary search to find optimal temperature T
+    def find_temperature(low, high, target_js):
+        best_t = 1.0
+        for _ in range(30):  # 30 iterations for precision
+            mid = (low + high) / 2
+            current_js = get_js_dist(mid)
+
+            if low < 1.0:  # sharpen mode: T < 1 means more peaked
+                if current_js < target_js:
+                    high = mid  # Need more peaked, smaller T
+                else:
+                    low = mid
+            else:  # flatten mode: T > 1 means flatter
+                if current_js < target_js:
+                    low = mid  # Need flatter, larger T
+                else:
+                    high = mid
+            best_t = mid
+        return best_t, get_js_dist(best_t)
+
+    # Try both modes if auto
+    if mode == 'auto':
+        t_sharpen, js_sharpen = find_temperature(0.01, 1.0, target_drift)
+        t_flatten, js_flatten = find_temperature(1.0, 20.0, target_drift)
+
+        # Pick the one closer to target
+        if abs(js_sharpen - target_drift) < abs(js_flatten - target_drift):
+            best_t, best_js = t_sharpen, js_sharpen
+            mode_used = 'sharpen'
+        else:
+            best_t, best_js = t_flatten, js_flatten
+            mode_used = 'flatten'
+    elif mode == 'sharpen':
+        best_t, best_js = find_temperature(0.01, 1.0, target_drift)
+        mode_used = 'sharpen'
+    else:  # flatten
+        best_t, best_js = find_temperature(1.0, 20.0, target_drift)
+        mode_used = 'flatten'
+
+    print(f"[solve_target_distribution] mode={mode_used}, T={best_t:.4f}, "
+          f"target_JS={target_drift:.4f}, achieved_JS={best_js:.4f}")
+
+    # 4. Generate target frequencies based on optimal T
+    log_p = np.log(p_probs + 1e-10)
+    target_probs = softmax(log_p / best_t)
+
+    # Convert probabilities back to counts (preserve total rows)
+    total_rows = len(original_data)
+    target_counts = (target_probs * total_rows).astype(int)
+
+    # Fix rounding errors
+    diff = total_rows - target_counts.sum()
+    if diff > 0:
+        # Add to highest frequency items
+        idx = np.argsort(-target_counts)[:diff]
+        target_counts[idx] += 1
+    elif diff < 0:
+        # Remove from highest frequency items
+        idx = np.argsort(-target_counts)[:-diff]
+        target_counts[idx] -= 1
+
+    # 5. Generate synthetic reference data (repeat each unique value by its target count)
+    synthetic_ref_data = np.repeat(unique_vals, target_counts)
+
+    return synthetic_ref_data
+
+
 def merge_wrapper(wrappers):
     if len(wrappers) == 1:
         return wrappers[0]
@@ -153,6 +256,24 @@ class DataWrapper:
         probs = sorted_counts / sorted_counts.sum()
         cumulative_probs = np.cumsum(probs)
         self.reference_distribution[col] = (unique_vals, cumulative_probs)
+
+    def set_synthetic_reference_distribution(self, col: str, original_data: np.ndarray,
+                                              target_drift: float, mode: str = 'sharpen'):
+        """Set synthetic reference distribution using temperature scaling.
+
+        When no real reference data is available, this method creates a synthetic
+        target distribution with a specific JS divergence from the original.
+
+        Args:
+            col: Column name
+            original_data: 1D array of values from original dataset
+            target_drift: Target JS divergence (e.g., 0.3)
+            mode: 'sharpen', 'flatten', or 'auto'
+        """
+        synthetic_ref = solve_target_distribution(original_data, target_drift, mode)
+        self.set_reference_distribution(col, synthetic_ref)
+        print(f"[DataWrapper] Synthetic reference for '{col}': "
+              f"target_drift={target_drift}, mode={mode}")
 
     def fit(self, dataframe, all_category=False):
         self.raw_dim = dataframe.shape[1]
