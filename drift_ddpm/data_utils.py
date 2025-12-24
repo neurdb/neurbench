@@ -73,9 +73,86 @@ def merge_wrapper(wrappers):
 
 
 class DataWrapper:
-    def __init__(self, num_encoder="quantile", seed=0):
+    def __init__(self, num_encoder="quantile", seed=0, dequantize=True):
         self.num_encoder = num_encoder
         self.seed = seed
+        self.dequantize = dequantize  # Enable dequantization for discrete numeric columns
+        self._rng = np.random.RandomState(seed)
+        # Reference distribution for frequency-preserving sampling
+        self.reference_distribution = {}  # col -> (unique_values, cumulative_probs)
+
+    def _dequantize(self, values):
+        """Add uniform noise [0, 1) to discrete values to make them continuous.
+
+        This is a standard technique for feeding discrete data into continuous models.
+        E.g., movie_id=5 becomes 5.xx where xx is random, spreading it over [5, 6).
+        """
+        noise = self._rng.uniform(0, 1, values.shape)
+        return values + noise
+
+    def set_reference_distribution(self, col: str, reference_data: np.ndarray,
+                                     valid_ids: np.ndarray = None):
+        """Set reference distribution for frequency-preserving sampling.
+
+        This enables mapping generated values to discrete IDs while preserving
+        the frequency distribution of the reference (target) dataset.
+
+        Args:
+            col: Column name
+            reference_data: 1D array of values from the reference dataset (for frequency shape)
+            valid_ids: Optional 1D array of valid IDs to use instead of reference_data's IDs.
+                      This allows using frequency shape from one dataset (e.g., 2016)
+                      but ID values from another (e.g., 2017 title table).
+        """
+        # Backward compatibility: initialize if not exists (for old pickled objects)
+        if not hasattr(self, 'reference_distribution'):
+            self.reference_distribution = {}
+
+        # Count frequency of each unique value in reference data
+        ref_unique_vals, counts = np.unique(reference_data, return_counts=True)
+
+        # Sort by frequency (descending) to get the frequency "shape"
+        freq_sort_idx = np.argsort(-counts)  # Descending by frequency
+        sorted_counts = counts[freq_sort_idx]
+
+        if valid_ids is not None:
+            valid_ids_unique = np.unique(valid_ids)
+            n_valid = len(valid_ids_unique)
+            n_ref = len(ref_unique_vals)
+
+            # Check if valid_ids is the same set as ref unique values
+            if n_valid == n_ref and set(valid_ids_unique) == set(ref_unique_vals):
+                # Same IDs: preserve frequency-ID mapping from reference
+                # Use ref_unique_vals sorted by frequency (descending)
+                unique_vals = ref_unique_vals[freq_sort_idx]
+                print(f"[DataWrapper] Set reference distribution for '{col}': "
+                      f"{n_ref} unique IDs from ref, preserving freq-ID mapping, "
+                      f"top freq={sorted_counts[0]:.0f}")
+            else:
+                # Different IDs: map frequency shape to new valid_ids
+                np.random.shuffle(valid_ids_unique)  # Randomize which IDs get high frequency
+
+                if n_valid != n_ref:
+                    # Interpolate frequency shape to match valid_ids count
+                    old_indices = np.linspace(0, n_ref - 1, n_ref)
+                    new_indices = np.linspace(0, n_ref - 1, n_valid)
+                    sorted_counts = np.interp(new_indices, old_indices, sorted_counts)
+                    sorted_counts = np.maximum(sorted_counts, 1)  # At least 1 occurrence
+
+                unique_vals = valid_ids_unique
+                print(f"[DataWrapper] Set reference distribution for '{col}': "
+                      f"shape from {n_ref} ref values, mapped to {n_valid} valid IDs")
+        else:
+            # Use both frequency and IDs from reference data
+            unique_vals = ref_unique_vals[freq_sort_idx]
+            print(f"[DataWrapper] Set reference distribution for '{col}': "
+                  f"{len(unique_vals)} unique values, "
+                  f"top freq={counts.max()}, min freq={counts.min()}")
+
+        # Compute cumulative probabilities (CDF) from the frequency shape
+        probs = sorted_counts / sorted_counts.sum()
+        cumulative_probs = np.cumsum(probs)
+        self.reference_distribution[col] = (unique_vals, cumulative_probs)
 
     def fit(self, dataframe, all_category=False):
         self.raw_dim = dataframe.shape[1]
@@ -106,7 +183,13 @@ class DataWrapper:
                     self.num_normalizer[col] = MinMaxScaler()
                 else:
                     raise ValueError(f"Unknown num encoder: {self.num_encoder}")
-                self.num_normalizer[col].fit(col_data.values.reshape(-1, 1))
+
+                # Dequantize: add noise to discrete values before fitting
+                fit_data = col_data.values.reshape(-1, 1)
+                if self.dequantize and np.issubdtype(self.col_dtype[col], np.integer):
+                    fit_data = self._dequantize(fit_data.astype(np.float64))
+
+                self.num_normalizer[col].fit(fit_data)
                 self.columns.append(col)
                 self.num_dim += 1
                 self.col_dim.append(1)
@@ -135,9 +218,13 @@ class DataWrapper:
                 norm_data.append(col_data)
 
             elif col in self.num_normalizer.keys():
+                # Dequantize: add noise to discrete values before transform
+                transform_data = col_data.reshape(-1, 1)
+                if self.dequantize and np.issubdtype(self.col_dtype[col], np.integer):
+                    transform_data = self._dequantize(transform_data.astype(np.float64))
                 norm_data.append(
                     self.num_normalizer[col]
-                    .transform(col_data.reshape(-1, 1))
+                    .transform(transform_data)
                     .reshape(-1, 1)
                 )
 
@@ -207,16 +294,48 @@ class DataWrapper:
                 col_data = self.BitsToVals(col_data)
                 col_data = col_data.astype(np.int32)
             else:
-                col_data = self.num_normalizer[col].inverse_transform(
-                    col_data.reshape(-1, 1)
-                )
-                if self.col_dtype[col] == np.int32 or self.col_dtype[col] == np.int64:
-                    col_data = np.round(col_data).astype(int)
+                # Check if we have reference distribution for frequency-preserving sampling
+                if col in self.reference_distribution:
+                    col_data = self._reverse_with_reference_distribution(col, col_data)
+                else:
+                    col_data = self.num_normalizer[col].inverse_transform(
+                        col_data.reshape(-1, 1)
+                    )
+                    if np.issubdtype(self.col_dtype[col], np.integer):
+                        # Use floor instead of round for dequantized data
+                        col_data = np.floor(col_data).astype(int)
                 # col_data = self.NumValsToCat(col, col_data)
             # col_data = col_data.astype(self.raw_data[col].dtype)
             reverse_data.append(col_data.reshape(-1, 1))
         reverse_data = np.concatenate(reverse_data, axis=1)
         return reverse_data
+
+    def _reverse_with_reference_distribution(self, col: str, normalized_data: np.ndarray):
+        """Reverse normalized data using EMPIRICAL RANKING to guarantee exact distribution match.
+
+        Uses empirical ranking instead of theoretical normal CDF to handle variance shrinkage
+        in diffusion outputs. This ensures:
+        - Diffusion output ordering is preserved (ranks come from diffusion)
+        - Exact frequency distribution match with reference data
+        """
+        unique_vals, cumulative_probs = self.reference_distribution[col]
+
+        data_flat = normalized_data.flatten()
+        n_samples = len(data_flat)
+
+        # Use empirical ranking: argsort twice gives rank of each element
+        # e.g., [-2.5, 0.1, 1.5] -> ranks [0, 1, 2] -> quantiles [0.0, 0.5, 1.0]
+        # This uniformly covers [0, 1] regardless of variance shrinkage
+        ranks = np.argsort(np.argsort(data_flat))
+        quantiles = ranks / (n_samples - 1) if n_samples > 1 else np.zeros(n_samples)
+
+        # Map quantiles to discrete values using reference CDF
+        indices = np.searchsorted(cumulative_probs, quantiles)
+        indices = np.clip(indices, 0, len(unique_vals) - 1)
+
+        result = unique_vals[indices]
+
+        return result.reshape(-1, 1)
 
     def ReverseToCat(self, data):
         reverse_data = []

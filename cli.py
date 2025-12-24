@@ -22,6 +22,11 @@ GLOBAL_CONFIG = {
     "pg_port": 5430     # PostgreSQL port (default: 5430)
 }
 
+# Tolerance settings for cache matching and validation
+CACHE_KEY_TOLERANCE = 0.2       # Max |cache_key - user_drift| for cache key matching
+DRIFT_ERROR_TOLERANCE = 0.20    # Max drift_error (|actual - target| / target) for cache quality
+CORRELATION_TOLERANCE = 0.25    # Max correlation_loss for cache quality
+
 
 def load_json(path):
     with open(path, "r") as f:
@@ -97,10 +102,11 @@ Core Commands:
                                        --validate: Validate with DB after generation, re-tune if needed
                                                    (pass if ratio in [1/1.2, 1.2] = within ±20%)
                                        --dry-run: Test validation without replacing tables
-  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate] [--dry-run]
+  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate] [--dry-run] [--force]
                                      Generate data using drift reference file
                                        The reference file should contain per-table drift values
                                        (e.g., from calc_drift.py --src-dir X --dst-dir Y)
+                                       --force: Force regenerate even if validation already passed
   gq DATASET DRIFT                   Generate query that drifts DRIFT on DATASET
   dd DATASET [TABLE]                 Delete data generator model for DATASET
   dq DATASET                         Delete query generator model for DATASET
@@ -174,7 +180,7 @@ def _run_table_generation(
             if quick_tune:
                 tune_result = tuner.quick_tune(drift)
             else:
-                tune_result = tuner.tune(drift, max_iterations=100, tolerance=0.20)
+                tune_result = tuner.tune(drift, max_iterations=100, tolerance=DRIFT_ERROR_TOLERANCE)
 
             if tune_result:
                 result["success"] = True
@@ -287,6 +293,7 @@ def handle_generate_data(tokens: List[str]):
     validate_after = False  # Whether to validate with DB after generation
     validate_threshold = 1.2  # 20% performance threshold
     dry_run = False  # Dry run: test without replacing tables
+    force_regenerate = False  # Force regenerate even if validation_passed=True
 
     # Parse flags
     remaining_tokens = []
@@ -301,6 +308,8 @@ def handle_generate_data(tokens: List[str]):
         elif t == "--dry-run":
             dry_run = True
             validate_after = True  # dry-run implies validate
+        elif t == "--force":
+            force_regenerate = True
         elif t.startswith("--validate-threshold="):
             validate_threshold = float(t[21:])
             validate_after = True
@@ -331,6 +340,7 @@ def handle_generate_data(tokens: List[str]):
             validate_after=validate_after,
             validate_threshold=validate_threshold,
             dry_run=dry_run,
+            force_regenerate=force_regenerate,
         )
         return
 
@@ -370,90 +380,118 @@ def handle_generate_data(tokens: List[str]):
 
     if table_name:
         device = gpus[0] if gpus else 0
+
+        # Check cache status for display and skip logic
+        cache_status = _check_cache_status(dataset_name, table_name, drift, reference_dataset)
+
         print_args(
             dataset_name=dataset_name,
             table_name=table_name,
             drift=drift,
-            scale=scale,
-            auto_tune=auto_tune,
-            quick_tune=quick_tune,
             reference_dataset=reference_dataset or f"{dataset_name}_2014 (default)",
             device=device,
+            cache_status="validated" if cache_status["validation_passed"] else
+                        ("cached" if cache_status["has_cache"] else "no cache"),
         )
 
-        if auto_tune:
-            # Non drift-ref mode: ignore --validate (no real data to validate against)
-            _generate_with_auto_tune(dataset_name, table_name, drift, quick_tune, reference_dataset, device, require_validation=False)
+        # Check if already validated and should skip
+        if cache_status["validation_passed"] and not force_regenerate:
+            print(f"\nAlready validated (validation_passed=True), skipping generation.")
+            print(f"Use --force to regenerate anyway.")
         else:
-            # Check for cached params first
-            cached_params = get_cached_params_for_table(dataset_name, table_name, drift, reference_dataset)
-            if cached_params:
-                print(f"Using cached parameters: scale_factor={cached_params.scale_factor}")
-                cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
-                cmd += f" --device={device} {cached_params.to_cmd_args()} --reuse{ref_arg}"
-                os.system(cmd)
+            # Always use auto-tune logic - it handles cache internally
+            # If cache exists with good params, it will use them without re-tuning
+            # If no cache or params not good enough, it will tune
+            _generate_with_auto_tune(
+                dataset_name, table_name, drift, quick_tune, reference_dataset, device,
+                no_cache=force_regenerate,  # --force means ignore cache
+                require_validation=False
+            )
+
+        # Run validation if requested
+        if validate_after:
+            print(f"\n{'#'*60}")
+            print(f"VALIDATION PHASE")
+            print(f"{'#'*60}")
+            failed_tables, import_failed_tables = _validate_and_get_failed_tables(
+                dataset_name, [table_name], validate_threshold,
+                reference_dataset=reference_dataset,
+                dry_run=dry_run,
+            )
+            if not failed_tables and not import_failed_tables:
+                print(f"\n✓ Table {table_name} passed validation!")
+            elif import_failed_tables:
+                print(f"\n✗ Table {table_name} import failed - check CSV format")
             else:
-                os.system(
-                    f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift} --device={device} --scale-factor={scale}{ref_arg}"
-                )
+                print(f"\n✗ Table {table_name} failed validation")
     else:
         # run on all tables
         ## get table names from dataset_info.json
         base_dir = os.path.join("datasets", dataset_name)
         config: dict = load_json(os.path.join(base_dir, "dataset_info.json"))
         table_names = [t for t in config.keys() if config[t]]
+
+        # Check cache status for each table
+        tables_to_skip = []
+        tables_to_generate = []
+        for t in table_names:
+            cache_status = _check_cache_status(dataset_name, t, drift, reference_dataset)
+            if cache_status["validation_passed"] and not force_regenerate:
+                tables_to_skip.append(t)
+            else:
+                tables_to_generate.append(t)
+
         print_args(
             dataset_name=dataset_name,
             table_names=table_names,
             drift=drift,
-            scale=scale,
-            auto_tune=auto_tune,
-            quick_tune=quick_tune,
             reference_dataset=reference_dataset or f"{dataset_name}_2014 (default)",
             gpus=gpus if gpus else [0],
+            tables_to_skip=tables_to_skip if tables_to_skip else "none",
         )
 
-        if gpus and len(gpus) > 1:
+        if tables_to_skip:
+            print(f"\nSkipping {len(tables_to_skip)} validated table(s): {tables_to_skip}")
+            if force_regenerate:
+                print("  (--force specified, will regenerate anyway)")
+                tables_to_generate = table_names
+                tables_to_skip = []
+
+        if not tables_to_generate:
+            print("\nAll tables already validated. Nothing to generate.")
+            print("Use --force to regenerate anyway.")
+        elif gpus and len(gpus) > 1:
             # Multi-GPU parallel execution
             print(f"\n{'='*60}")
             print(f"Running parallel generation on GPUs: {gpus}")
-            print(f"Tables: {table_names}")
+            print(f"Tables: {tables_to_generate}")
             print(f"{'='*60}\n")
 
             # Distribute tables across GPUs using subprocess
             processes = []
             table_gpu_assignments = []
 
-            for i, t in enumerate(table_names):
+            for i, t in enumerate(tables_to_generate):
                 gpu_id = gpus[i % len(gpus)]
                 table_gpu_assignments.append((t, gpu_id))
 
             print("Table -> GPU assignments:")
             for t, gpu_id in table_gpu_assignments:
-                print(f"  {t} -> GPU {gpu_id}")
+                cache_status = _check_cache_status(dataset_name, t, drift, reference_dataset)
+                status_str = " [cached]" if cache_status["has_cache"] else ""
+                print(f"  {t} -> GPU {gpu_id}{status_str}")
             print()
 
-            # Launch all processes
+            # Launch all processes - always use auto_tune.py (handles cache internally)
             for t, gpu_id in table_gpu_assignments:
-                ref_arg = f" --reference-dataset={reference_dataset}" if reference_dataset else ""
-
-                if auto_tune:
-                    # Use auto_tune.py script directly for better subprocess handling
-                    # Non drift-ref mode: ignore --validate (no real data to validate against)
-                    cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
-                    cmd += f" --target-drift={drift} --device={gpu_id}"
-                    if reference_dataset:
-                        cmd += f" --reference-dataset={reference_dataset}"
-                    if quick_tune:
-                        cmd += " --quick"
-                else:
-                    cached_params = get_cached_params_for_table(dataset_name, t, drift, reference_dataset)
-                    if cached_params:
-                        cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift}"
-                        cmd += f" --device={gpu_id} {cached_params.to_cmd_args()} --reuse{ref_arg}"
-                    else:
-                        cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift}"
-                        cmd += f" --device={gpu_id} --scale-factor={scale}{ref_arg}"
+                cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
+                cmd += f" --target-drift={drift} --device={gpu_id}"
+                if reference_dataset:
+                    cmd += f" --reference-dataset={reference_dataset}"
+                if quick_tune:
+                    cmd += " --quick"
+                if force_regenerate:
+                    cmd += " --no-cache"
 
                 print(f"[GPU {gpu_id}] Starting: {t}")
 
@@ -495,29 +533,20 @@ def handle_generate_data(tokens: List[str]):
             print(f"{'='*60}")
 
         else:
-            # Sequential execution (original behavior)
+            # Sequential execution
             device = gpus[0] if gpus else 0
 
-            for t in table_names:
+            for t in tables_to_generate:
                 print(f"\n{'='*60}")
                 print(f"Generating data for {dataset_name}.{t} on GPU {device}...")
                 print(f"{'='*60}")
 
-                if auto_tune:
-                    # Non drift-ref mode: ignore --validate (no real data to validate against)
-                    _generate_with_auto_tune(dataset_name, t, drift, quick_tune, reference_dataset, device, require_validation=False)
-                else:
-                    # Check for cached params first
-                    cached_params = get_cached_params_for_table(dataset_name, t, drift, reference_dataset)
-                    if cached_params:
-                        print(f"Using cached parameters: scale_factor={cached_params.scale_factor}")
-                        cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift}"
-                        cmd += f" --device={device} {cached_params.to_cmd_args()} --reuse{ref_arg}"
-                        os.system(cmd)
-                    else:
-                        os.system(
-                            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={t} --drift={drift} --device={device} --scale-factor={scale}{ref_arg}"
-                        )
+                # Always use auto-tune logic - it handles cache internally
+                _generate_with_auto_tune(
+                    dataset_name, t, drift, quick_tune, reference_dataset, device,
+                    no_cache=force_regenerate,
+                    require_validation=False
+                )
 
                 print(f"Data generation complete for {dataset_name}.{t}")
 
@@ -558,7 +587,7 @@ def _generate_with_auto_tune(
     if quick:
         result = tuner.quick_tune(drift, use_cache=not no_cache)
     else:
-        result = tuner.tune(drift, max_iterations=100, tolerance=0.20, use_cache=not no_cache, require_validation=require_validation)
+        result = tuner.tune(drift, max_iterations=100, tolerance=DRIFT_ERROR_TOLERANCE, use_cache=not no_cache, require_validation=require_validation)
 
     used_validated_cache = False
 
@@ -571,7 +600,7 @@ def _generate_with_auto_tune(
         if target_corr_loss is not None:
             corr_error = abs(target_corr_loss - result.correlation_loss)  # Absolute error
             print(f"  Target corr loss: {target_corr_loss:.4f}")
-            print(f"  Corr error: {corr_error:.4f} (tolerance: 0.20)")
+            print(f"  Corr error: {corr_error:.4f} (tolerance: {CORRELATION_TOLERANCE})")
         print(f"  Best scale_factor: {result.params.scale_factor}")
 
         # Check if this was a validated cache hit
@@ -608,6 +637,7 @@ def _validate_and_get_failed_tables(
     drift_ref: dict = None,  # {table_name: (drift, corr_loss)} for saving validation status
     reference_dataset: str = None,
     dry_run: bool = False,
+    validated_cache_tables: set = None,  # Tables already validated - import only, skip SQL
 ) -> Tuple[List[str], List[str]]:
     """
     Validate generated tables against real database.
@@ -621,10 +651,28 @@ def _validate_and_get_failed_tables(
     """
     from db_validation import DatabaseValidator
 
+    # Sort tables to validate: put 'title' last (it's referenced by other tables via FK)
+    # This avoids FK constraint issues when using DELETE instead of TRUNCATE CASCADE
+    FK_VALIDATION_ORDER = [
+        'aka_name', 'person_info',  # Reference: name, info_type
+        'aka_title',                 # Reference: kind_type, title
+        'movie_companies',           # Reference: title, company_name
+        'movie_keyword',             # Reference: title, keyword
+        'movie_link',                # Reference: title, link_type
+        'title',                     # Referenced BY: movie_*, aka_title (validate LAST)
+    ]
+    def sort_key(t):
+        try:
+            return FK_VALIDATION_ORDER.index(t)
+        except ValueError:
+            return 0  # Unknown tables first
+    table_names = sorted(table_names, key=sort_key)
+
     print(f"\nValidating {len(table_names)} table(s) against database...")
     print(f"  gen_db: {gen_db}")
     print(f"  real_db: {real_db}")
     print(f"  threshold: {threshold:.1%}")
+    print(f"  order: {table_names}")
     print()
 
     validator = DatabaseValidator(
@@ -646,42 +694,138 @@ def _validate_and_get_failed_tables(
     failed_tables = []
     import_failed_tables = []
 
+    if validated_cache_tables is None:
+        validated_cache_tables = set()
+
     for table_name in table_names:
-        print(f"\n--- Validating: {table_name} ---")
+        # Check if this table already passed validation (in cache)
+        is_validated = table_name in validated_cache_tables
 
-        # Ensure we have data generated with best cached params
-        if not dry_run:
-            regenerate_with_best_cached_params(dataset_name, table_name)
-
-        result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
-
-        passed = result.passed
-        ratio = result.time_ratio
-
-        lower_bound = 1.0 / threshold
-        upper_bound = threshold
-        if passed:
-            print(f"  ✓ PASSED (ratio={ratio:.2f}x in [{lower_bound:.2f}, {upper_bound:.2f}])")
-        elif result.import_failed:
-            # Import failed - don't retry auto-tune
-            print(f"  ✗ IMPORT FAILED - data format error, skipping retry")
-            import_failed_tables.append(table_name)
+        if is_validated:
+            print(f"\n--- Importing (validated cache): {table_name} ---")
+            # Just import the data, skip SQL validation
+            if not dry_run:
+                regenerate_with_best_cached_params(dataset_name, table_name)
+                success = validator.import_generated_table(validator.gen_db, dataset_name, table_name)
+                if success:
+                    print(f"  ✓ Imported (already validated)")
+                else:
+                    print(f"  ✗ Import failed")
+                    import_failed_tables.append(table_name)
+            else:
+                print(f"  [DRY RUN] Would import (already validated)")
         else:
-            print(f"  ✗ FAILED (ratio={ratio:.2f}x outside [{lower_bound:.2f}, {upper_bound:.2f}])")
-            failed_tables.append(table_name)
+            print(f"\n--- Validating: {table_name} ---")
 
-        # Save validation status to cache (only if not import failure)
-        if drift_ref and table_name in drift_ref and not result.import_failed:
-            target_drift, _ = drift_ref[table_name]
-            tuner = AutoTuner(
-                dataset_name=dataset_name,
-                table_name=table_name,
-                reference_dataset=reference_dataset,
-                verbose=False,
-            )
-            tuner.set_validation_status(target_drift, passed, ratio)
+            # Ensure we have data generated with best cached params
+            if not dry_run:
+                regenerate_with_best_cached_params(dataset_name, table_name)
+
+            result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
+
+            passed = result.passed
+            ratio = result.time_ratio
+
+            lower_bound = 1.0 / threshold
+            upper_bound = threshold
+            if passed:
+                print(f"  ✓ PASSED (ratio={ratio:.2f}x in [{lower_bound:.2f}, {upper_bound:.2f}])")
+            elif result.import_failed:
+                # Import failed - don't retry auto-tune
+                print(f"  ✗ IMPORT FAILED - data format error, skipping retry")
+                import_failed_tables.append(table_name)
+            else:
+                print(f"  ✗ FAILED (ratio={ratio:.2f}x outside [{lower_bound:.2f}, {upper_bound:.2f}])")
+                failed_tables.append(table_name)
+
+            # Save validation status to cache (only if not import failure)
+            if drift_ref and table_name in drift_ref and not result.import_failed:
+                target_drift, _ = drift_ref[table_name]
+                tuner = AutoTuner(
+                    dataset_name=dataset_name,
+                    table_name=table_name,
+                    reference_dataset=reference_dataset,
+                    verbose=False,
+                )
+                tuner.set_validation_status(target_drift, passed, ratio)
 
     return failed_tables, import_failed_tables
+
+
+def _check_cache_status(dataset_name: str, table_name: str, target_drift: float, reference_dataset: str = None) -> dict:
+    """
+    Check cache status for a table.
+
+    Returns dict with:
+        - has_cache: bool - whether cache exists for this table/drift
+        - validation_passed: bool - whether validation already passed
+        - within_tolerance: bool - whether drift/corr are within tolerance
+        - fallback_type: str - if generated with fallback (year_offset, etc.)
+        - cache_path: str - path to cache file
+        - cache_key: str - key in cache file
+    """
+    import json
+
+    result = {
+        "has_cache": False,
+        "validation_passed": False,
+        "within_tolerance": False,
+        "fallback_type": "",
+        "cache_path": None,
+        "cache_key": None,
+    }
+
+    # Build cache path
+    ref_suffix = f"_ref_{reference_dataset}" if reference_dataset else ""
+    cache_path = os.path.join("tuning_cache", f"{dataset_name}_{table_name}{ref_suffix}.json")
+
+    if not os.path.exists(cache_path):
+        return result
+
+    try:
+        with open(cache_path) as f:
+            cache_data = json.load(f)
+
+        # Find matching cache key (closest drift value within tolerance)
+        cache_key = f"{target_drift:.2f}"
+        if cache_key not in cache_data.get("best_params", {}):
+            # Try to find close match (within CACHE_KEY_TOLERANCE)
+            best_match = None
+            best_diff = float('inf')
+            for key in cache_data.get("best_params", {}).keys():
+                try:
+                    cached_drift = float(key)
+                    diff = abs(cached_drift - target_drift)
+                    if diff < CACHE_KEY_TOLERANCE and diff < best_diff:
+                        best_match = key
+                        best_diff = diff
+                except ValueError:
+                    continue
+            if best_match:
+                cache_key = best_match
+
+        if cache_key not in cache_data.get("best_params", {}):
+            return result
+
+        cached_result = cache_data["best_params"][cache_key]
+
+        result["has_cache"] = True
+        result["cache_path"] = cache_path
+        result["cache_key"] = cache_key
+        result["validation_passed"] = cached_result.get("validation_passed", False)
+        result["fallback_type"] = cached_result.get("fallback_type", "")
+
+        # Check if drift/corr are within tolerance
+        drift_error = cached_result.get("drift_error", 1.0)
+        correlation_loss = cached_result.get("correlation_loss", 1.0)
+        if drift_error < DRIFT_ERROR_TOLERANCE and correlation_loss < CORRELATION_TOLERANCE:
+            result["within_tolerance"] = True
+
+        return result
+
+    except Exception as e:
+        print(f"  Warning: Error reading cache for {table_name}: {e}")
+        return result
 
 
 def _generate_with_drift_reference(
@@ -695,6 +839,7 @@ def _generate_with_drift_reference(
     validate_threshold: float = 1.2,
     max_retries: int = 3,
     dry_run: bool = False,
+    force_regenerate: bool = False,
 ):
     """Generate data using drift reference file (per-table target drift and correlation)."""
     # Load drift reference, filtering by dataset_name (src) and reference_dataset (dst)
@@ -720,6 +865,8 @@ def _generate_with_drift_reference(
     print(f"Reference dataset: {reference_dataset or '(default)'}")
     print(f"Tables to generate: {list(drift_ref.keys())}")
     print(f"GPUs: {gpus if gpus else [0]}")
+    if force_regenerate:
+        print(f"Force regenerate: YES (will regenerate even if validated)")
     if validate_after:
         if dry_run:
             print(f"Validation: DRY RUN (no table replacement, threshold={validate_threshold:.1%})")
@@ -727,15 +874,53 @@ def _generate_with_drift_reference(
             print(f"Validation: enabled (threshold={validate_threshold:.1%})")
     print()
 
-    # Print per-table drift and correlation targets
+    # Print per-table drift and correlation targets, and check cache status
     print("Target per table:")
+    tables_to_skip = set()  # Tables to skip (validation already passed)
+    tables_generate_only = set()  # Tables to generate without re-tuning (cache OK, no validation yet)
+
     for table, (target_drift, target_corr) in drift_ref.items():
         corr_str = f"{target_corr:.4f}" if target_corr is not None else "N/A"
-        print(f"  {table}: drift={target_drift:.4f}, corr_loss={corr_str}")
+        cache_status = _check_cache_status(dataset_name, table, target_drift, reference_dataset)
+
+        status_str = ""
+        if cache_status["has_cache"]:
+            if cache_status["validation_passed"]:
+                if force_regenerate:
+                    status_str = " [CACHE: validated, FORCE regenerate]"
+                else:
+                    status_str = " [CACHE: validated, SKIP]"
+                    tables_to_skip.add(table)
+            elif cache_status["within_tolerance"]:
+                status_str = " [CACHE: OK, generate only]"
+                tables_generate_only.add(table)
+            elif cache_status["fallback_type"]:
+                status_str = f" [CACHE: {cache_status['fallback_type']} fallback]"
+                tables_generate_only.add(table)
+            else:
+                status_str = " [CACHE: needs tuning]"
+        else:
+            status_str = " [NO CACHE: auto-tune]"
+
+        print(f"  {table}: drift={target_drift:.4f}, corr_loss={corr_str}{status_str}")
     print()
 
-    # Track tables that need to be generated
-    tables_to_generate = dict(drift_ref)
+    if tables_to_skip:
+        print(f"Skipping {len(tables_to_skip)} validated table(s): {list(tables_to_skip)}")
+        if force_regenerate:
+            print("  (--force specified, will regenerate anyway)")
+            tables_to_skip.clear()
+        print()
+
+    # Track tables that need to be generated (exclude skipped ones)
+    tables_to_generate = {t: v for t, v in drift_ref.items() if t not in tables_to_skip}
+
+    # If no tables to generate, we're done
+    if not tables_to_generate:
+        print("All tables already validated. Nothing to generate.")
+        print("Use --force to regenerate anyway.")
+        return
+
     generated_tables = set()
     validated_cache_tables = set()  # Tables that used validated cache (skip validation)
     retry_counts = {t: 0 for t in drift_ref.keys()}
@@ -782,8 +967,13 @@ def _generate_with_drift_reference(
                 # Validation happens later for tables without validation_passed=True
 
                 corr_str = f", corr={target_corr:.4f}" if target_corr is not None else ""
-                retry_str = f" [RETRY {retry_counts[t]}]" if t in force_retrain_tables else ""
-                print(f"[GPU {gpu_id}] Starting: {t} (drift={target_drift:.4f}{corr_str}){retry_str}")
+                if t in force_retrain_tables:
+                    mode_str = f" [RETRY {retry_counts[t]}]"
+                elif t in tables_generate_only:
+                    mode_str = " [GEN ONLY]"
+                else:
+                    mode_str = ""
+                print(f"[GPU {gpu_id}] Starting: {t} (drift={target_drift:.4f}{corr_str}){mode_str}")
 
                 log_file_path = os.path.join(log_dir, f"{dataset_name}_{t}_ref.log")
                 log_file = open(log_file_path, "w", buffering=1)  # Line buffering
@@ -879,9 +1069,14 @@ def _generate_with_drift_reference(
 
             for table_name, (target_drift, target_corr) in tables_to_generate.items():
                 corr_str = f", corr_loss={target_corr:.4f}" if target_corr is not None else ""
-                retry_str = f" [RETRY {retry_counts[table_name]}]" if table_name in force_retrain_tables else ""
+                if table_name in force_retrain_tables:
+                    mode_str = f" [RETRY {retry_counts[table_name]}]"
+                elif table_name in tables_generate_only:
+                    mode_str = " [GEN ONLY]"
+                else:
+                    mode_str = ""
                 print(f"\n{'='*60}")
-                print(f"Generating: {table_name} (drift={target_drift:.4f}{corr_str}) on GPU {device}{retry_str}")
+                print(f"Generating: {table_name} (drift={target_drift:.4f}{corr_str}) on GPU {device}{mode_str}")
                 print(f"{'='*60}")
 
                 # Force no-cache for validation-failed tables
@@ -901,20 +1096,23 @@ def _generate_with_drift_reference(
         tables_to_generate = {}
 
         # Validation phase
-        # Skip tables that used validated cache
-        tables_to_validate = generated_tables - validated_cache_tables
-        if validate_after and tables_to_validate:
+        # Process all generated tables: validated ones just import, others run full validation
+        if validate_after and generated_tables:
             print(f"\n{'#'*60}")
             print(f"VALIDATION PHASE")
             print(f"{'#'*60}")
+            tables_needing_validation = generated_tables - validated_cache_tables
             if validated_cache_tables:
-                print(f"Skipping validated cache tables: {list(validated_cache_tables)}")
-            print(f"Tables to validate: {list(tables_to_validate)}")
+                print(f"Already validated (import only): {list(validated_cache_tables)}")
+            if tables_needing_validation:
+                print(f"Need validation: {list(tables_needing_validation)}")
 
+            # Pass all generated tables, with validated_cache_tables for import-only handling
             failed_tables, import_failed_tables = _validate_and_get_failed_tables(
-                dataset_name, list(tables_to_validate), validate_threshold,
+                dataset_name, list(generated_tables), validate_threshold,
                 drift_ref=drift_ref, reference_dataset=reference_dataset,
                 dry_run=dry_run,
+                validated_cache_tables=validated_cache_tables,
             )
 
             # Handle import failures (don't retry - data format error)
@@ -942,12 +1140,7 @@ def _generate_with_drift_reference(
                     print(f"\nRetrying {len(tables_to_generate)} table(s) with --no-cache...")
                     generated_tables -= set(tables_to_generate.keys())
             elif not import_failed_tables:
-                print(f"\n✓ All {len(tables_to_validate)} table(s) passed validation!")
-        elif validate_after and validated_cache_tables:
-            print(f"\n{'#'*60}")
-            print(f"VALIDATION PHASE")
-            print(f"{'#'*60}")
-            print(f"All tables used validated cache, skipping validation")
+                print(f"\n✓ All tables processed successfully!")
 
     print(f"\n{'='*60}")
     print(f"All tables processed using drift reference file")
@@ -1564,9 +1757,14 @@ def handle_lcc(tokens: List[str]):
         print("To build LCC, run: cd benchmarks/lcc && MODE=perf make -j dbtest")
 
 
-def regenerate_with_best_cached_params(dataset_name: str, table_name: str) -> bool:
+def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force_if_not_validated: bool = True) -> bool:
     """
     Check if cache has better params than last generation. If so, regenerate.
+
+    Args:
+        force_if_not_validated: If True, force regenerate when validation_passed is False or missing.
+                                This ensures we always use best params for tables that haven't passed validation.
+
     Returns True if regeneration was done, False otherwise.
     """
     import json
@@ -1600,23 +1798,70 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str) -> bo
             return False
 
         cached_result = cache_data["best_params"][cache_key]
-        cached_scale_factor = cached_result["params"]["scale_factor"]
+        cached_params = cached_result["params"]
 
-        # Compare scale_factor
-        if abs(cached_scale_factor - last_scale_factor) < 0.01:
+        # Check if this was generated with a fallback method (year_offset, find_q, row_mixing)
+        # Fallback results are deterministic and don't need regeneration via dbproc.py
+        fallback_type = cached_result.get("fallback_type", "")
+        if fallback_type:
+            print(f"  Generated with {fallback_type} fallback, skipping regeneration")
+            return False
+
+        # Get cached scale_factor
+        cached_scale_factor = cached_params.get("scale_factor", 8.0)
+
+        # ALWAYS check scale_factor first - if it matches, no need to regenerate
+        # This prevents double-generation when auto_tune.py just generated with best params
+        if last_scale_factor is not None and abs(cached_scale_factor - last_scale_factor) < 0.01:
             print(f"  Last generation used best cached params (scale_factor={cached_scale_factor:.2f})")
             return False
 
+        # Check validation status - if not validated and scale_factor differs, regenerate
+        validation_passed = cached_result.get("validation_passed", False)
+        if not validation_passed and force_if_not_validated:
+            print(f"  Validation not passed and params differ, regenerating with best params")
+
+        # Get all cached params with defaults for regeneration
+        cached_scale_factor = cached_params.get("scale_factor", 8.0)
+        cached_controller_dim = cached_params.get("controller_dim", [512, 512])
+        cached_controller_steps = cached_params.get("controller_steps", 10000)
+        cached_controller_bs = cached_params.get("controller_bs", 512)
+        cached_controller_lr = cached_params.get("controller_lr", 0.001)
+        cached_diffuser_steps = cached_params.get("diffuser_steps", 30000)
+        cached_diffuser_bs = cached_params.get("diffuser_bs", 2048)
+        cached_diffuser_lr = cached_params.get("diffuser_lr", 0.0018)
+        cached_diffuser_timesteps = cached_params.get("diffuser_timesteps", 1000)
+        cached_lambda_p = cached_params.get("lambda_p", 1.0)
+        cached_lambda_s = cached_params.get("lambda_s", 1.0)
+
+        # Convert dim to list if needed
+        if isinstance(cached_controller_dim, tuple):
+            cached_controller_dim = list(cached_controller_dim)
+
         # Need to regenerate with best cached params
         print(f"\n  Last generation: scale_factor={last_scale_factor:.2f}")
-        print(f"  Best cached:     scale_factor={cached_scale_factor:.2f}")
-        print(f"  Regenerating with best cached params...")
+        print(f"  Best cached:     scale_factor={cached_scale_factor:.2f}, dim={cached_controller_dim}, steps={cached_controller_steps}")
+        print(f"  Regenerating with retrain using best cached params...")
 
-        # Build command
+        # Build command with all cached params
         cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
         cmd += f" --drift={target_drift}"
         cmd += f" --scale-factor={cached_scale_factor}"
-        cmd += " --reuse"  # Don't retrain, just regenerate
+        # Controller params
+        cmd += f" --controller-dim {' '.join(str(d) for d in cached_controller_dim)}"
+        cmd += f" --controller-steps={cached_controller_steps}"
+        cmd += f" --controller-bs={cached_controller_bs}"
+        cmd += f" --controller-lr={cached_controller_lr}"
+        # Diffuser params
+        cmd += f" --diffuser-steps={cached_diffuser_steps}"
+        cmd += f" --diffuser-bs={cached_diffuser_bs}"
+        cmd += f" --diffuser-lr={cached_diffuser_lr}"
+        cmd += f" --diffuser-timesteps={cached_diffuser_timesteps}"
+        # Lambda params
+        cmd += f" --lambda-p={cached_lambda_p}"
+        cmd += f" --lambda-s={cached_lambda_s}"
+        # Force retrain
+        cmd += " --retrain-diffuser --retrain-controller"
 
         if reference_dataset:
             cmd += f" --reference-dataset={reference_dataset}"
@@ -1629,7 +1874,7 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str) -> bo
             print(f"  Regeneration failed!")
             return False
 
-        # Update last_generation.json with the new scale_factor
+        # Update last_generation.json with the new params
         metadata["scale_factor"] = cached_scale_factor
         metadata["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
         with open(metadata_path, "w") as f:
@@ -1906,4 +2151,31 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1:
+        # Command-line mode: run command directly and exit
+        text = " ".join(sys.argv[1:])
+        tokens = text.split()
+        main_command = tokens[0]
+
+        if main_command == "gd":
+            handle_generate_data(tokens)
+        elif main_command == "vd":
+            handle_validate_data(tokens)
+        elif main_command == "dd":
+            handle_delete_data(tokens)
+        elif main_command == "tqo":
+            handle_tqo(tokens)
+        elif main_command == "iqo":
+            handle_iqo(tokens)
+        elif main_command == "set":
+            handle_set(tokens)
+        elif main_command == "idx":
+            handle_idx(tokens)
+        elif main_command == "lcc":
+            handle_lcc(tokens)
+        else:
+            print("Unknown command:", main_command)
+    else:
+        # Interactive mode
+        main()

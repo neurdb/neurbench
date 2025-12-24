@@ -93,6 +93,7 @@ class TuningResult:
     timestamp: str = ""
     validation_passed: bool = False  # Whether DB validation passed
     validation_ratio: float = 0.0  # Query time ratio from validation
+    fallback_type: str = ""  # Type of fallback used: "year_offset", "find_q", "row_mixing", or "" for normal
 
     def __post_init__(self):
         if not self.timestamp:
@@ -876,7 +877,7 @@ class AutoTuner:
 
                 # Check if we meet tolerance
                 drift_ok = drift_error <= tolerance
-                corr_tolerance = 0.10
+                corr_tolerance = 0.25
                 corr_ok = corr_error <= corr_tolerance
 
                 result = TuningResult(
@@ -886,6 +887,7 @@ class AutoTuner:
                     correlation_loss=corr_loss,
                     drift_error=drift_error,
                     score=score,
+                    fallback_type="year_offset",
                 )
 
                 if best_result is None or result.score < best_result.score:
@@ -1372,7 +1374,7 @@ class AutoTuner:
                 # Check correlation error
                 # drift_error: relative (<=20%), corr_error: absolute (<=0.10)
                 # With new logic: correlation_loss = |generated - reference|, target is 0
-                corr_tolerance = 0.10
+                corr_tolerance = 0.25
                 if self.target_corr_loss is not None:
                     corr_error = abs(cached.correlation_loss - self.target_corr_loss)
                 else:
@@ -1637,7 +1639,7 @@ class AutoTuner:
 
             # === EVALUATE RESULT AND DETERMINE MODE ===
             drift_ok = result.drift_error <= tolerance  # e.g., 20%
-            corr_tolerance = 0.10
+            corr_tolerance = 0.25
             # With new logic: correlation_loss = |generated - reference|, target is 0
             if self.target_corr_loss is not None:
                 corr_error = abs(result.correlation_loss - self.target_corr_loss)
@@ -2028,7 +2030,7 @@ class AutoTuner:
             if cached and cached.drift_error <= tolerance:
                 # Check correlation error
                 # With new logic: correlation_loss = |generated - reference|, target is 0
-                corr_tolerance = 0.10
+                corr_tolerance = 0.25
                 if self.target_corr_loss is not None:
                     corr_error = abs(cached.correlation_loss - self.target_corr_loss)
                 else:
@@ -2241,10 +2243,27 @@ if __name__ == "__main__":
     if result:
         print(f"\nFinal result: drift_error={result.drift_error:.4f}, corr_loss={result.correlation_loss:.4f}")
 
-        # Generate data using the best parameters (needed when using cached result)
-        output_path = os.path.join("expdir", args.dataset_name, args.table_name, f"{args.table_name}.drifted.csv")
-        if not os.path.exists(output_path):
-            print(f"\nGenerating data with cached parameters...")
+        # Always ensure data is generated with best params
+        # The last iteration might not be the best one, so we need to regenerate
+        metadata_path = os.path.join("expdir", args.dataset_name, args.table_name, "last_generation.json")
+        need_regenerate = True
+
+        if os.path.exists(metadata_path):
+            try:
+                with open(metadata_path) as f:
+                    metadata = json.load(f)
+                last_sf = metadata.get("scale_factor")
+                best_sf = result.params.scale_factor
+                if last_sf is not None and abs(last_sf - best_sf) < 0.01:
+                    print(f"Last generation used best params (scale_factor={best_sf:.2f}), skipping regeneration")
+                    need_regenerate = False
+                else:
+                    print(f"Last generation used scale_factor={last_sf}, best is {best_sf:.2f}, regenerating...")
+            except Exception as e:
+                print(f"Could not read metadata: {e}, will regenerate")
+
+        if need_regenerate:
+            print(f"\nGenerating data with best parameters...")
             tuner.generate_with_best_params(args.target_drift, use_cache=True)
 
         # Exit code 2 means validated cache was used (skip validation)

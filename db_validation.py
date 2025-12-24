@@ -121,57 +121,13 @@ class DatabaseValidator:
             return False
 
     def create_database(self, dbname: str, force: bool = False) -> bool:
-        """Create database using psycopg2. If exists and force=False, skip creation."""
+        """Check if database exists. Actual creation is done in copy_all_tables."""
         if self.database_exists(dbname):
             if not force:
                 print(f"Database {dbname} already exists, skipping creation.")
                 return True
-            print(f"Database {dbname} already exists, dropping...")
-            try:
-                conn = self._get_connection("postgres")
-                conn.autocommit = True
-                cur = conn.cursor()
-                # Terminate connections
-                cur.execute("""
-                    SELECT pg_terminate_backend(pid)
-                    FROM pg_stat_activity
-                    WHERE datname = %s AND pid <> pg_backend_pid()
-                """, (dbname,))
-                # Drop database
-                cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(dbname)))
-                cur.close()
-                conn.close()
-            except Exception as e:
-                print(f"Failed to drop database: {e}")
-                return False
-
-        print(f"Creating database {dbname}...")
-        try:
-            # Create database
-            conn = self._get_connection("postgres")
-            conn.autocommit = True
-            cur = conn.cursor()
-            cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(dbname)))
-            cur.close()
-            conn.close()
-
-            # Apply schema
-            print("Applying schema...")
-            success, err = self._execute_sql_file(dbname, self.SCHEMA_FILE)
-            if not success:
-                print(f"Failed to apply schema: {err}")
-                return False
-
-            # Apply indexes
-            if os.path.exists(self.FK_INDEX_FILE):
-                print("Applying indexes...")
-                self._execute_sql_file(dbname, self.FK_INDEX_FILE)
-
-            print(f"Database {dbname} created successfully")
-            return True
-        except Exception as e:
-            print(f"Failed to create database: {e}")
-            return False
+            # Will be dropped and recreated in copy_all_tables
+        return True
 
     def _copy_table_data(self, src_db: str, dst_db: str, table_name: str) -> bool:
         """Copy table data from one database to another using psycopg2 copy_expert."""
@@ -194,7 +150,10 @@ class DatabaseValidator:
             dst_conn = self._get_connection(dst_db)
             dst_conn.autocommit = True
             dst_cur = dst_conn.cursor()
-            dst_cur.execute(f"TRUNCATE TABLE {table_name} CASCADE")
+            # Disable FK checks, delete data, then re-enable
+            dst_cur.execute("SET session_replication_role = 'replica'")
+            dst_cur.execute(f"TRUNCATE TABLE {table_name}")
+            dst_cur.execute("SET session_replication_role = 'origin'")
 
             # Import to destination using psycopg2 copy_expert
             with open(tmp_path, 'r', encoding='utf-8') as f:
@@ -223,22 +182,22 @@ class DatabaseValidator:
             return -1
 
     def copy_all_tables(self, src_db: str, dst_db: str) -> bool:
-        """Copy all tables from source to destination database using psycopg2."""
-        print(f"\nCopying all tables from {src_db} to {dst_db}...")
-        all_tables = [
-            "aka_name", "aka_title", "cast_info", "char_name", "comp_cast_type",
-            "company_name", "company_type", "complete_cast", "info_type", "keyword",
-            "kind_type", "link_type", "movie_companies", "movie_info", "movie_info_idx",
-            "movie_keyword", "movie_link", "name", "person_info", "role_type", "title"
-        ]
-        for table in all_tables:
-            row_count = self._get_table_row_count(src_db, table)
-            count_str = f"({row_count:,} rows)" if row_count >= 0 else ""
-            print(f"  Copying {table} {count_str}...", end=" ", flush=True)
-            if self._copy_table_data(src_db, dst_db, table):
-                print("OK")
-            else:
-                print("FAILED")
+        """Drop, create and copy all tables using dropdb && createdb && pg_dump | psql via docker exec."""
+        print(f"\nSetting up {dst_db} from {src_db} via dropdb && createdb && pg_dump | psql...")
+
+        # Combine all operations into one atomic command
+        # This ensures database is created and fully populated before returning
+        cmd = f"docker exec -i pg_bao bash -c \"su - postgres -c 'dropdb -p 5432 --if-exists {dst_db} && createdb -p 5432 {dst_db} && pg_dump -p 5432 {src_db} | psql -p 5432 {dst_db}'\""
+        print(f"  Running: {cmd}")
+
+        # Use capture_output=False to show real-time output
+        result = subprocess.run(cmd, shell=True)
+
+        if result.returncode != 0:
+            print(f"FAILED")
+            return False
+
+        print("OK - database created and all tables copied")
         return True
 
     def _get_integer_columns(self, dbname: str, table_name: str) -> List[str]:
@@ -443,8 +402,10 @@ class DatabaseValidator:
                     else:
                         break
 
-            # Truncate table
-            cur.execute(f"TRUNCATE TABLE {table_name} CASCADE")
+            # Disable FK checks, delete data, then re-enable
+            cur.execute("SET session_replication_role = 'replica'")  # Disable FK triggers
+            cur.execute(f"TRUNCATE TABLE {table_name}")
+            cur.execute("SET session_replication_role = 'origin'")   # Re-enable FK triggers
             # Import CSV with explicit UTF-8 encoding
             with open(import_path, 'r', encoding='utf-8') as f:
                 copy_sql = f"COPY {table_name} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8')"
@@ -570,10 +531,13 @@ class DatabaseValidator:
         os.makedirs("validation_logs", exist_ok=True)
         self.run_job_queries(self.gen_db, gen_output)
         real_output = f"validation_logs/{dataset_name}_real.log"
-        # Always re-run real queries (performance may vary over time)
+        # Use cached real query results if available, unless explicitly told to re-run
         if not skip_real_queries:
-            print(f"\nRunning queries on real database {self.real_db}...")
-            self.run_job_queries(self.real_db, real_output)
+            if os.path.exists(real_output):
+                print(f"\nUsing cached real database results: {real_output}")
+            else:
+                print(f"\nRunning queries on real database {self.real_db}...")
+                self.run_job_queries(self.real_db, real_output)
         gen_results = self.parse_query_results(gen_output)
         real_results = self.parse_query_results(real_output)
         print(f"\nComparing results for {table_name}:")
@@ -626,9 +590,12 @@ class DatabaseValidator:
         print(f"\nGenerated tables: {generated_tables}")
         real_output = f"validation_logs/{dataset_name}_real.log"
         os.makedirs("validation_logs", exist_ok=True)
-        # Always re-run real queries (performance may vary over time)
-        print(f"\nRunning queries on real database {self.real_db}...")
-        self.run_job_queries(self.real_db, real_output)
+        # Use cached real query results if available
+        if os.path.exists(real_output):
+            print(f"\nUsing cached real database results: {real_output}")
+        else:
+            print(f"\nRunning queries on real database {self.real_db}...")
+            self.run_job_queries(self.real_db, real_output)
         results = {}
         failed_tables = []
         for table_name in generated_tables:

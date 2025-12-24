@@ -1,0 +1,36 @@
+{
+  "dataset_name": "imdb_2014",
+  "table_name": "movie_keyword",
+  "best_params": {
+    "0.18": {
+      "params": {
+        "diffuser_lr": 0.0018,
+        "diffuser_steps": 30000,
+        "diffuser_bs": 2048,
+        "diffuser_timesteps": 1000,
+        "controller_lr": 0.001,
+        "controller_steps": 15000,
+        "controller_bs": 8192,
+        "controller_dim": [
+          1024,
+          768
+        ],
+        "scale_factor": 2.7330121803676235,
+        "lambda_p": 1.0,
+        "lambda_s": 1.0,
+        "drift_range_min": 0.028195057462703094,
+        "drift_range_max": 0.32819505746270305,
+        "loss_weight_corr": 0.8,
+        "loss_weight_real": 0.05
+      },
+      "target_drift": 0.1781950574627031,
+      "actual_drift": 0.1780778526832401,
+      "correlation_loss": 0.2030803771309004,
+      "drift_error": 0.0006577330546191353,
+      "score": 0.20439584324013868,
+      "timestamp": "2025-12-22 02:32:27",
+      "validation_passed": true,
+      "validation_ratio": 1.1706686754136908
+    }
+  }
+}

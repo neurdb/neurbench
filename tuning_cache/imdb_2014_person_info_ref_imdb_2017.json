@@ -1,0 +1,36 @@
+{
+  "dataset_name": "imdb_2014",
+  "table_name": "person_info",
+  "best_params": {
+    "0.08": {
+      "params": {
+        "diffuser_lr": 0.0018,
+        "diffuser_steps": 30000,
+        "diffuser_bs": 2048,
+        "diffuser_timesteps": 1000,
+        "controller_lr": 0.001,
+        "controller_steps": 12000,
+        "controller_bs": 512,
+        "controller_dim": [
+          512,
+          512
+        ],
+        "scale_factor": 1.3584087136300491,
+        "lambda_p": 1.0,
+        "lambda_s": 1.0,
+        "drift_range_min": 0.01,
+        "drift_range_max": 0.22561291717999998,
+        "loss_weight_corr": 0.8,
+        "loss_weight_real": 0.1
+      },
+      "target_drift": 0.07561291718,
+      "actual_drift": 0.07491290910166833,
+      "correlation_loss": 0.08197635125024996,
+      "drift_error": 0.009257784310388067,
+      "score": 0.1004919198710261,
+      "timestamp": "2025-12-21 17:25:53",
+      "validation_passed": true,
+      "validation_ratio": 1.0187319879932006
+    }
+  }
+}

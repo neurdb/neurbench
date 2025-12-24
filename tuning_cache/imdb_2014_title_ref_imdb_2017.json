@@ -1,0 +1,37 @@
+{
+  "dataset_name": "imdb_2014",
+  "table_name": "title",
+  "best_params": {
+    "0.16": {
+      "params": {
+        "diffuser_lr": 0.0018,
+        "diffuser_steps": 30000,
+        "diffuser_bs": 2048,
+        "diffuser_timesteps": 1000,
+        "controller_lr": 0.001,
+        "controller_steps": 10000,
+        "controller_bs": 512,
+        "controller_dim": [
+          512,
+          512
+        ],
+        "scale_factor": 0.0,
+        "lambda_p": 1.0,
+        "lambda_s": 1.0,
+        "drift_range_min": 0.05,
+        "drift_range_max": 0.75,
+        "loss_weight_corr": 0.8,
+        "loss_weight_real": 0.1
+      },
+      "fallback_type": "year_offset",
+      "target_drift": 0.157511686725199,
+      "actual_drift": 0.15751168672519905,
+      "correlation_loss": 2.528614406487205e-07,
+      "drift_error": 3.524256033655759e-16,
+      "score": 3.7929216167793193e-07,
+      "timestamp": "2025-12-22 00:20:48",
+      "validation_passed": true,
+      "validation_ratio": 0.991360167821922293
+    }
+  }
+}

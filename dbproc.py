@@ -286,6 +286,44 @@ def main(args: argparse.Namespace):
     print(f"[TIMING] Total oversampling took: {oversampling_end - oversampling_start:.2f} seconds")
 
     sample_data = sample_data.cpu().numpy()
+
+    # Set reference distribution for frequency-preserving sampling
+    # This ensures generated ID columns match the target data's frequency distribution
+    print("\n[Frequency Preservation] Setting reference distributions...")
+
+    # Mapping from foreign key column to primary table
+    FK_TO_TABLE = {
+        'movie_id': 'title',
+        'person_id': 'name',
+        'company_id': 'company_name',
+        'keyword_id': 'keyword',
+        'linked_movie_id': 'title',
+        'link_type_id': 'link_type',
+        'info_type_id': 'info_type',
+        'kind_id': 'kind_type',
+        'role_id': 'role_type',
+    }
+
+    for col in config["applicable_columns"]:
+        if col in data_wrapper.num_normalizer:
+            # Only use frequency preservation for foreign key columns
+            if col in FK_TO_TABLE:
+                freq_shape_data = real_data[col].dropna().values
+                # Use the unique IDs from ref data directly as valid_ids
+                # This preserves:
+                # 1. Frequency distribution shape (hotspot effect)
+                # 2. Cross-table correlation (e.g., movie_keyword and movie_companies
+                #    share ~82% of movie_ids in real data, random sampling would break this)
+                # 3. Valid FK references
+                valid_ids = np.unique(freq_shape_data)
+                print(f"  {col}: FK column, using {len(valid_ids)} unique IDs from --ref "
+                      f"(total {len(freq_shape_data)} values)")
+                data_wrapper.set_reference_distribution(col, freq_shape_data, valid_ids)
+            else:
+                # Non-FK columns (like production_year): skip frequency preservation
+                # Let the model's inverse_transform handle the drift naturally
+                print(f"  {col}: not a FK column, skip frequency preservation")
+
     sample_data = data_wrapper.Reverse(sample_data)
     sample_data = sample_data[config["applicable_columns"]]
 

@@ -1,0 +1,36 @@
+{
+  "dataset_name": "imdb_2014",
+  "table_name": "movie_companies",
+  "best_params": {
+    "0.18": {
+      "params": {
+        "diffuser_lr": 0.0018,
+        "diffuser_steps": 30000,
+        "diffuser_bs": 2048,
+        "diffuser_timesteps": 1000,
+        "controller_lr": 0.001,
+        "controller_steps": 15000,
+        "controller_bs": 1024,
+        "controller_dim": [
+          512,
+          512
+        ],
+        "scale_factor": 5.208070202563774,
+        "lambda_p": 1.0,
+        "lambda_s": 1.0,
+        "drift_range_min": 0.0251847363626429,
+        "drift_range_max": 0.3251847363626429,
+        "loss_weight_corr": 1.0,
+        "loss_weight_real": 0.05
+      },
+      "target_drift": 0.1751847363626429,
+      "actual_drift": 0.17663711829049972,
+      "correlation_loss": 0.2233187204504754,
+      "drift_error": 0.008290573471254392,
+      "score": 0.2398998673929842,
+      "timestamp": "2025-12-22 19:33:48",
+      "validation_passed": true,
+      "validation_ratio": 1.0321915733519114
+    }
+  }
+}
