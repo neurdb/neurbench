@@ -1,6 +1,8 @@
 import pickle
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import copy
 
 sys.path.append("drift_ddpm")
 
@@ -23,6 +25,42 @@ warnings.filterwarnings("ignore")
 
 
 INFERENCE_BATCH_SIZE = 524288  # 262144
+
+
+class ControllerDimAdapter(torch.nn.Module):
+    """Wrapper to adapt controller from one dimension to another.
+
+    This allows using a controller trained on one table (e.g., aka_title with d_in=2)
+    on another table with different dimensions (e.g., aka_name with d_in=1).
+    """
+    def __init__(self, controller, source_dim: int, target_dim: int):
+        super().__init__()
+        self.controller = controller
+        self.source_dim = source_dim
+        self.target_dim = target_dim
+
+    def forward(self, x: torch.Tensor, t: torch.Tensor, drift: float):
+        batch_size = x.shape[0]
+
+        if self.target_dim < self.source_dim:
+            # Target has fewer dims: pad input with zeros, then truncate output
+            padding = torch.zeros(batch_size, self.source_dim - self.target_dim, device=x.device)
+            x_padded = torch.cat([x, padding], dim=1)
+            out = self.controller(x_padded, t, drift)
+            return out[:, :self.target_dim]
+        elif self.target_dim > self.source_dim:
+            # Target has more dims: truncate input, then pad output with zeros
+            x_truncated = x[:, :self.source_dim]
+            out = self.controller(x_truncated, t, drift)
+            padding = torch.zeros(batch_size, self.target_dim - self.source_dim, device=out.device)
+            return torch.cat([out, padding], dim=1)
+        else:
+            # Same dimension
+            return self.controller(x, t, drift)
+
+    def to(self, device):
+        self.controller = self.controller.to(device)
+        return super().to(device)
 
 
 def main(args: argparse.Namespace):
@@ -219,36 +257,66 @@ def main(args: argparse.Namespace):
     """ controller training. To avoid randomness, reseed everything. """
     deterministic.seed_everything(args.random_state)
 
-    if not args.retrain_controller and os.path.exists(
-        os.path.join(save_dir, "controller.pt")
-    ):
-        print("Load existing controller")
-    else:
-        print("Train controller")
-        controller_start = time.time()
-        lo.controller_training(
-            train_x=train_x,
-            real_x=real_x,
-            # cond_x=cond_x,
-            # synthetic_x=synthetic_x,
-            diffuser=diffuser,
-            save_path=os.path.join(save_dir, "controller.pt"),
-            cond_save_path=os.path.join(save_dir, "controller_cond.pt"),
-            device=device,
-            lr=args.controller_lr,
-            d_hidden=args.controller_dim,
-            steps=args.controller_steps,
-            drop_out=0.0,
-            bs=args.controller_bs,
-            # New parameters for better training
-            drift_range=(args.drift_range_min, args.drift_range_max),
-            loss_weight_corr=args.loss_weight_corr,
-            loss_weight_real=args.loss_weight_real,
-        )
-        controller_end = time.time()
-        print(f"[TIMING] Controller training took: {controller_end - controller_start:.2f} seconds")
+    # Determine controller source
+    if args.controller_from:
+        # Use controller from another table
+        controller_source_dir = os.path.join("expdir", args.dataset_name, args.controller_from)
+        controller_path = os.path.join(controller_source_dir, "controller.pt")
+        if not os.path.exists(controller_path):
+            raise FileNotFoundError(
+                f"Controller not found at {controller_path}. "
+                f"Please train the controller for '{args.controller_from}' first."
+            )
+        print(f"Using controller from table '{args.controller_from}': {controller_path}")
 
-    controller = torch.load(os.path.join(save_dir, "controller.pt"))
+        # Get source table's dimension from dataset_info.json
+        full_config = du.load_json(os.path.join(base_dir, "dataset_info.json"))
+        source_config = full_config.get(args.controller_from)
+        if source_config is None:
+            raise ValueError(f"Table '{args.controller_from}' not found in dataset_info.json")
+        source_dim = len(source_config["applicable_columns"])
+        target_dim = len(config["applicable_columns"])
+
+        print(f"Source dim ({args.controller_from}): {source_dim}, Target dim ({args.table_name}): {target_dim}")
+
+        raw_controller = torch.load(controller_path)
+        if source_dim != target_dim:
+            print(f"Wrapping controller with dimension adapter: {source_dim} -> {target_dim}")
+            controller = ControllerDimAdapter(raw_controller, source_dim, target_dim)
+        else:
+            controller = raw_controller
+    else:
+        # Train or load controller for current table
+        if not args.retrain_controller and os.path.exists(
+            os.path.join(save_dir, "controller.pt")
+        ):
+            print("Load existing controller")
+        else:
+            print("Train controller")
+            controller_start = time.time()
+            lo.controller_training(
+                train_x=train_x,
+                real_x=real_x,
+                # cond_x=cond_x,
+                # synthetic_x=synthetic_x,
+                diffuser=diffuser,
+                save_path=os.path.join(save_dir, "controller.pt"),
+                cond_save_path=os.path.join(save_dir, "controller_cond.pt"),
+                device=device,
+                lr=args.controller_lr,
+                d_hidden=args.controller_dim,
+                steps=args.controller_steps,
+                drop_out=0.0,
+                bs=args.controller_bs,
+                # New parameters for better training
+                drift_range=(args.drift_range_min, args.drift_range_max),
+                loss_weight_corr=args.loss_weight_corr,
+                loss_weight_real=args.loss_weight_real,
+            )
+            controller_end = time.time()
+            print(f"[TIMING] Controller training took: {controller_end - controller_start:.2f} seconds")
+
+        controller = torch.load(os.path.join(save_dir, "controller.pt"))
     # controller_cond = torch.load(os.path.join(save_dir, "controller_cond.pt"))
 
     """ oversampling. To avoid randomness, reseed everything. """
@@ -263,25 +331,82 @@ def main(args: argparse.Namespace):
     print(f"[TIMING] Starting data generation for {config['n_samples']} samples in {len(batched_ids)} batches...")
     oversampling_start = time.time()
 
-    all_data = []
-    for batch_idx, b in enumerate(tqdm(batched_ids)):
-        batch_start = time.time()
-        sample_data = lo.oversampling(
-            len(b),
-            controller,
-            diffuser,
-            None,  # controller_cond,
-            None,  # cond_x,
-            None,  # synthetic_x,
-            device,
-            args.drift,
-            args.scale_factor,
-        )
-        batch_end = time.time()
-        print(f"[TIMING] Batch {batch_idx + 1}/{len(batched_ids)} generation took: {batch_end - batch_start:.2f} seconds")
-        all_data.append(sample_data)
+    num_gpus = args.num_gpus
+    if num_gpus > 1 and len(batched_ids) > 1:
+        # Multi-GPU parallel generation
+        gpu_ids = [args.device + i for i in range(num_gpus)]
+        print(f"[Parallel] Using {num_gpus} GPUs: {gpu_ids}")
 
-    sample_data = torch.cat(all_data, dim=0)
+        # Prepare model copies for each GPU
+        diffuser_copies = {}
+        controller_copies = {}
+        for gpu_id in gpu_ids:
+            gpu_device = torch.device(f"cuda:{gpu_id}")
+            diffuser_copies[gpu_id] = copy.deepcopy(diffuser).to(gpu_device)
+            diffuser_copies[gpu_id].variables_to_device(gpu_device)
+            controller_copies[gpu_id] = copy.deepcopy(controller).to(gpu_device)
+
+        def generate_batch(batch_idx, batch, gpu_id):
+            """Worker function to generate a batch on a specific GPU."""
+            gpu_device = torch.device(f"cuda:{gpu_id}")
+            batch_start = time.time()
+            sample_data = lo.oversampling(
+                len(batch),
+                controller_copies[gpu_id],
+                diffuser_copies[gpu_id],
+                None,
+                None,
+                None,
+                gpu_device,
+                args.drift,
+                args.scale_factor,
+            )
+            # Move result to CPU immediately to free GPU memory
+            result = sample_data.cpu()
+            batch_end = time.time()
+            print(f"[TIMING] Batch {batch_idx + 1}/{len(batched_ids)} (GPU {gpu_id}) took: {batch_end - batch_start:.2f}s")
+            return batch_idx, result
+
+        # Submit all batches to thread pool
+        all_data = [None] * len(batched_ids)
+        with ThreadPoolExecutor(max_workers=num_gpus) as executor:
+            futures = []
+            for batch_idx, b in enumerate(batched_ids):
+                gpu_id = gpu_ids[batch_idx % num_gpus]
+                futures.append(executor.submit(generate_batch, batch_idx, b, gpu_id))
+
+            # Collect results with progress bar
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Generating"):
+                batch_idx, result = future.result()
+                all_data[batch_idx] = result
+
+        sample_data = torch.cat(all_data, dim=0)
+
+        # Cleanup GPU copies
+        del diffuser_copies, controller_copies
+        torch.cuda.empty_cache()
+    else:
+        # Single GPU sequential generation
+        all_data = []
+        for batch_idx, b in enumerate(tqdm(batched_ids)):
+            batch_start = time.time()
+            sample_data = lo.oversampling(
+                len(b),
+                controller,
+                diffuser,
+                None,  # controller_cond,
+                None,  # cond_x,
+                None,  # synthetic_x,
+                device,
+                args.drift,
+                args.scale_factor,
+            )
+            batch_end = time.time()
+            print(f"[TIMING] Batch {batch_idx + 1}/{len(batched_ids)} generation took: {batch_end - batch_start:.2f} seconds")
+            all_data.append(sample_data)
+
+        sample_data = torch.cat(all_data, dim=0)
+
     oversampling_end = time.time()
     print(f"[TIMING] Total oversampling took: {oversampling_end - oversampling_start:.2f} seconds")
 
@@ -396,6 +521,12 @@ if __name__ == "__main__":
     parser.add_argument("--controller-bs", type=int, default=512)
 
     parser.add_argument("--device", type=int, default=1)
+    parser.add_argument(
+        "--num-gpus",
+        type=int,
+        default=1,
+        help="Number of GPUs for parallel batch generation (default: 1)"
+    )
     parser.add_argument("--scale-factor", type=float, default=8.0)
     # parser.add_argument("--save-name", type=str, default="output")
 
@@ -414,6 +545,13 @@ if __name__ == "__main__":
     parser.add_argument("--random-state", type=int, default=42)
 
     parser.add_argument("--fillna", action="store_true", default=False)
+
+    parser.add_argument(
+        "--controller-from",
+        type=str,
+        default=None,
+        help="Use controller from another table (e.g., 'aka_title'), diffuser still uses current table"
+    )
 
     # Controller training improvement parameters
     parser.add_argument("--drift-range-min", type=float, default=0.05,

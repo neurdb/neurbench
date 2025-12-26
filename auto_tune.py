@@ -368,6 +368,7 @@ class AutoTuner:
         device: int = 0,
         verbose: bool = True,
         target_corr_loss: float = None,  # Target correlation loss from reference
+        num_gpus: int = 1,  # Number of GPUs for parallel batch generation
     ):
         self.dataset_name = dataset_name
         self.table_name = table_name
@@ -375,6 +376,7 @@ class AutoTuner:
         self.device = device
         self.verbose = verbose
         self.target_corr_loss = target_corr_loss  # If set, use as target instead of minimizing
+        self.num_gpus = num_gpus
         self.evaluator = DataEvaluator(dataset_name, table_name, reference_dataset)
         self.cache = self._load_cache()
 
@@ -499,6 +501,10 @@ class AutoTuner:
         cmd = f"python3 dbproc.py --dataset-name={self.dataset_name} --table-name={self.table_name}"
         cmd += f" --drift={target_drift} --device={self.device}"
         cmd += f" {params.to_cmd_args()}"
+
+        # Multi-GPU parallel batch generation
+        if self.num_gpus > 1:
+            cmd += f" --num-gpus={self.num_gpus}"
 
         # Tables that need fillna (have NULL values that cause issues)
         FILLNA_TABLES = {"aka_title", "title"}
@@ -2204,6 +2210,8 @@ if __name__ == "__main__":
                         help="Retrain models every N iterations if not improving")
     parser.add_argument("--quick", action="store_true", help="Quick tune (no retraining)")
     parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--num-gpus", type=int, default=1,
+                        help="Number of GPUs for parallel batch generation")
     parser.add_argument("--no-cache", action="store_true", help="Ignore cached params, force retrain")
     parser.add_argument("--require-validation", action="store_true",
                         help="Only use cache if validation_passed=True")
@@ -2224,6 +2232,7 @@ if __name__ == "__main__":
         reference_dataset=args.reference_dataset,
         device=args.device,
         target_corr_loss=args.target_corr_loss,
+        num_gpus=args.num_gpus,
     )
 
     if args.quick:

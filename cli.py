@@ -926,24 +926,67 @@ def _generate_with_drift_reference(
     retry_counts = {t: 0 for t in drift_ref.keys()}
     force_retrain_tables = set()  # Tables that need forced retrain (validation failed)
 
+    # Load dataset info for n_samples (for GPU allocation)
+    INFERENCE_BATCH_SIZE = 524288
+    base_dir = os.path.join("datasets", dataset_name)
+    full_dataset_info = load_json(os.path.join(base_dir, "dataset_info.json"))
+
     while tables_to_generate:
         if gpus and len(gpus) > 1:
-            # Multi-GPU parallel execution
+            # Multi-GPU parallel execution with smart allocation based on n_samples
             print(f"Running parallel generation on GPUs: {gpus}")
             print()
 
-            # Distribute tables across GPUs
-            table_gpu_assignments = []
-            table_names = list(tables_to_generate.keys())
-            for i, t in enumerate(table_names):
-                gpu_id = gpus[i % len(gpus)]
+            # Calculate batch count for each table and sort by size (largest first)
+            table_batch_info = []
+            for t in tables_to_generate.keys():
+                table_info = full_dataset_info.get(t, {})
+                n_samples = table_info.get("n_samples", 100000) if table_info else 100000
+                n_batches = (n_samples + INFERENCE_BATCH_SIZE - 1) // INFERENCE_BATCH_SIZE
                 target_drift, target_corr = tables_to_generate[t]
-                table_gpu_assignments.append((t, gpu_id, target_drift, target_corr))
+                table_batch_info.append((t, n_samples, n_batches, target_drift, target_corr))
 
-            print("Table -> GPU assignments:")
-            for t, gpu_id, target_drift, target_corr in table_gpu_assignments:
+            # Sort by n_samples descending (process large tables first)
+            table_batch_info.sort(key=lambda x: -x[1])
+
+            # Smart GPU allocation:
+            # - If tables >= GPUs: each table gets 1 GPU, run in rounds
+            # - If tables < GPUs: distribute GPUs proportionally by batch count
+            num_tables = len(table_batch_info)
+            num_gpus = len(gpus)
+
+            table_gpu_assignments = []
+            if num_tables >= num_gpus:
+                # More tables than GPUs: each table gets 1 GPU
+                for i, (t, n_samples, n_batches, target_drift, target_corr) in enumerate(table_batch_info):
+                    gpu_id = gpus[i % num_gpus]
+                    table_gpu_assignments.append((t, gpu_id, 1, target_drift, target_corr, n_samples, n_batches))
+            else:
+                # Fewer tables than GPUs: distribute GPUs proportionally
+                total_batches = sum(x[2] for x in table_batch_info)
+                if total_batches == 0:
+                    total_batches = num_tables  # Avoid division by zero
+
+                gpu_idx = 0
+                for t, n_samples, n_batches, target_drift, target_corr in table_batch_info:
+                    # Allocate GPUs proportionally to batch count (min 1, max remaining)
+                    remaining_tables = num_tables - len(table_gpu_assignments)
+                    remaining_gpus = num_gpus - gpu_idx
+                    # Give at least 1 GPU per remaining table
+                    max_gpus_for_this = remaining_gpus - (remaining_tables - 1)
+                    # Proportional allocation
+                    prop_gpus = max(1, int(num_gpus * n_batches / total_batches))
+                    gpus_for_table = min(max_gpus_for_this, max(1, prop_gpus))
+
+                    start_gpu = gpus[gpu_idx]
+                    table_gpu_assignments.append((t, start_gpu, gpus_for_table, target_drift, target_corr, n_samples, n_batches))
+                    gpu_idx += gpus_for_table
+
+            print("Table -> GPU assignments (sorted by data size):")
+            for t, start_gpu, num_gpus_for_table, target_drift, target_corr, n_samples, n_batches in table_gpu_assignments:
                 corr_str = f"{target_corr:.4f}" if target_corr is not None else "N/A"
-                print(f"  {t} (drift={target_drift:.4f}, corr={corr_str}) -> GPU {gpu_id}")
+                gpu_range = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPU {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
+                print(f"  {t} ({n_samples:,} samples, {n_batches} batches) -> {gpu_range} ({num_gpus_for_table} GPUs)")
             print()
 
             # Launch all processes
@@ -952,9 +995,11 @@ def _generate_with_drift_reference(
             log_dir = "gd_logs"
             os.makedirs(log_dir, exist_ok=True)
 
-            for t, gpu_id, target_drift, target_corr in table_gpu_assignments:
+            for t, start_gpu, num_gpus_for_table, target_drift, target_corr, n_samples, n_batches in table_gpu_assignments:
                 cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
-                cmd += f" --target-drift={target_drift} --device={gpu_id}"
+                cmd += f" --target-drift={target_drift} --device={start_gpu}"
+                if num_gpus_for_table > 1:
+                    cmd += f" --num-gpus={num_gpus_for_table}"
                 # Note: Don't pass target_corr_loss - with new logic we directly compare
                 # generated vs reference correlation, so we want to minimize it (target=0)
                 if reference_dataset:
@@ -973,7 +1018,8 @@ def _generate_with_drift_reference(
                     mode_str = " [GEN ONLY]"
                 else:
                     mode_str = ""
-                print(f"[GPU {gpu_id}] Starting: {t} (drift={target_drift:.4f}{corr_str}){mode_str}")
+                gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
+                print(f"[{gpu_str}] Starting: {t} (drift={target_drift:.4f}{corr_str}){mode_str}")
 
                 log_file_path = os.path.join(log_dir, f"{dataset_name}_{t}_ref.log")
                 log_file = open(log_file_path, "w", buffering=1)  # Line buffering
@@ -990,7 +1036,7 @@ def _generate_with_drift_reference(
                     stderr=subprocess.STDOUT,
                     env=env,
                 )
-                processes.append((t, gpu_id, target_drift, target_corr, proc, log_file_path))
+                processes.append((t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file_path))
 
             # Wait for all processes to complete with periodic status updates
             print(f"\nWaiting for {len(processes)} processes to complete...")
@@ -1022,22 +1068,23 @@ def _generate_with_drift_reference(
 
             while len(completed) < len(processes):
                 # Check for completed processes
-                for t, gpu_id, target_drift, target_corr, proc, log_file in processes:
+                for t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file in processes:
                     if t in completed:
                         continue
                     ret = proc.poll()
                     if ret is not None:
                         completed.add(t)
                         corr_str = f", corr={target_corr:.4f}" if target_corr is not None else ""
+                        gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
                         if ret == 0:
-                            print(f"✓ {t} (GPU {gpu_id}, drift={target_drift:.4f}{corr_str}) completed")
+                            print(f"✓ {t} ({gpu_str}, drift={target_drift:.4f}{corr_str}) completed")
                             generated_tables.add(t)
                         elif ret == 2:
-                            print(f"✓ {t} (GPU {gpu_id}, drift={target_drift:.4f}{corr_str}) completed (validated cache)")
+                            print(f"✓ {t} ({gpu_str}, drift={target_drift:.4f}{corr_str}) completed (validated cache)")
                             generated_tables.add(t)
                             validated_cache_tables.add(t)
                         else:
-                            print(f"✗ {t} (GPU {gpu_id}) failed (exit code {ret})")
+                            print(f"✗ {t} ({gpu_str}) failed (exit code {ret})")
                             print(f"    Check log: {log_file}")
                             gen_failed.append(t)
 
@@ -1045,10 +1092,11 @@ def _generate_with_drift_reference(
                 if time.time() - last_status_time >= status_interval and len(completed) < len(processes):
                     last_status_time = time.time()
                     print(f"\n--- Status Update ({len(completed)}/{len(processes)} completed) ---")
-                    for t, gpu_id, target_drift, target_corr, proc, log_file in processes:
+                    for t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file in processes:
                         if t not in completed:
                             status = get_log_status(log_file)
-                            print(f"  [GPU {gpu_id}] {t}: {status}")
+                            gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
+                            print(f"  [{gpu_str}] {t}: {status}")
                     print()
 
                 time.sleep(1)  # Check every second
