@@ -404,7 +404,7 @@ def handle_generate_data(tokens: List[str]):
             # If no cache or params not good enough, it will tune
             _generate_with_auto_tune(
                 dataset_name, table_name, drift, quick_tune, reference_dataset, device,
-                no_cache=force_regenerate,  # --force means ignore cache
+                force_regenerate=force_regenerate,  # --force means regenerate with cached params
                 require_validation=False
             )
 
@@ -491,7 +491,7 @@ def handle_generate_data(tokens: List[str]):
                 if quick_tune:
                     cmd += " --quick"
                 if force_regenerate:
-                    cmd += " --no-cache"
+                    cmd += " --force-regenerate"
 
                 print(f"[GPU {gpu_id}] Starting: {t}")
 
@@ -544,7 +544,7 @@ def handle_generate_data(tokens: List[str]):
                 # Always use auto-tune logic - it handles cache internally
                 _generate_with_auto_tune(
                     dataset_name, t, drift, quick_tune, reference_dataset, device,
-                    no_cache=force_regenerate,
+                    force_regenerate=force_regenerate,
                     require_validation=False
                 )
 
@@ -561,16 +561,26 @@ def _generate_with_auto_tune(
     reference_dataset: str = None,
     device: int = 0,
     target_corr_loss: float = None,
+    force_regenerate: bool = False,
     no_cache: bool = False,
     require_validation: bool = False,
 ) -> bool:
     """Generate data with automatic parameter tuning.
 
+    Args:
+        force_regenerate: If True, use cached params to regenerate (don't skip), train only if no cache.
+        no_cache: If True, ignore cache and force retrain (for validation-failed retries).
+
     Returns:
         True if used validated cache (skip validation), False otherwise
     """
     corr_str = f", target_corr={target_corr_loss:.4f}" if target_corr_loss is not None else ""
-    cache_str = " [NO CACHE]" if no_cache else ""
+    if force_regenerate:
+        cache_str = " [FORCE REGEN]"
+    elif no_cache:
+        cache_str = " [NO CACHE]"
+    else:
+        cache_str = ""
     print(f"\nAuto-tuning parameters for {dataset_name}.{table_name} (drift={drift}{corr_str}) on GPU {device}{cache_str}...")
     if reference_dataset:
         print(f"Reference dataset: {reference_dataset}")
@@ -583,6 +593,20 @@ def _generate_with_auto_tune(
         verbose=True,
         target_corr_loss=target_corr_loss,
     )
+
+    # --force-regenerate: use cached params to regenerate, train only if no cache
+    if force_regenerate and not no_cache:
+        cached = tuner.cache.get_best_params(drift)
+        if cached:
+            print(f"Using cached params (drift_error={cached.drift_error:.2%}) to force regenerate...")
+            success, output_path = tuner.generate_with_best_params(drift, use_cache=True)
+            if success:
+                print(f"Force regenerate completed: {output_path}")
+                return False  # Don't skip validation
+            else:
+                print("Force regenerate failed, falling through to tune...")
+        else:
+            print("No cached params found, will train...")
 
     if quick:
         result = tuner.quick_tune(drift, use_cache=not no_cache)
@@ -1006,7 +1030,9 @@ def _generate_with_drift_reference(
                     cmd += f" --reference-dataset={reference_dataset}"
                 if quick_tune:
                     cmd += " --quick"
-                if t in force_retrain_tables:
+                if force_regenerate:
+                    cmd += " --force-regenerate"  # Force regenerate using cached params
+                elif t in force_retrain_tables:
                     cmd += " --no-cache"  # Force retrain for validation-failed tables
                 # Note: --require-validation is deprecated, cache is used if it meets tolerance
                 # Validation happens later for tables without validation_passed=True

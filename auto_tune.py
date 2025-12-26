@@ -2213,6 +2213,8 @@ if __name__ == "__main__":
     parser.add_argument("--num-gpus", type=int, default=1,
                         help="Number of GPUs for parallel batch generation")
     parser.add_argument("--no-cache", action="store_true", help="Ignore cached params, force retrain")
+    parser.add_argument("--force-regenerate", action="store_true",
+                        help="Force regenerate using cached params (no skip), train only if no cache")
     parser.add_argument("--require-validation", action="store_true",
                         help="Only use cache if validation_passed=True")
     parser.add_argument("--list-cache", action="store_true", help="List cached parameters")
@@ -2234,6 +2236,22 @@ if __name__ == "__main__":
         target_corr_loss=args.target_corr_loss,
         num_gpus=args.num_gpus,
     )
+
+    # --force-regenerate: use cached params to regenerate, train only if no cache
+    if args.force_regenerate:
+        cached = tuner.cache.get_best_params(args.target_drift)
+        if cached:
+            print(f"Using cached params (drift_error={cached.drift_error:.2%}) to force regenerate...")
+            success, output_path = tuner.generate_with_best_params(args.target_drift, use_cache=True)
+            if success:
+                print(f"Force regenerate completed: {output_path}")
+                sys.exit(0)  # Don't skip validation
+            else:
+                print("Force regenerate failed")
+                sys.exit(1)
+        else:
+            print("No cached params found, will train...")
+            # Fall through to normal tune/quick_tune
 
     if args.quick:
         result = tuner.quick_tune(args.target_drift, use_cache=not args.no_cache)
