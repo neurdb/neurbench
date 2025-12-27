@@ -294,6 +294,7 @@ def handle_generate_data(tokens: List[str]):
     validate_threshold = 1.2  # 20% performance threshold
     dry_run = False  # Dry run: test without replacing tables
     force_regenerate = False  # Force regenerate even if validation_passed=True
+    exclude_tables = []  # Tables to exclude from generation
 
     # Parse flags
     remaining_tokens = []
@@ -321,6 +322,8 @@ def handle_generate_data(tokens: List[str]):
         elif t.startswith("--drift-ref="):
             drift_ref_file = t[12:]  # Extract value after --drift-ref=
             auto_tune = True  # drift-ref implies auto-tune
+        elif t.startswith("--exclude="):
+            exclude_tables = [x.strip() for x in t[10:].split(",")]
         else:
             remaining_tokens.append(t)
 
@@ -341,6 +344,7 @@ def handle_generate_data(tokens: List[str]):
             validate_threshold=validate_threshold,
             dry_run=dry_run,
             force_regenerate=force_regenerate,
+            exclude_tables=exclude_tables,
         )
         return
 
@@ -864,6 +868,7 @@ def _generate_with_drift_reference(
     max_retries: int = 3,
     dry_run: bool = False,
     force_regenerate: bool = False,
+    exclude_tables: Optional[List[str]] = None,
 ):
     """Generate data using drift reference file (per-table target drift and correlation)."""
     # Load drift reference, filtering by dataset_name (src) and reference_dataset (dst)
@@ -878,6 +883,13 @@ def _generate_with_drift_reference(
             print(f"Available tables: {list(drift_ref.keys())}")
             return
         drift_ref = {single_table: drift_ref[single_table]}
+
+    # Exclude specified tables
+    if exclude_tables:
+        for t in exclude_tables:
+            if t in drift_ref:
+                del drift_ref[t]
+                print(f"Excluding table: {t}")
 
     print(f"\n{'='*60}")
     print(f"DRIFT REFERENCE MODE")
@@ -955,6 +967,9 @@ def _generate_with_drift_reference(
     base_dir = os.path.join("datasets", dataset_name)
     full_dataset_info = load_json(os.path.join(base_dir, "dataset_info.json"))
 
+    # Start timing
+    generation_start_time = time.time()
+
     while tables_to_generate:
         if gpus and len(gpus) > 1:
             # Multi-GPU parallel execution with smart allocation based on n_samples
@@ -973,38 +988,102 @@ def _generate_with_drift_reference(
             # Sort by n_samples descending (process large tables first)
             table_batch_info.sort(key=lambda x: -x[1])
 
-            # Smart GPU allocation:
-            # - If tables >= GPUs: each table gets 1 GPU, run in rounds
-            # - If tables < GPUs: distribute GPUs proportionally by batch count
+            # Balanced scheduling with strict concurrency limit
+            # Each GPU runs 1 table at a time to avoid CUDA initialization conflicts
+            max_concurrent_per_gpu = 1
             num_tables = len(table_batch_info)
             num_gpus = len(gpus)
+            total_batches = sum(x[2] for x in table_batch_info)
 
+            print(f"Scheduling: {total_batches} batches, {num_tables} tables, {num_gpus} GPUs (max {max_concurrent_per_gpu} concurrent/GPU)")
+
+            # Track: gpu_slots[gpu_id] = [slot0_load, slot1_load], gpu_slot_count[gpu_id] = count of tables
+            gpu_slots = {g: [0.0, 0.0] for g in gpus}
+            gpu_slot_tables = {g: [[], []] for g in gpus}
+            gpu_process_count = {g: 0 for g in gpus}  # Track actual process count per GPU
             table_gpu_assignments = []
-            if num_tables >= num_gpus:
-                # More tables than GPUs: each table gets 1 GPU
-                for i, (t, n_samples, n_batches, target_drift, target_corr) in enumerate(table_batch_info):
-                    gpu_id = gpus[i % num_gpus]
-                    table_gpu_assignments.append((t, gpu_id, 1, target_drift, target_corr, n_samples, n_batches))
-            else:
-                # Fewer tables than GPUs: distribute GPUs proportionally
-                total_batches = sum(x[2] for x in table_batch_info)
-                if total_batches == 0:
-                    total_batches = num_tables  # Avoid division by zero
 
-                gpu_idx = 0
-                for t, n_samples, n_batches, target_drift, target_corr in table_batch_info:
-                    # Allocate GPUs proportionally to batch count (min 1, max remaining)
-                    remaining_tables = num_tables - len(table_gpu_assignments)
-                    remaining_gpus = num_gpus - gpu_idx
-                    # Give at least 1 GPU per remaining table
-                    max_gpus_for_this = remaining_gpus - (remaining_tables - 1)
-                    # Proportional allocation
-                    prop_gpus = max(1, int(num_gpus * n_batches / total_batches))
-                    gpus_for_table = min(max_gpus_for_this, max(1, prop_gpus))
+            for t, n_samples, n_batches, target_drift, target_corr in table_batch_info:
+                best_assignment = None
+                best_max_time = float('inf')
 
-                    start_gpu = gpus[gpu_idx]
-                    table_gpu_assignments.append((t, start_gpu, gpus_for_table, target_drift, target_corr, n_samples, n_batches))
-                    gpu_idx += gpus_for_table
+                # Strategy 1: Single GPU - try each GPU that has capacity
+                for g in gpus:
+                    if gpu_process_count[g] >= max_concurrent_per_gpu:
+                        continue  # GPU already at capacity
+                    # Find which slot to use (the one with lower load)
+                    slot = 0 if gpu_slots[g][0] <= gpu_slots[g][1] else 1
+                    new_loads = gpu_slots[g].copy()
+                    new_loads[slot] += n_batches
+                    gpu_time = max(new_loads)
+                    global_max = max(gpu_time, max(max(gpu_slots[g2]) for g2 in gpus if g2 != g) if len(gpus) > 1 else 0)
+                    if global_max < best_max_time:
+                        best_max_time = global_max
+                        best_assignment = (g, 1, slot)
+
+                # Strategy 2: Multi-GPU for large tables (only if GPUs have capacity)
+                if n_batches >= 4:
+                    for num_g in range(2, min(num_gpus, n_batches) + 1):
+                        # Find GPUs with capacity, sorted by slot0 load
+                        available_gpus = [g for g in gpus if gpu_process_count[g] < max_concurrent_per_gpu]
+                        if len(available_gpus) < num_g:
+                            continue  # Not enough GPUs with capacity
+
+                        gpu_by_slot0 = sorted(available_gpus, key=lambda g: gpu_slots[g][0])
+                        selected_gpus = gpu_by_slot0[:num_g]
+                        batches_per_gpu = n_batches / num_g
+
+                        # Simulate adding to slot0 of each selected GPU
+                        new_gpu_times = {}
+                        for g in gpus:
+                            if g in selected_gpus:
+                                new_gpu_times[g] = max(gpu_slots[g][0] + batches_per_gpu, gpu_slots[g][1])
+                            else:
+                                new_gpu_times[g] = max(gpu_slots[g])
+                        global_max = max(new_gpu_times.values())
+
+                        if global_max < best_max_time:
+                            best_max_time = global_max
+                            best_assignment = (min(selected_gpus), num_g, 0)
+
+                if best_assignment is None:
+                    # No capacity available, fall back to GPU with minimum load (will exceed limit)
+                    g = min(gpus, key=lambda g: max(gpu_slots[g]))
+                    slot = 0 if gpu_slots[g][0] <= gpu_slots[g][1] else 1
+                    best_assignment = (g, 1, slot)
+                    print(f"  Warning: No GPU has capacity, assigning {t} to GPU {g} (may cause memory issues)")
+
+                # Apply best assignment
+                start_gpu, num_g, slot = best_assignment
+                if num_g == 1:
+                    gpu_slots[start_gpu][slot] += n_batches
+                    gpu_slot_tables[start_gpu][slot].append(f"{t}({n_batches})")
+                    gpu_process_count[start_gpu] += 1
+                    table_gpu_assignments.append((t, start_gpu, 1, target_drift, target_corr, n_samples, n_batches))
+                else:
+                    batches_per_gpu = n_batches / num_g
+                    available_gpus = [g for g in gpus if gpu_process_count[g] < max_concurrent_per_gpu]
+                    gpu_by_slot0 = sorted(available_gpus, key=lambda g: gpu_slots[g][0])
+                    selected_gpus = gpu_by_slot0[:num_g]
+                    for g in selected_gpus:
+                        gpu_slots[g][0] += batches_per_gpu
+                        gpu_slot_tables[g][0].append(f"{t}({n_batches}/{num_g})")
+                        gpu_process_count[g] += 1
+                    table_gpu_assignments.append((t, min(selected_gpus), num_g, target_drift, target_corr, n_samples, n_batches))
+
+            # Print results
+            print("\nBalanced load distribution:")
+            max_time = 0
+            for g in gpus:
+                slot0, slot1 = gpu_slots[g]
+                gpu_time = max(slot0, slot1)
+                max_time = max(max_time, gpu_time)
+                t0 = '+'.join(gpu_slot_tables[g][0]) if gpu_slot_tables[g][0] else '-'
+                t1 = '+'.join(gpu_slot_tables[g][1]) if gpu_slot_tables[g][1] else '-'
+                procs = gpu_process_count[g]
+                print(f"  GPU {g}: [{procs} procs] slot0[{slot0:.1f}b: {t0}] slot1[{slot1:.1f}b: {t1}] -> {gpu_time:.1f}b")
+            print(f"  Max completion time: {max_time:.1f} batch units")
+            print()
 
             print("Table -> GPU assignments (sorted by data size):")
             for t, start_gpu, num_gpus_for_table, target_drift, target_corr, n_samples, n_batches in table_gpu_assignments:
@@ -1131,7 +1210,7 @@ def _generate_with_drift_reference(
             for f in log_files:
                 f.close()
 
-            print(f"\nGeneration: {len(generated_tables)}/{len(drift_ref)} succeeded")
+            print(f"\nGeneration complete: {len(generated_tables)}/{len(drift_ref)} succeeded")
             if validated_cache_tables:
                 print(f"Using validated cache (skip validation): {list(validated_cache_tables)}")
             if gen_failed:
@@ -1216,11 +1295,22 @@ def _generate_with_drift_reference(
             elif not import_failed_tables:
                 print(f"\n✓ All tables processed successfully!")
 
+    # Calculate total time
+    generation_total_time = time.time() - generation_start_time
+    hours, remainder = divmod(generation_total_time, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
     print(f"\n{'='*60}")
     print(f"All tables processed using drift reference file")
     if validate_after:
         passed = len([t for t in drift_ref if retry_counts.get(t, 0) <= max_retries])
         print(f"Validation: {passed}/{len(drift_ref)} passed")
+    if hours > 0:
+        print(f"Total time: {int(hours)}h {int(minutes)}m {seconds:.1f}s")
+    elif minutes > 0:
+        print(f"Total time: {int(minutes)}m {seconds:.1f}s")
+    else:
+        print(f"Total time: {seconds:.1f}s")
     print(f"{'='*60}")
 
 
