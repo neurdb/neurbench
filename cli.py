@@ -7,6 +7,8 @@ import subprocess
 from typing import List, Optional, Tuple
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import pandas as pd
+
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import button_dialog
@@ -102,11 +104,12 @@ Core Commands:
                                        --validate: Validate with DB after generation, re-tune if needed
                                                    (pass if ratio in [1/1.2, 1.2] = within ±20%)
                                        --dry-run: Test validation without replacing tables
-  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate] [--dry-run] [--force]
+  gd DATASET --drift-ref=FILE [--gpus=0,1,2] [--validate] [--dry-run] [--force] [--batch-size=N]
                                      Generate data using drift reference file
                                        The reference file should contain per-table drift values
                                        (e.g., from calc_drift.py --src-dir X --dst-dir Y)
                                        --force: Force regenerate even if validation already passed
+                                       --batch-size=N: Samples per batch (default 524288, larger = fewer inits)
   gq DATASET DRIFT                   Generate query that drifts DRIFT on DATASET
   dd DATASET [TABLE]                 Delete data generator model for DATASET
   dq DATASET                         Delete query generator model for DATASET
@@ -295,6 +298,8 @@ def handle_generate_data(tokens: List[str]):
     dry_run = False  # Dry run: test without replacing tables
     force_regenerate = False  # Force regenerate even if validation_passed=True
     exclude_tables = []  # Tables to exclude from generation
+    batch_size = 524288  # Samples per batch (default 512K)
+    sample_steps = None  # DDIM sampling steps (None = use diffuser-timesteps)
 
     # Parse flags
     remaining_tokens = []
@@ -324,6 +329,10 @@ def handle_generate_data(tokens: List[str]):
             auto_tune = True  # drift-ref implies auto-tune
         elif t.startswith("--exclude="):
             exclude_tables = [x.strip() for x in t[10:].split(",")]
+        elif t.startswith("--batch-size="):
+            batch_size = int(t[13:])
+        elif t.startswith("--sample-steps="):
+            sample_steps = int(t[15:])
         else:
             remaining_tokens.append(t)
 
@@ -345,6 +354,8 @@ def handle_generate_data(tokens: List[str]):
             dry_run=dry_run,
             force_regenerate=force_regenerate,
             exclude_tables=exclude_tables,
+            batch_size=batch_size,
+            sample_steps=sample_steps,
         )
         return
 
@@ -869,6 +880,8 @@ def _generate_with_drift_reference(
     dry_run: bool = False,
     force_regenerate: bool = False,
     exclude_tables: Optional[List[str]] = None,
+    batch_size: int = 524288,
+    sample_steps: Optional[int] = None,
 ):
     """Generate data using drift reference file (per-table target drift and correlation)."""
     # Load drift reference, filtering by dataset_name (src) and reference_dataset (dst)
@@ -963,7 +976,7 @@ def _generate_with_drift_reference(
     force_retrain_tables = set()  # Tables that need forced retrain (validation failed)
 
     # Load dataset info for n_samples (for GPU allocation)
-    INFERENCE_BATCH_SIZE = 524288
+    # batch_size is passed as parameter (default 524288)
     base_dir = os.path.join("datasets", dataset_name)
     full_dataset_info = load_json(os.path.join(base_dir, "dataset_info.json"))
 
@@ -981,238 +994,281 @@ def _generate_with_drift_reference(
             for t in tables_to_generate.keys():
                 table_info = full_dataset_info.get(t, {})
                 n_samples = table_info.get("n_samples", 100000) if table_info else 100000
-                n_batches = (n_samples + INFERENCE_BATCH_SIZE - 1) // INFERENCE_BATCH_SIZE
+                n_batches = (n_samples + batch_size - 1) // batch_size
                 target_drift, target_corr = tables_to_generate[t]
                 table_batch_info.append((t, n_samples, n_batches, target_drift, target_corr))
 
-            # Sort by n_samples descending (process large tables first)
+            # Sort by n_samples descending (process large tables first for better balancing)
             table_batch_info.sort(key=lambda x: -x[1])
 
-            # Balanced scheduling with strict concurrency limit
-            # Each GPU runs 1 table at a time to avoid CUDA initialization conflicts
-            max_concurrent_per_gpu = 1
             num_tables = len(table_batch_info)
             num_gpus = len(gpus)
             total_batches = sum(x[2] for x in table_batch_info)
+            ideal_per_gpu = total_batches / num_gpus
 
-            print(f"Scheduling: {total_batches} batches, {num_tables} tables, {num_gpus} GPUs (max {max_concurrent_per_gpu} concurrent/GPU)")
+            print(f"Scheduling: {total_batches} batches, {num_tables} tables, {num_gpus} GPUs (batch_size={batch_size})")
+            print(f"  Ideal load per GPU: {ideal_per_gpu:.1f} batches")
 
-            # Track: gpu_slots[gpu_id] = [slot0_load, slot1_load], gpu_slot_count[gpu_id] = count of tables
-            gpu_slots = {g: [0.0, 0.0] for g in gpus}
-            gpu_slot_tables = {g: [[], []] for g in gpus}
-            gpu_process_count = {g: 0 for g in gpus}  # Track actual process count per GPU
-            table_gpu_assignments = []
+            # Check if largest table benefits from multi-GPU splitting
+            largest = table_batch_info[0]
+            largest_t, largest_samples, largest_batches, largest_drift, largest_corr = largest
+            remaining_tables = table_batch_info[1:]
+            remaining_batches = sum(x[2] for x in remaining_tables)
+
+            # Use multi-GPU for largest table if:
+            # 1. It has >= 4 batches
+            # 2. It's significantly larger than ideal (> 1.2x)
+            # 3. Remaining tables can fit on remaining GPUs
+            use_multi_gpu = False
+            multi_gpu_count = 0
+
+            if largest_batches >= 4 and largest_batches > ideal_per_gpu * 1.2:
+                # How many GPUs for the largest table?
+                # We want: largest_batches / n <= ideal_per_gpu
+                # So: n >= largest_batches / ideal_per_gpu
+                min_gpus_needed = max(2, int(largest_batches / ideal_per_gpu + 0.5))
+
+                # But we need GPUs for other large tables too
+                # Count how many tables have >= 4 batches (need their own GPU)
+                large_tables = [t for t in remaining_tables if t[2] >= 4]
+                gpus_for_others = len(large_tables)
+
+                available_for_multi = num_gpus - gpus_for_others
+                if available_for_multi >= 2:
+                    multi_gpu_count = min(min_gpus_needed, available_for_multi, largest_batches)
+                    use_multi_gpu = True
+
+            # Build work pool: each batch is an independent task
+            # GPUs dynamically pull from queue, 2 concurrent tasks per GPU
+            max_concurrent_per_gpu = 2
+
+            # Split each table into batches (each batch = batch_size samples)
+            # batch_task = (table, batch_idx, sample_start, sample_count, drift, corr)
+            # Put batch 0 first for each table (needs training), then rest
+            batch0_list = []
+            other_batches = []
+            table_batch_counts = {}
+            table_samples = {}  # table -> total samples
 
             for t, n_samples, n_batches, target_drift, target_corr in table_batch_info:
-                best_assignment = None
-                best_max_time = float('inf')
+                table_batch_counts[t] = n_batches
+                table_samples[t] = n_samples
+                for batch_idx in range(n_batches):
+                    sample_start = batch_idx * batch_size
+                    sample_count = min(batch_size, n_samples - sample_start)
+                    batch = (t, batch_idx, sample_start, sample_count, target_drift, target_corr)
+                    if batch_idx == 0:
+                        batch0_list.append(batch)
+                    else:
+                        other_batches.append(batch)
 
-                # Strategy 1: Single GPU - try each GPU that has capacity
-                for g in gpus:
-                    if gpu_process_count[g] >= max_concurrent_per_gpu:
-                        continue  # GPU already at capacity
-                    # Find which slot to use (the one with lower load)
-                    slot = 0 if gpu_slots[g][0] <= gpu_slots[g][1] else 1
-                    new_loads = gpu_slots[g].copy()
-                    new_loads[slot] += n_batches
-                    gpu_time = max(new_loads)
-                    global_max = max(gpu_time, max(max(gpu_slots[g2]) for g2 in gpus if g2 != g) if len(gpus) > 1 else 0)
-                    if global_max < best_max_time:
-                        best_max_time = global_max
-                        best_assignment = (g, 1, slot)
+            # Queue: batch 0 first (for training), then interleave other batches by table
+            # This minimizes same-table conflicts on same GPU
+            all_batches = batch0_list.copy()
 
-                # Strategy 2: Multi-GPU for large tables (only if GPUs have capacity)
-                if n_batches >= 4:
-                    for num_g in range(2, min(num_gpus, n_batches) + 1):
-                        # Find GPUs with capacity, sorted by slot0 load
-                        available_gpus = [g for g in gpus if gpu_process_count[g] < max_concurrent_per_gpu]
-                        if len(available_gpus) < num_g:
-                            continue  # Not enough GPUs with capacity
+            # Group other batches by table, then interleave
+            table_other_batches = {}
+            for b in other_batches:
+                t = b[0]
+                if t not in table_other_batches:
+                    table_other_batches[t] = []
+                table_other_batches[t].append(b)
 
-                        gpu_by_slot0 = sorted(available_gpus, key=lambda g: gpu_slots[g][0])
-                        selected_gpus = gpu_by_slot0[:num_g]
-                        batches_per_gpu = n_batches / num_g
+            # Interleave: take one batch from each table in round-robin
+            while any(table_other_batches.values()):
+                for t in list(table_other_batches.keys()):
+                    if table_other_batches[t]:
+                        all_batches.append(table_other_batches[t].pop(0))
+                    if not table_other_batches[t]:
+                        del table_other_batches[t]
 
-                        # Simulate adding to slot0 of each selected GPU
-                        new_gpu_times = {}
-                        for g in gpus:
-                            if g in selected_gpus:
-                                new_gpu_times[g] = max(gpu_slots[g][0] + batches_per_gpu, gpu_slots[g][1])
-                            else:
-                                new_gpu_times[g] = max(gpu_slots[g])
-                        global_max = max(new_gpu_times.values())
+            print(f"  Work pool: {len(all_batches)} batches from {len(table_batch_info)} tables")
+            print(f"  Workers: {num_gpus} GPUs x {max_concurrent_per_gpu} slots = {num_gpus * max_concurrent_per_gpu} parallel")
+            for t, count in table_batch_counts.items():
+                print(f"    {t}: {count} batches")
 
-                        if global_max < best_max_time:
-                            best_max_time = global_max
-                            best_assignment = (min(selected_gpus), num_g, 0)
-
-                if best_assignment is None:
-                    # No capacity available, fall back to GPU with minimum load (will exceed limit)
-                    g = min(gpus, key=lambda g: max(gpu_slots[g]))
-                    slot = 0 if gpu_slots[g][0] <= gpu_slots[g][1] else 1
-                    best_assignment = (g, 1, slot)
-                    print(f"  Warning: No GPU has capacity, assigning {t} to GPU {g} (may cause memory issues)")
-
-                # Apply best assignment
-                start_gpu, num_g, slot = best_assignment
-                if num_g == 1:
-                    gpu_slots[start_gpu][slot] += n_batches
-                    gpu_slot_tables[start_gpu][slot].append(f"{t}({n_batches})")
-                    gpu_process_count[start_gpu] += 1
-                    table_gpu_assignments.append((t, start_gpu, 1, target_drift, target_corr, n_samples, n_batches))
-                else:
-                    batches_per_gpu = n_batches / num_g
-                    available_gpus = [g for g in gpus if gpu_process_count[g] < max_concurrent_per_gpu]
-                    gpu_by_slot0 = sorted(available_gpus, key=lambda g: gpu_slots[g][0])
-                    selected_gpus = gpu_by_slot0[:num_g]
-                    for g in selected_gpus:
-                        gpu_slots[g][0] += batches_per_gpu
-                        gpu_slot_tables[g][0].append(f"{t}({n_batches}/{num_g})")
-                        gpu_process_count[g] += 1
-                    table_gpu_assignments.append((t, min(selected_gpus), num_g, target_drift, target_corr, n_samples, n_batches))
-
-            # Print results
-            print("\nBalanced load distribution:")
-            max_time = 0
-            for g in gpus:
-                slot0, slot1 = gpu_slots[g]
-                gpu_time = max(slot0, slot1)
-                max_time = max(max_time, gpu_time)
-                t0 = '+'.join(gpu_slot_tables[g][0]) if gpu_slot_tables[g][0] else '-'
-                t1 = '+'.join(gpu_slot_tables[g][1]) if gpu_slot_tables[g][1] else '-'
-                procs = gpu_process_count[g]
-                print(f"  GPU {g}: [{procs} procs] slot0[{slot0:.1f}b: {t0}] slot1[{slot1:.1f}b: {t1}] -> {gpu_time:.1f}b")
-            print(f"  Max completion time: {max_time:.1f} batch units")
+            # Estimate time: total_batches / num_slots (parallel execution)
+            num_slots = num_gpus * max_concurrent_per_gpu
+            estimated_time = (total_batches + num_slots - 1) // num_slots  # ceil
+            print(f"  Estimated time: ~{estimated_time} batch units (~{estimated_time * 3.5:.0f} min)")
             print()
 
-            print("Table -> GPU assignments (sorted by data size):")
-            for t, start_gpu, num_gpus_for_table, target_drift, target_corr, n_samples, n_batches in table_gpu_assignments:
-                corr_str = f"{target_corr:.4f}" if target_corr is not None else "N/A"
-                gpu_range = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPU {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
-                print(f"  {t} ({n_samples:,} samples, {n_batches} batches) -> {gpu_range} ({num_gpus_for_table} GPUs)")
-            print()
-
-            # Launch all processes
-            processes = []
-            log_files = []  # Keep file handles open until all processes complete
+            # Launch processes using work pool pattern
             log_dir = "gd_logs"
             os.makedirs(log_dir, exist_ok=True)
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            from queue import Queue
+            import threading
 
-            for t, start_gpu, num_gpus_for_table, target_drift, target_corr, n_samples, n_batches in table_gpu_assignments:
-                cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
-                cmd += f" --target-drift={target_drift} --device={start_gpu}"
-                if num_gpus_for_table > 1:
-                    cmd += f" --num-gpus={num_gpus_for_table}"
-                # Note: Don't pass target_corr_loss - with new logic we directly compare
-                # generated vs reference correlation, so we want to minimize it (target=0)
-                if reference_dataset:
-                    cmd += f" --reference-dataset={reference_dataset}"
-                if quick_tune:
-                    cmd += " --quick"
-                if force_regenerate:
-                    cmd += " --force-regenerate"  # Force regenerate using cached params
-                elif t in force_retrain_tables:
-                    cmd += " --no-cache"  # Force retrain for validation-failed tables
-                # Note: --require-validation is deprecated, cache is used if it meets tolerance
-                # Validation happens later for tables without validation_passed=True
+            # Work queue with all batches
+            work_queue = Queue()
+            for batch in all_batches:
+                work_queue.put(batch)
 
-                corr_str = f", corr={target_corr:.4f}" if target_corr is not None else ""
-                if t in force_retrain_tables:
-                    mode_str = f" [RETRY {retry_counts[t]}]"
-                elif t in tables_generate_only:
-                    mode_str = " [GEN ONLY]"
+            # Track which tables have completed batch 0 (training done)
+            tables_trained = set()
+            tables_trained_lock = threading.Lock()
+
+            # Results storage
+            batch_results = []
+            results_lock = threading.Lock()
+
+            # Track which tables are currently running on each GPU (to avoid OOM)
+            gpu_running_tables = {g: set() for g in gpus}
+            gpu_tables_lock = threading.Lock()
+
+            def run_batch(table_name, batch_idx, sample_start, sample_count, gpu_id, target_drift, target_corr):
+                """Run a single batch on specified GPU."""
+                # Check if this table's training is done
+                with tables_trained_lock:
+                    need_training = table_name not in tables_trained
+                    if batch_idx == 0:
+                        tables_trained.add(table_name)
+
+                if need_training and batch_idx == 0:
+                    # First batch: use auto_tune.py (handles training)
+                    cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
+                    cmd += f" --target-drift={target_drift} --device={gpu_id}"
+                    cmd += f" --sample-start={sample_start} --sample-count={sample_count}"
+                    if reference_dataset:
+                        cmd += f" --reference-dataset={reference_dataset}"
+                    if quick_tune:
+                        cmd += " --quick"
+                    if force_regenerate:
+                        cmd += " --force-regenerate"
+                    elif table_name in force_retrain_tables:
+                        cmd += " --no-cache"
+                    if sample_steps:
+                        cmd += f" --sample-steps={sample_steps}"
                 else:
-                    mode_str = ""
-                gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
-                print(f"[{gpu_str}] Starting: {t} (drift={target_drift:.4f}{corr_str}){mode_str}")
+                    # Subsequent batches: use dbproc.py directly
+                    cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
+                    cmd += f" --drift={target_drift} --device={gpu_id}"
+                    cmd += f" --sample-start={sample_start} --sample-count={sample_count}"
+                    if reference_dataset:
+                        cmd += f" --reference-dataset={reference_dataset}"
+                    if sample_steps:
+                        cmd += f" --sample-steps={sample_steps}"
 
-                log_file_path = os.path.join(log_dir, f"{dataset_name}_{t}_ref.log")
-                log_file = open(log_file_path, "w", buffering=1)  # Line buffering
-                log_files.append(log_file)  # Keep handle open
+                batch_str = f"{table_name}[{batch_idx}]"
+                print(f"[GPU {gpu_id}] Start: {batch_str}")
 
-                # Use unbuffered Python output for real-time logging
+                log_file_path = os.path.join(log_dir, f"{dataset_name}_{table_name}_b{batch_idx}.log")
                 env = os.environ.copy()
                 env["PYTHONUNBUFFERED"] = "1"
 
-                proc = subprocess.Popen(
-                    cmd,
-                    shell=True,
-                    stdout=log_file,
-                    stderr=subprocess.STDOUT,
-                    env=env,
-                )
-                processes.append((t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file_path))
+                with open(log_file_path, "w", buffering=1) as log_file:
+                    proc = subprocess.Popen(cmd, shell=True, stdout=log_file, stderr=subprocess.STDOUT, env=env)
+                    ret = proc.wait()
+                    success = (ret == 0)
+                    status = "Done" if success else "FAIL"
+                    print(f"[GPU {gpu_id}] {status}: {batch_str}")
+                    return (table_name, batch_idx, sample_start, sample_count, gpu_id, success, log_file_path)
 
-            # Wait for all processes to complete with periodic status updates
-            print(f"\nWaiting for {len(processes)} processes to complete...")
-            print(f"Logs are being written to: {log_dir}/")
-            print(f"Status updates every 30 seconds. Use 'tail -f {log_dir}/*.log' for real-time logs.")
-            print()
+            def gpu_worker(gpu_id):
+                """Worker that pulls batches from queue and runs them on this GPU."""
+                skipped = []  # Batches we couldn't run (table conflict)
 
-            def get_log_status(log_path):
-                """Get last meaningful line from log file."""
-                try:
-                    with open(log_path, 'r') as f:
-                        lines = f.readlines()
-                        # Find last line with iteration or result info
-                        for line in reversed(lines[-20:]):
-                            line = line.strip()
-                            if any(kw in line for kw in ['Iteration', 'drift_error', 'Score', 'Drift error', 'Best', 'completed']):
-                                return line[:80]  # Truncate long lines
-                        if lines:
-                            return lines[-1].strip()[:80]
-                except:
-                    pass
-                return "starting..."
+                while True:
+                    batch = None
 
-            # Poll until all complete
-            gen_failed = []
-            completed = set()
-            last_status_time = time.time()
-            status_interval = 30  # seconds
+                    # First try skipped batches
+                    for i, b in enumerate(skipped):
+                        t = b[0]
+                        with gpu_tables_lock:
+                            if t not in gpu_running_tables[gpu_id]:
+                                batch = skipped.pop(i)
+                                break
 
-            while len(completed) < len(processes):
-                # Check for completed processes
-                for t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file in processes:
-                    if t in completed:
-                        continue
-                    ret = proc.poll()
-                    if ret is not None:
-                        completed.add(t)
-                        corr_str = f", corr={target_corr:.4f}" if target_corr is not None else ""
-                        gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
-                        if ret == 0:
-                            print(f"✓ {t} ({gpu_str}, drift={target_drift:.4f}{corr_str}) completed")
-                            generated_tables.add(t)
-                        elif ret == 2:
-                            print(f"✓ {t} ({gpu_str}, drift={target_drift:.4f}{corr_str}) completed (validated cache)")
-                            generated_tables.add(t)
-                            validated_cache_tables.add(t)
-                        else:
-                            print(f"✗ {t} ({gpu_str}) failed (exit code {ret})")
-                            print(f"    Check log: {log_file}")
-                            gen_failed.append(t)
+                    # Then try queue
+                    if batch is None:
+                        try:
+                            batch = work_queue.get_nowait()
+                        except:
+                            if skipped:
+                                # Still have skipped batches, wait and retry
+                                time.sleep(0.5)
+                                continue
+                            break  # Queue empty and no skipped
 
-                # Periodic status update
-                if time.time() - last_status_time >= status_interval and len(completed) < len(processes):
-                    last_status_time = time.time()
-                    print(f"\n--- Status Update ({len(completed)}/{len(processes)} completed) ---")
-                    for t, start_gpu, num_gpus_for_table, target_drift, target_corr, proc, log_file in processes:
-                        if t not in completed:
-                            status = get_log_status(log_file)
-                            gpu_str = f"GPU {start_gpu}" if num_gpus_for_table == 1 else f"GPUs {start_gpu}-{start_gpu + num_gpus_for_table - 1}"
-                            print(f"  [{gpu_str}] {t}: {status}")
-                    print()
+                    t, batch_idx, sample_start, sample_count, target_drift, target_corr = batch
 
-                time.sleep(1)  # Check every second
+                    # Check if this table is already running on this GPU (would cause OOM)
+                    with gpu_tables_lock:
+                        if t in gpu_running_tables[gpu_id]:
+                            skipped.append(batch)
+                            continue
+                        gpu_running_tables[gpu_id].add(t)
 
-            # Close all log file handles
-            for f in log_files:
-                f.close()
+                    # Wait if this batch needs training but batch 0 isn't done yet
+                    if batch_idx > 0:
+                        while True:
+                            with tables_trained_lock:
+                                if t in tables_trained:
+                                    break
+                            time.sleep(0.5)
 
-            print(f"\nGeneration complete: {len(generated_tables)}/{len(drift_ref)} succeeded")
-            if validated_cache_tables:
-                print(f"Using validated cache (skip validation): {list(validated_cache_tables)}")
+                    try:
+                        result = run_batch(t, batch_idx, sample_start, sample_count, gpu_id, target_drift, target_corr)
+                        with results_lock:
+                            batch_results.append(result)
+                    finally:
+                        with gpu_tables_lock:
+                            gpu_running_tables[gpu_id].discard(t)
+
+            # Start workers: 2 per GPU
+            print(f"=== Starting {num_gpus * max_concurrent_per_gpu} workers ===")
+            workers = []
+            with ThreadPoolExecutor(max_workers=num_gpus * max_concurrent_per_gpu) as executor:
+                for gpu_id in gpus:
+                    for slot in range(max_concurrent_per_gpu):
+                        workers.append(executor.submit(gpu_worker, gpu_id))
+
+                # Wait for all workers to complete
+                for w in workers:
+                    w.result()
+
+            print(f"\n=== All {len(batch_results)} batches completed ===")
+
+            # Merge batches for each table
+            print("\n=== Merging batches ===")
+            for t, n_batches in table_batch_counts.items():
+                if n_batches > 1:
+                    save_dir = f"expdir/{dataset_name}/{t}"
+                    batch_files = []
+                    for batch_idx in range(n_batches):
+                        sample_start = batch_idx * batch_size
+                        sample_end = min(sample_start + batch_size, table_samples[t])
+                        batch_file = os.path.join(save_dir, f"{t}.drifted.chunk_{sample_start}_{sample_end}.csv")
+                        if os.path.exists(batch_file):
+                            batch_files.append(batch_file)
+
+                    if len(batch_files) == n_batches:
+                        merged_df = pd.concat([pd.read_csv(f, low_memory=False, doublequote=False, escapechar="\\") for f in batch_files], ignore_index=True)
+                        merged_file = os.path.join(save_dir, f"{t}.drifted.csv")
+                        merged_df.to_csv(merged_file, index=False, doublequote=False, escapechar="\\")
+                        print(f"  {t}: merged {n_batches} batches -> {len(merged_df)} rows")
+                        for f in batch_files:
+                            os.remove(f)
+                    else:
+                        print(f"  {t}: missing batches, expected {n_batches} got {len(batch_files)}")
+
+            # Collect results by table
+            table_success = {}
+            for t, batch_idx, sample_start, sample_count, gpu_id, success, log_path in batch_results:
+                if t not in table_success:
+                    table_success[t] = True
+                table_success[t] = table_success[t] and success
+
+            all_results = [(t, 0, 0, 0, success, "") for t, success in table_success.items()]
+
+            # Collect results
+            gen_failed = [t for t, _, _, _, success, _ in all_results if not success]
+            for t, gpu, target_drift, target_corr, success, log_path in all_results:
+                if success:
+                    generated_tables.add(t)
+
+            print(f"\nGeneration complete: {len(generated_tables)}/{len(tables_to_generate)} succeeded")
             if gen_failed:
                 print(f"Failed: {gen_failed}")
 

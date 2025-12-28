@@ -369,6 +369,9 @@ class AutoTuner:
         verbose: bool = True,
         target_corr_loss: float = None,  # Target correlation loss from reference
         num_gpus: int = 1,  # Number of GPUs for parallel batch generation
+        sample_start: int = 0,  # For chunked generation
+        sample_count: int = -1,  # -1 means all samples
+        sample_steps: int = None,  # DDIM sampling steps (None = use diffuser-timesteps)
     ):
         self.dataset_name = dataset_name
         self.table_name = table_name
@@ -377,6 +380,9 @@ class AutoTuner:
         self.verbose = verbose
         self.target_corr_loss = target_corr_loss  # If set, use as target instead of minimizing
         self.num_gpus = num_gpus
+        self.sample_start = sample_start
+        self.sample_count = sample_count
+        self.sample_steps = sample_steps
         self.evaluator = DataEvaluator(dataset_name, table_name, reference_dataset)
         self.cache = self._load_cache()
 
@@ -505,6 +511,14 @@ class AutoTuner:
         # Multi-GPU parallel batch generation
         if self.num_gpus > 1:
             cmd += f" --num-gpus={self.num_gpus}"
+
+        # Chunked generation
+        if self.sample_start > 0 or self.sample_count > 0:
+            cmd += f" --sample-start={self.sample_start} --sample-count={self.sample_count}"
+
+        # DDIM sampling steps
+        if self.sample_steps:
+            cmd += f" --sample-steps={self.sample_steps}"
 
         # Tables that need fillna (have NULL values that cause issues)
         FILLNA_TABLES = {"aka_title", "title"}
@@ -2218,6 +2232,12 @@ if __name__ == "__main__":
     parser.add_argument("--require-validation", action="store_true",
                         help="Only use cache if validation_passed=True")
     parser.add_argument("--list-cache", action="store_true", help="List cached parameters")
+    parser.add_argument("--sample-start", type=int, default=0,
+                        help="Start index for sample generation (for chunked generation)")
+    parser.add_argument("--sample-count", type=int, default=-1,
+                        help="Number of samples to generate (-1 for all)")
+    parser.add_argument("--sample-steps", type=int, default=None,
+                        help="Number of DDIM sampling steps (default: use diffuser-timesteps)")
 
     args = parser.parse_args()
 
@@ -2235,6 +2255,9 @@ if __name__ == "__main__":
         device=args.device,
         target_corr_loss=args.target_corr_loss,
         num_gpus=args.num_gpus,
+        sample_start=args.sample_start,
+        sample_count=args.sample_count,
+        sample_steps=args.sample_steps,
     )
 
     # --force-regenerate: use cached params to regenerate, train only if no cache

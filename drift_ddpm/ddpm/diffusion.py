@@ -643,14 +643,32 @@ class GaussianDiffusion(torch.nn.Module):
         return sample
 
     @torch.no_grad()
-    def sample(self, num_samples, clip_denoised=False, control_tools=None):
+    def sample(self, num_samples, clip_denoised=False, control_tools=None, sample_steps=None):
+        """
+        Sample from the diffusion model.
+
+        Args:
+            num_samples: Number of samples to generate
+            clip_denoised: Whether to clip denoised values
+            control_tools: Optional control tools for guided sampling
+            sample_steps: Number of sampling steps (default: num_timesteps).
+                         If < num_timesteps, uses DDIM-style strided sampling.
+        """
         b = num_samples
         device = self.log_alpha.device
         z_norm = torch.randn((b, self.input_dim), device=device)
 
-        for i in reversed(range(0, self.num_timesteps)):
-            if i % 100 == 0:
-                print(f"Sample timestep {i:4d}", end="\r")
+        # Determine timesteps to use
+        if sample_steps is None or sample_steps >= self.num_timesteps:
+            timesteps = list(reversed(range(0, self.num_timesteps)))
+        else:
+            # DDIM-style strided sampling: evenly spaced timesteps
+            timesteps = list(reversed(np.linspace(0, self.num_timesteps - 1, sample_steps, dtype=int)))
+            print(f"[DDIM] Using {sample_steps} steps (stride ~{self.num_timesteps // sample_steps})")
+
+        for idx, i in enumerate(timesteps):
+            if idx % max(1, len(timesteps) // 10) == 0:
+                print(f"Sample step {idx+1}/{len(timesteps)} (t={i:4d})", end="\r")
             t = torch.full((b,), i, device=device, dtype=torch.long)
 
             model_out = self._denoise_fn(z_norm.float(), t)

@@ -254,6 +254,11 @@ def main(args: argparse.Namespace):
 
     diffuser = torch.load(os.path.join(save_dir, "diffuser.pt"))
 
+    # Override num_timesteps for faster sampling (model was trained with 1000, but can sample with fewer)
+    if diffuser.num_timesteps != args.diffuser_timesteps:
+        print(f"[Sampling] Overriding timesteps: {diffuser.num_timesteps} -> {args.diffuser_timesteps}")
+        diffuser.num_timesteps = args.diffuser_timesteps
+
     """ controller training. To avoid randomness, reseed everything. """
     deterministic.seed_everything(args.random_state)
 
@@ -322,13 +327,25 @@ def main(args: argparse.Namespace):
     """ oversampling. To avoid randomness, reseed everything. """
     deterministic.seed_everything(args.random_state)
 
-    ids = range(config["n_samples"])
+    # Support chunked generation with --sample-start and --sample-count
+    total_samples = config["n_samples"]
+    sample_start = args.sample_start
+    # Track if this is explicitly chunked (sample_count was provided)
+    is_chunked = args.sample_count > 0
+    sample_count = args.sample_count if args.sample_count > 0 else (total_samples - sample_start)
+    sample_end = min(sample_start + sample_count, total_samples)
+    actual_count = sample_end - sample_start
+
+    if is_chunked or sample_start > 0:
+        print(f"[Chunk] Generating samples {sample_start} to {sample_end} ({actual_count} samples)")
+
+    ids = range(actual_count)
     batched_ids = [
         ids[x : x + INFERENCE_BATCH_SIZE]
         for x in range(0, len(ids), INFERENCE_BATCH_SIZE)
     ]
 
-    print(f"[TIMING] Starting data generation for {config['n_samples']} samples in {len(batched_ids)} batches...")
+    print(f"[TIMING] Starting data generation for {actual_count} samples in {len(batched_ids)} batches...")
     oversampling_start = time.time()
 
     num_gpus = args.num_gpus
@@ -360,6 +377,7 @@ def main(args: argparse.Namespace):
                 gpu_device,
                 args.drift,
                 args.scale_factor,
+                sample_steps=args.sample_steps,
             )
             # Move result to CPU immediately to free GPU memory
             result = sample_data.cpu()
@@ -400,6 +418,7 @@ def main(args: argparse.Namespace):
                 device,
                 args.drift,
                 args.scale_factor,
+                sample_steps=args.sample_steps,
             )
             batch_end = time.time()
             print(f"[TIMING] Batch {batch_idx + 1}/{len(batched_ids)} generation took: {batch_end - batch_start:.2f} seconds")
@@ -468,6 +487,10 @@ def main(args: argparse.Namespace):
     # if len(original_data.index) > len(sample_data.index):
     # original_data = original_data[:len(sample_data.index)]
 
+    # For chunked generation, slice the reference data to the correct range
+    if is_chunked or sample_start > 0:
+        original_real_drift_data = original_real_drift_data.iloc[sample_start:sample_end].reset_index(drop=True)
+
     if len(original_real_drift_data.index) > len(sample_data.index):
         original_real_drift_data = original_real_drift_data[: len(sample_data.index)]
 
@@ -479,12 +502,19 @@ def main(args: argparse.Namespace):
     print("Drifted data")
     print(original_real_drift_data)
 
+    # Save output (with chunk suffix if chunked generation)
+    if is_chunked or sample_start > 0:
+        output_filename = f"{args.table_name}.drifted.chunk_{sample_start}_{sample_end}.csv"
+    else:
+        output_filename = f"{args.table_name}.drifted.csv"
+
     original_real_drift_data.to_csv(
-        os.path.join(save_dir, f"{args.table_name}.drifted.csv"),
+        os.path.join(save_dir, output_filename),
         index=False,
         doublequote=False,
         escapechar="\\",
     )
+    print(f"[Output] Saved to {output_filename}")
 
     total_end = time.time()
     total_time = total_end - total_start
@@ -512,6 +542,8 @@ if __name__ == "__main__":
     parser.add_argument("--diffuser-steps", type=int, default=30000)
     parser.add_argument("--diffuser-bs", type=int, default=2048)
     parser.add_argument("--diffuser-timesteps", type=int, default=1000)
+    parser.add_argument("--sample-steps", type=int, default=None,
+                        help="Number of sampling steps (default: same as diffuser-timesteps). Use fewer for faster DDIM-style sampling.")
 
     parser.add_argument(
         "--controller-dim", nargs="+", type=int, default=(512, 512)
@@ -526,6 +558,18 @@ if __name__ == "__main__":
         type=int,
         default=1,
         help="Number of GPUs for parallel batch generation (default: 1)"
+    )
+    parser.add_argument(
+        "--sample-start",
+        type=int,
+        default=0,
+        help="Start index for sample generation (for chunked generation)"
+    )
+    parser.add_argument(
+        "--sample-count",
+        type=int,
+        default=-1,
+        help="Number of samples to generate (-1 for all remaining)"
     )
     parser.add_argument("--scale-factor", type=float, default=8.0)
     # parser.add_argument("--save-name", type=str, default="output")
