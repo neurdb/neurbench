@@ -643,7 +643,7 @@ class GaussianDiffusion(torch.nn.Module):
         return sample
 
     @torch.no_grad()
-    def sample(self, num_samples, clip_denoised=False, control_tools=None, sample_steps=None):
+    def sample(self, num_samples, clip_denoised=False, control_tools=None, sample_steps=None, eta=0.0):
         """
         Sample from the diffusion model.
 
@@ -653,37 +653,84 @@ class GaussianDiffusion(torch.nn.Module):
             control_tools: Optional control tools for guided sampling
             sample_steps: Number of sampling steps (default: num_timesteps).
                          If < num_timesteps, uses DDIM-style strided sampling.
+            eta: DDIM eta parameter (0.0 = deterministic DDIM, 1.0 = closer to DDPM)
         """
         b = num_samples
         device = self.log_alpha.device
         z_norm = torch.randn((b, self.input_dim), device=device)
 
-        # Determine timesteps to use
         if sample_steps is None or sample_steps >= self.num_timesteps:
+            # === Strategy A: Standard DDPM sampling (full steps) ===
             timesteps = list(reversed(range(0, self.num_timesteps)))
+            for idx, i in enumerate(timesteps):
+                if idx % 100 == 0:
+                    print(f"DDPM Sample step {i:4d}", end="\r")
+                t = torch.full((b,), i, device=device, dtype=torch.long)
+                model_out = self._denoise_fn(z_norm.float(), t)
+
+                z_norm = self.gaussian_p_sample(
+                    model_out,
+                    z_norm,
+                    t,
+                    clip_denoised=clip_denoised,
+                    control_tools=control_tools,
+                )["sample"]
         else:
-            # DDIM-style strided sampling: evenly spaced timesteps
-            timesteps = list(reversed(np.linspace(0, self.num_timesteps - 1, sample_steps, dtype=int)))
-            print(f"[DDIM] Using {sample_steps} steps (stride ~{self.num_timesteps // sample_steps})")
+            # === Strategy B: DDIM / Accelerated sampling (strided) ===
+            print(f"[DDIM] Using {sample_steps} steps (eta={eta})")
 
-        for idx, i in enumerate(timesteps):
-            if idx % max(1, len(timesteps) // 10) == 0:
-                print(f"Sample step {idx+1}/{len(timesteps)} (t={i:4d})", end="\r")
-            t = torch.full((b,), i, device=device, dtype=torch.long)
+            # Generate strided sequence, e.g., [0, 100, 200, ..., 999] then reverse to [999, ..., 0]
+            seq = np.linspace(0, self.num_timesteps - 1, sample_steps, dtype=int)
+            seq = list(reversed(seq))
+            seq_next = list(seq[1:]) + [-1]
 
-            model_out = self._denoise_fn(z_norm.float(), t)
+            for i, t_val in enumerate(seq):
+                if i % max(1, len(seq) // 10) == 0:
+                    print(f"DDIM Sample step {i+1}/{len(seq)} (t={t_val:4d})", end="\r")
 
-            z_norm = self.gaussian_p_sample(
-                model_out,
-                z_norm,
-                t,
-                clip_denoised=clip_denoised,
-                control_tools=control_tools,
-            )["sample"]
+                t_next_val = seq_next[i]
+
+                t = torch.full((b,), t_val, device=device, dtype=torch.long)
+
+                # 1. Model prediction
+                model_out = self._denoise_fn(z_norm.float(), t)
+
+                # 2. Get alpha parameters
+                at = extract(self.alphas_cumprod, t, z_norm.shape)
+
+                if t_next_val < 0:
+                    at_next = torch.ones_like(at)
+                else:
+                    t_next = torch.full((b,), t_next_val, device=device, dtype=torch.long)
+                    at_next = extract(self.alphas_cumprod, t_next, z_norm.shape)
+
+                # 3. Predict x0 and eps based on parametrization
+                if self.gaussian_parametrization == "eps":
+                    eps = model_out
+                    pred_x0 = (z_norm - torch.sqrt(1 - at) * eps) / torch.sqrt(at)
+                elif self.gaussian_parametrization == "x0":
+                    pred_x0 = model_out
+                    eps = (z_norm - torch.sqrt(at) * pred_x0) / torch.sqrt(1 - at)
+                else:
+                    raise NotImplementedError(f"Unknown parametrization: {self.gaussian_parametrization}")
+
+                # 4. Apply control/guidance if provided
+                if control_tools is not None:
+                    cond, cond_fn = control_tools
+                    # Guidance modifies epsilon: eps_hat = eps - sqrt(1-at) * gradient
+                    gradient = cond_fn(cond, z_norm, t)
+                    eps = eps - torch.sqrt(1 - at) * gradient
+
+                # 5. DDIM update step
+                # sigma_t controls stochasticity (eta=0 -> deterministic DDIM)
+                sigma_t = eta * torch.sqrt((1 - at / at_next) * (1 - at_next) / (1 - at))
+                c2 = torch.sqrt((1 - at_next) - sigma_t ** 2)
+
+                noise = torch.randn_like(z_norm)
+                z_norm = torch.sqrt(at_next) * pred_x0 + c2 * eps + sigma_t * noise
 
         print()
-        sample = z_norm
-        return sample
+        return z_norm
 
     def batch_sample(
         self, num_samples, batch_size, clip_denoised=False, control_tools=None

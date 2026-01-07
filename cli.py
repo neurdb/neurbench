@@ -1109,6 +1109,10 @@ def _generate_with_drift_reference(
             tables_trained = set()
             tables_trained_lock = threading.Lock()
 
+            # Track which tables failed training (to avoid deadlock)
+            tables_failed = set()
+            tables_failed_lock = threading.Lock()
+
             # Results storage
             batch_results = []
             results_lock = threading.Lock()
@@ -1119,13 +1123,10 @@ def _generate_with_drift_reference(
 
             def run_batch(table_name, batch_idx, sample_start, sample_count, gpu_id, target_drift, target_corr):
                 """Run a single batch on specified GPU."""
-                # Check if this table's training is done
-                with tables_trained_lock:
-                    need_training = table_name not in tables_trained
-                    if batch_idx == 0:
-                        tables_trained.add(table_name)
+                # Batch 0 always needs training
+                need_training = (batch_idx == 0)
 
-                if need_training and batch_idx == 0:
+                if need_training:
                     # First batch: use auto_tune.py (handles training)
                     cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
                     cmd += f" --target-drift={target_drift} --device={gpu_id}"
@@ -1161,6 +1162,16 @@ def _generate_with_drift_reference(
                     proc = subprocess.Popen(cmd, shell=True, stdout=log_file, stderr=subprocess.STDOUT, env=env)
                     ret = proc.wait()
                     success = (ret == 0)
+
+                    # Update training status AFTER execution completes (not before!)
+                    if batch_idx == 0:
+                        if success:
+                            with tables_trained_lock:
+                                tables_trained.add(table_name)
+                        else:
+                            with tables_failed_lock:
+                                tables_failed.add(table_name)
+
                     status = "Done" if success else "FAIL"
                     print(f"[GPU {gpu_id}] {status}: {batch_str}")
                     return (table_name, batch_idx, sample_start, sample_count, gpu_id, success, log_file_path)
@@ -1202,11 +1213,30 @@ def _generate_with_drift_reference(
 
                     # Wait if this batch needs training but batch 0 isn't done yet
                     if batch_idx > 0:
+                        should_run = True
                         while True:
+                            # Check if training completed
                             with tables_trained_lock:
                                 if t in tables_trained:
                                     break
+
+                            # Check if training failed (avoid deadlock)
+                            with tables_failed_lock:
+                                if t in tables_failed:
+                                    print(f"[GPU {gpu_id}] Skipping {t}[{batch_idx}] because batch 0 failed.")
+                                    should_run = False
+                                    break
+
                             time.sleep(0.5)
+
+                        # If batch 0 failed, skip this batch
+                        if not should_run:
+                            result = (t, batch_idx, sample_start, sample_count, gpu_id, False, "Skipped: training failed")
+                            with results_lock:
+                                batch_results.append(result)
+                            with gpu_tables_lock:
+                                gpu_running_tables[gpu_id].discard(t)
+                            continue
 
                     try:
                         result = run_batch(t, batch_idx, sample_start, sample_count, gpu_id, target_drift, target_corr)
