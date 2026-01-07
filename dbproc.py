@@ -17,7 +17,7 @@ import os
 import warnings
 
 import data_utils as du
-import lib_oversampling as lo
+import drift_ops as lo
 import pandas as pd
 import torch
 
@@ -328,13 +328,20 @@ def main(args: argparse.Namespace):
     deterministic.seed_everything(args.random_state)
 
     # Support chunked generation with --sample-start and --sample-count
-    total_samples = config["n_samples"]
     sample_start = args.sample_start
-    # Track if this is explicitly chunked (sample_count was provided)
     is_chunked = args.sample_count > 0
-    sample_count = args.sample_count if args.sample_count > 0 else (total_samples - sample_start)
-    sample_end = min(sample_start + sample_count, total_samples)
-    actual_count = sample_end - sample_start
+
+    if is_chunked:
+        # Chunked mode: use provided sample_count directly
+        sample_count = args.sample_count
+        sample_end = sample_start + sample_count
+        actual_count = sample_count
+    else:
+        # Non-chunked: generate all samples based on reference data size
+        total_samples = len(original_real_drift_data)
+        sample_count = total_samples - sample_start
+        sample_end = total_samples
+        actual_count = sample_count
 
     if is_chunked or sample_start > 0:
         print(f"[Chunk] Generating samples {sample_start} to {sample_end} ({actual_count} samples)")
@@ -430,6 +437,32 @@ def main(args: argparse.Namespace):
     print(f"[TIMING] Total oversampling took: {oversampling_end - oversampling_start:.2f} seconds")
 
     sample_data = sample_data.cpu().numpy()
+
+    # For chunked generation: save normalized data, skip Frequency Preservation
+    # Frequency Preservation will be done after all chunks are merged in cli.py
+    if is_chunked:
+        npy_filename = f"{args.table_name}.normalized.chunk_{sample_start}_{sample_end}.npy"
+        np.save(os.path.join(save_dir, npy_filename), sample_data)
+        print(f"[Chunk] Saved normalized data to {npy_filename}")
+
+        # Save CSV without frequency preservation (for debugging/fallback)
+        simple_data = data_wrapper.Reverse(sample_data, skip_freq_preservation=True)
+        simple_data = simple_data[config["applicable_columns"]]
+
+        original_real_drift_data_chunk = original_real_drift_data.iloc[sample_start:sample_end].reset_index(drop=True)
+        if len(original_real_drift_data_chunk) > len(simple_data):
+            original_real_drift_data_chunk = original_real_drift_data_chunk[:len(simple_data)]
+        original_real_drift_data_chunk[config["applicable_columns"]] = simple_data
+
+        output_filename = f"{args.table_name}.drifted.chunk_{sample_start}_{sample_end}.csv"
+        original_real_drift_data_chunk.to_csv(
+            os.path.join(save_dir, output_filename), index=False, doublequote=False, escapechar="\\"
+        )
+        print(f"[Chunk] Saved CSV (no freq preservation) to {output_filename}")
+
+        total_end = time.time()
+        print(f"[TIMING] Chunk generation took: {total_end - total_start:.2f}s")
+        return
 
     # Set reference distribution for frequency-preserving sampling
     # This ensures generated ID columns match the target data's frequency distribution

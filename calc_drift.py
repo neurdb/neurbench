@@ -30,10 +30,16 @@ CORR_TYPES = ["pearson", "spearman"]
 
 
 def load_csv(path: str) -> pd.DataFrame:
-    try:
-        return pd.read_csv(path, doublequote=False, escapechar="\\", low_memory=False, on_bad_lines='warn')
-    except:
-        return pd.read_csv(path, doublequote=True, low_memory=False, on_bad_lines='warn')
+    """Load CSV with multiple strategy fallbacks."""
+    for strategy in [
+        {"doublequote": True},                        # Standard CSV (most common)
+        {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+    ]:
+        try:
+            return pd.read_csv(path, low_memory=False, on_bad_lines='skip', **strategy)
+        except:
+            continue
+    raise RuntimeError(f"Failed to load {path}")
 
 
 def numerical_dist(series: pd.Series, n_bins: int):

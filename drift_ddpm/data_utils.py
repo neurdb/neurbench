@@ -403,8 +403,12 @@ class DataWrapper:
             cat_values[i] = self.all_distinct_values[col][int(val)]
         return cat_values
 
-    def ReverseToOrdi(self, data):
+    def ReverseToOrdi(self, data, skip_freq_preservation=False):
         reverse_data = []
+
+        # Backward compatibility: old pickled objects may not have reference_distribution
+        if not hasattr(self, 'reference_distribution'):
+            self.reference_distribution = {}
 
         # Unnorm the normalized numerical columns, and reverse the binary code to ordinal columns
         for i, col in enumerate(self.columns):
@@ -416,7 +420,8 @@ class DataWrapper:
                 col_data = col_data.astype(np.int32)
             else:
                 # Check if we have reference distribution for frequency-preserving sampling
-                if col in self.reference_distribution:
+                # (skip if skip_freq_preservation=True, used for chunk outputs before merge)
+                if col in self.reference_distribution and not skip_freq_preservation:
                     col_data = self._reverse_with_reference_distribution(col, col_data)
                 else:
                     col_data = self.num_normalizer[col].inverse_transform(
@@ -468,8 +473,15 @@ class DataWrapper:
         reverse_data = np.concatenate(reverse_data, axis=1)
         return reverse_data
 
-    def Reverse(self, data):
-        data = self.ReverseToOrdi(data)
+    def Reverse(self, data, skip_freq_preservation=False):
+        """Reverse normalized data back to original format.
+
+        Args:
+            data: Normalized data array
+            skip_freq_preservation: If True, skip frequency-preserving sampling for FK columns.
+                                   Used for chunk outputs that will be merged later.
+        """
+        data = self.ReverseToOrdi(data, skip_freq_preservation=skip_freq_preservation)
         data = self.ReverseToCat(data)
         data = pd.DataFrame(data, columns=self.columns)
         return self.ReOrderColumns(data)

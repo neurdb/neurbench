@@ -267,6 +267,154 @@ def load_drift_reference(filepath: str, src_dataset: str = None, dst_dataset: st
         return None
 
 
+def _validate_generation_results(
+    dataset_name: str,
+    tables: List[str],
+    drift_ref: dict,
+):
+    """Validate generated data against original and compare with target."""
+    import calc_drift
+
+    print(f"\n{'='*70}")
+    print("VALIDATION: Generated vs Original (compared with Target)")
+    print(f"{'='*70}")
+
+    base_dir = os.path.join("datasets", dataset_name)
+    config = load_json(os.path.join(base_dir, "dataset_info.json"))
+
+    for t in tables:
+        table_config = config.get(t, {})
+        if not table_config:
+            continue
+        columns = table_config.get("applicable_columns", [])
+        target_drift, target_corr = drift_ref.get(t, (None, None))
+
+        orig_path = os.path.join(base_dir, f"{t}.csv")
+        gen_path = os.path.join("expdir", dataset_name, t, f"{t}.drifted.csv")
+
+        if not os.path.exists(gen_path):
+            print(f"  {t}: generated file not found")
+            continue
+
+        try:
+            orig_df = calc_drift.load_csv(orig_path)
+            gen_df = calc_drift.load_csv(gen_path)
+
+            actual_drift = calc_drift.calc_drift(orig_df, gen_df, columns, verbose=False)
+            corr_results = calc_drift.calc_correlation(orig_df, gen_df, verbose=False)
+            actual_corr = corr_results.get("pearson", 0.0)
+
+            # Format output
+            drift_str = f"drift={actual_drift:.4f}"
+            if target_drift:
+                drift_str += f" (target={target_drift:.4f}, Δ={actual_drift - target_drift:+.4f})"
+            corr_str = f"corr={actual_corr:.4f}"
+            if target_corr:
+                corr_str += f" (target={target_corr:.4f}, Δ={actual_corr - target_corr:+.4f})"
+            print(f"  {t}: {drift_str}, {corr_str}")
+
+        except Exception as e:
+            print(f"  {t}: error - {e}")
+
+    print(f"{'='*70}\n")
+
+
+def _merge_npy_with_freq_preservation(
+    dataset_name: str, table_name: str, npy_files: List[str],
+    reference_dataset: Optional[str], drift: float
+) -> Optional[pd.DataFrame]:
+    """Merge .npy chunks and apply unified Frequency Preservation."""
+    import pickle
+    import numpy as np
+
+    try:
+        save_dir = os.path.dirname(npy_files[0])
+        base_dir = os.path.join("datasets", dataset_name)
+
+        # 1. Load and concat all .npy files
+        all_data = [np.load(f) for f in npy_files]
+        merged_data = np.concatenate(all_data, axis=0)
+        print(f"    Loaded {len(npy_files)} chunks -> {len(merged_data)} rows")
+
+        # 2. Load data_wrapper and config
+        with open(os.path.join(save_dir, "data_wrapper.pkl"), "rb") as f:
+            data_wrapper = pickle.load(f)
+        config = load_json(os.path.join(base_dir, "dataset_info.json")).get(table_name, {})
+        applicable_columns = config.get("applicable_columns", [])
+
+        # 3. Set up reference distributions for FK columns
+        FK_TO_TABLE = {
+            'movie_id': 'title', 'person_id': 'name', 'company_id': 'company_name',
+            'keyword_id': 'keyword', 'linked_movie_id': 'title', 'link_type_id': 'link_type',
+            'info_type_id': 'info_type', 'kind_id': 'kind_type', 'role_id': 'role_type',
+        }
+        has_real_ref = reference_dataset and reference_dataset != dataset_name
+
+        # Load reference data if available
+        real_data = None
+        if has_real_ref:
+            real_path = os.path.join("datasets", reference_dataset, f"{table_name}.csv")
+            if os.path.exists(real_path):
+                for strat in [{"doublequote": True}, {"doublequote": False, "escapechar": "\\"}]:
+                    try:
+                        real_data = pd.read_csv(real_path, low_memory=False, on_bad_lines='warn', **strat)
+                        break
+                    except:
+                        continue
+
+        # Load train data for synthetic distribution
+        train_data = None
+        train_path = os.path.join(base_dir, f"{table_name}.csv")
+        for strat in [{"doublequote": True}, {"doublequote": False, "escapechar": "\\"}]:
+            try:
+                train_data = pd.read_csv(train_path, low_memory=False, on_bad_lines='warn', **strat)
+                break
+            except:
+                continue
+
+        print(f"    Setting up Frequency Preservation...")
+        for col in applicable_columns:
+            if col in data_wrapper.num_normalizer and col in FK_TO_TABLE:
+                if has_real_ref and real_data is not None and col in real_data.columns:
+                    freq_data = real_data[col].dropna().values
+                    valid_ids = np.unique(freq_data)
+                    data_wrapper.set_reference_distribution(col, freq_data, valid_ids)
+                elif train_data is not None and col in train_data.columns:
+                    orig_data = train_data[col].dropna().values
+                    data_wrapper.set_synthetic_reference_distribution(col, orig_data, drift, mode='auto')
+
+        # 4. Apply Reverse with frequency preservation
+        sample_df = data_wrapper.Reverse(merged_data)
+        sample_df = sample_df[applicable_columns]
+
+        # 5. Load reference data for non-applicable columns
+        ref_path = os.path.join("datasets", reference_dataset or dataset_name, f"{table_name}.csv")
+        ref_df = None
+        for strat in [{"doublequote": True}, {"doublequote": False, "escapechar": "\\"}]:
+            try:
+                ref_df = pd.read_csv(ref_path, low_memory=False, on_bad_lines='warn', **strat)
+                break
+            except:
+                continue
+
+        if ref_df is not None:
+            # Adjust ref_df size to match sample_df
+            if len(ref_df) > len(sample_df):
+                ref_df = ref_df.iloc[:len(sample_df)].reset_index(drop=True)
+            elif len(ref_df) < len(sample_df):
+                repeat = (len(sample_df) // len(ref_df)) + 1
+                ref_df = pd.concat([ref_df] * repeat, ignore_index=True).iloc[:len(sample_df)]
+            ref_df[applicable_columns] = sample_df[applicable_columns].values
+            return ref_df
+        return sample_df
+
+    except Exception as e:
+        print(f"    Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def handle_generate_data(tokens: List[str]):
     tokens = tokens[1:]
 
@@ -990,10 +1138,19 @@ def _generate_with_drift_reference(
             print()
 
             # Calculate batch count for each table and sort by size (largest first)
+            # Use reference dataset row count if available, else fallback to dataset_info.json
+            ref_dir = os.path.join("datasets", reference_dataset) if reference_dataset else base_dir
             table_batch_info = []
             for t in tables_to_generate.keys():
-                table_info = full_dataset_info.get(t, {})
-                n_samples = table_info.get("n_samples", 100000) if table_info else 100000
+                # Try to get row count from reference dataset CSV
+                ref_csv = os.path.join(ref_dir, f"{t}.csv")
+                if os.path.exists(ref_csv):
+                    # Count lines (subtract 1 for header)
+                    with open(ref_csv, 'r') as f:
+                        n_samples = sum(1 for _ in f) - 1
+                else:
+                    table_info = full_dataset_info.get(t, {})
+                    n_samples = table_info.get("n_samples", 100000) if table_info else 100000
                 n_batches = (n_samples + batch_size - 1) // batch_size
                 target_drift, target_corr = tables_to_generate[t]
                 table_batch_info.append((t, n_samples, n_batches, target_drift, target_corr))
@@ -1246,42 +1403,113 @@ def _generate_with_drift_reference(
                         with gpu_tables_lock:
                             gpu_running_tables[gpu_id].discard(t)
 
-            # Start workers: 2 per GPU
-            print(f"=== Starting {num_gpus * max_concurrent_per_gpu} workers ===")
-            workers = []
-            with ThreadPoolExecutor(max_workers=num_gpus * max_concurrent_per_gpu) as executor:
-                for gpu_id in gpus:
-                    for slot in range(max_concurrent_per_gpu):
-                        workers.append(executor.submit(gpu_worker, gpu_id))
+            # Start workers: 2 per GPU, with retry for failed batches
+            max_retries = 2
+            for retry_round in range(max_retries + 1):
+                if retry_round == 0:
+                    print(f"=== Starting {num_gpus * max_concurrent_per_gpu} workers ===")
+                else:
+                    # Collect failed batches and retry
+                    # batch_results: (table, batch_idx, sample_start, sample_count, gpu, success, log)
+                    failed_batches = []
+                    for t, idx, start, count, gpu, success, log in batch_results:
+                        if not success:
+                            drift, corr = drift_ref.get(t, (0.3, None))
+                            failed_batches.append((t, idx, start, count, drift, corr))
 
-                # Wait for all workers to complete
-                for w in workers:
-                    w.result()
+                    if not failed_batches:
+                        break
+                    print(f"\n=== Retry round {retry_round}: {len(failed_batches)} failed batches ===")
 
-            print(f"\n=== All {len(batch_results)} batches completed ===")
+                    # Reset for retry
+                    work_queue = Queue()
+                    for batch in failed_batches:
+                        work_queue.put(batch)
+                    batch_results = [r for r in batch_results if r[5]]  # Keep only successful
 
-            # Merge batches for each table
-            print("\n=== Merging batches ===")
+                    # Reset failed tables tracking (they may succeed this time)
+                    with tables_failed_lock:
+                        for t, _, _, _, _, _ in failed_batches:
+                            tables_failed.discard(t)
+
+                workers = []
+                with ThreadPoolExecutor(max_workers=num_gpus * max_concurrent_per_gpu) as executor:
+                    for gpu_id in gpus:
+                        for slot in range(max_concurrent_per_gpu):
+                            workers.append(executor.submit(gpu_worker, gpu_id))
+
+                    for w in workers:
+                        w.result()
+
+            # Count final results
+            failed_count = sum(1 for r in batch_results if not r[5])
+            print(f"\n=== All batches completed: {len(batch_results) - failed_count} succeeded, {failed_count} failed ===")
+
+            # Post-process: merge if needed, then apply freq preservation if needed
+            print("\n=== Post-processing ===")
             for t, n_batches in table_batch_counts.items():
+                save_dir = f"expdir/{dataset_name}/{t}"
+                target_drift = drift_ref.get(t, (0.3, None))[0]
+
+                # Collect .npy files
+                npy_files = []
+                for batch_idx in range(n_batches):
+                    sample_start = batch_idx * batch_size
+                    sample_end = min(sample_start + batch_size, table_samples[t])
+                    npy_file = os.path.join(save_dir, f"{t}.normalized.chunk_{sample_start}_{sample_end}.npy")
+                    if os.path.exists(npy_file):
+                        npy_files.append(npy_file)
+
+                if len(npy_files) != n_batches:
+                    print(f"  {t}: ERROR - missing .npy files ({len(npy_files)}/{n_batches})")
+                    continue
+
+                # Step 1: Merge if multiple chunks
                 if n_batches > 1:
-                    save_dir = f"expdir/{dataset_name}/{t}"
-                    batch_files = []
+                    print(f"  {t}: merging {n_batches} chunks...")
+
+                # Step 2: Apply freq preservation and save
+                final_df = _merge_npy_with_freq_preservation(
+                    dataset_name, t, npy_files, reference_dataset, target_drift
+                )
+                if final_df is not None:
+                    merged_file = os.path.join(save_dir, f"{t}.drifted.csv")
+                    final_df.to_csv(merged_file, index=False, doublequote=False, escapechar="\\")
+                    print(f"  {t}: -> {len(final_df)} rows")
+                    # Cleanup
+                    for npy_f in npy_files:
+                        os.remove(npy_f)
                     for batch_idx in range(n_batches):
                         sample_start = batch_idx * batch_size
                         sample_end = min(sample_start + batch_size, table_samples[t])
-                        batch_file = os.path.join(save_dir, f"{t}.drifted.chunk_{sample_start}_{sample_end}.csv")
-                        if os.path.exists(batch_file):
-                            batch_files.append(batch_file)
+                        csv_f = os.path.join(save_dir, f"{t}.drifted.chunk_{sample_start}_{sample_end}.csv")
+                        if os.path.exists(csv_f):
+                            os.remove(csv_f)
+                else:
+                    print(f"  {t}: ERROR - post-processing failed")
 
-                    if len(batch_files) == n_batches:
-                        merged_df = pd.concat([pd.read_csv(f, low_memory=False, doublequote=False, escapechar="\\") for f in batch_files], ignore_index=True)
-                        merged_file = os.path.join(save_dir, f"{t}.drifted.csv")
-                        merged_df.to_csv(merged_file, index=False, doublequote=False, escapechar="\\")
-                        print(f"  {t}: merged {n_batches} batches -> {len(merged_df)} rows")
-                        for f in batch_files:
-                            os.remove(f)
-                    else:
-                        print(f"  {t}: missing batches, expected {n_batches} got {len(batch_files)}")
+            # Print total time before validation
+            generation_end_time = time.time()
+            gen_time = generation_end_time - generation_start_time
+            gen_hours, gen_remainder = divmod(gen_time, 3600)
+            gen_minutes, gen_seconds = divmod(gen_remainder, 60)
+
+            print(f"\n{'='*60}")
+            print(f"All tables processed")
+            if gen_hours > 0:
+                print(f"Total generation time: {int(gen_hours)}h {int(gen_minutes)}m {gen_seconds:.1f}s")
+            elif gen_minutes > 0:
+                print(f"Total generation time: {int(gen_minutes)}m {gen_seconds:.1f}s")
+            else:
+                print(f"Total generation time: {gen_seconds:.1f}s")
+            print(f"{'='*60}")
+
+            # Validate generated data against original and target
+            _validate_generation_results(
+                dataset_name,
+                list(table_batch_counts.keys()),
+                drift_ref,
+            )
 
             # Collect results by table
             table_success = {}
