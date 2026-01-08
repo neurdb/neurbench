@@ -1352,7 +1352,7 @@ class AutoTuner:
     def tune(
         self,
         target_drift: float,
-        max_iterations: int = 100,
+        max_iterations: int = 50,
         tolerance: float = 0.20,
         use_cache: bool = True,
         stop_only_on_tolerance: bool = True,
@@ -2214,7 +2214,7 @@ if __name__ == "__main__":
                         help="Target correlation loss (from reference, e.g., drift_reference.csv)")
     parser.add_argument("--reference-dataset", type=str, default=None,
                         help="Reference dataset for drift direction (default: {dataset_name}_2014)")
-    parser.add_argument("--max-iterations", type=int, default=100)
+    parser.add_argument("--max-iterations", type=int, default=50)
     parser.add_argument("--tolerance", type=float, default=0.20, help="Drift error tolerance (relative, default 20%)")
     parser.add_argument("--no-stop-on-tolerance", action="store_true",
                         help="Allow early stop even if tolerance not met")

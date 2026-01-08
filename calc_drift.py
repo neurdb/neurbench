@@ -157,18 +157,69 @@ def calc_drift(df1: pd.DataFrame, df2: pd.DataFrame, columns: list, verbose: boo
     return 0.0
 
 
+def _generate_dataset_info(src_dir: str) -> dict:
+    """Auto-generate dataset_info.json by copying structure from imdb and updating n_samples."""
+    import json
+
+    # Use imdb's dataset_info.json as template
+    template_path = "datasets/imdb/dataset_info.json"
+    if not os.path.exists(template_path):
+        print(f"Error: Template {template_path} not found")
+        return {}
+
+    with open(template_path) as f:
+        template = json.load(f)
+
+    dataset_info = {}
+    print(f"Auto-generating dataset_info.json using imdb as template...")
+
+    for table_name, table_config in template.items():
+        csv_path = f"{src_dir}/{table_name}.csv"
+
+        if table_config is None:
+            # Keep null entries as-is
+            dataset_info[table_name] = None
+            continue
+
+        if not os.path.exists(csv_path):
+            print(f"  {table_name}: CSV not found, skipped")
+            dataset_info[table_name] = None
+            continue
+
+        try:
+            # Count rows
+            with open(csv_path, 'r') as f:
+                n_samples = sum(1 for _ in f) - 1  # minus header
+
+            dataset_info[table_name] = {
+                "applicable_columns": table_config["applicable_columns"],
+                "n_samples": n_samples
+            }
+            print(f"  {table_name}: {n_samples} rows")
+        except Exception as e:
+            print(f"  {table_name}: error - {e}")
+            dataset_info[table_name] = None
+
+    return dataset_info
+
+
 def calc_all_tables(src_dir: str, dst_dir: str, output: str):
     """Calculate drift and correlation for all driftable tables between two datasets."""
     import json
 
-    # Load dataset_info.json
+    # Load or generate dataset_info.json
     info_path = f"{src_dir}/dataset_info.json"
     if not os.path.exists(info_path):
-        print(f"Error: {info_path} not found")
-        return
+        print(f"dataset_info.json not found, auto-generating...")
+        dataset_info = _generate_dataset_info(src_dir)
 
-    with open(info_path) as f:
-        dataset_info = json.load(f)
+        # Save generated dataset_info.json
+        with open(info_path, 'w') as f:
+            json.dump(dataset_info, f, indent=4)
+        print(f"Saved auto-generated dataset_info.json to {info_path}\n")
+    else:
+        with open(info_path) as f:
+            dataset_info = json.load(f)
 
     # Get driftable tables (non-null entries)
     driftable_tables = {k: v for k, v in dataset_info.items() if v is not None}
@@ -235,14 +286,32 @@ def calc_all_tables(src_dir: str, dst_dir: str, output: str):
                 "dst_dataset": dst_dataset,
             })
 
-    # Save to CSV
-    df = pd.DataFrame(results)
+    # Save to CSV (append if exists)
+    df_new = pd.DataFrame(results)
+
+    if os.path.exists(output):
+        # Load existing and append
+        df_existing = pd.read_csv(output)
+        # Remove duplicates (same src_dataset, dst_dataset, table_name)
+        key_cols = ["src_dataset", "dst_dataset", "table_name"]
+        for _, row in df_new.iterrows():
+            mask = (
+                (df_existing["src_dataset"] == row["src_dataset"]) &
+                (df_existing["dst_dataset"] == row["dst_dataset"]) &
+                (df_existing["table_name"] == row["table_name"])
+            )
+            df_existing = df_existing[~mask]
+        df = pd.concat([df_existing, df_new], ignore_index=True)
+        print(f"\nAppended to existing file: {output}")
+    else:
+        df = df_new
+        print(f"\nCreated new file: {output}")
+
     df.to_csv(output, index=False)
 
     print("=" * 70)
-    print(f"\nResults saved to: {output}")
-    print("\nSummary:")
-    print(df.to_string(index=False))
+    print("\nNew results:")
+    print(df_new.to_string(index=False))
 
 
 def main():

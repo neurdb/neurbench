@@ -183,7 +183,7 @@ def _run_table_generation(
             if quick_tune:
                 tune_result = tuner.quick_tune(drift)
             else:
-                tune_result = tuner.tune(drift, max_iterations=100, tolerance=DRIFT_ERROR_TOLERANCE)
+                tune_result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE)
 
             if tune_result:
                 result["success"] = True
@@ -774,7 +774,7 @@ def _generate_with_auto_tune(
     if quick:
         result = tuner.quick_tune(drift, use_cache=not no_cache)
     else:
-        result = tuner.tune(drift, max_iterations=100, tolerance=DRIFT_ERROR_TOLERANCE, use_cache=not no_cache, require_validation=require_validation)
+        result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE, use_cache=not no_cache, require_validation=require_validation)
 
     used_validated_cache = False
 
