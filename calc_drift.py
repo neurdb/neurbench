@@ -7,7 +7,7 @@ Usage:
     python calc_drift.py --file1 datasets/imdb/aka_title.csv --file2 datasets/imdb_2017/aka_title.csv --dataset-name imdb --table-name aka_title
 
     # All tables between two datasets
-    python calc_drift.py --src-dataset imdb --dst-dataset imdb_2017 --output drift_reference.csv
+    python calc_drift.py --src-dataset imdb --dst-dataset imdb_2017 --output drift_ref.csv
 
 This calculates:
 1. JS divergence (drift) between file1 and file2
@@ -30,15 +30,44 @@ CORR_TYPES = ["pearson", "spearman"]
 
 
 def load_csv(path: str) -> pd.DataFrame:
-    """Load CSV with multiple strategy fallbacks."""
-    for strategy in [
-        {"doublequote": True},                        # Standard CSV (most common)
-        {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
-    ]:
+    """
+    Smart CSV loader that auto-detects the correct quoting strategy.
+    If first strategy has warnings/skipped lines, try next one.
+    """
+    import warnings
+
+    # Use escapechar first for: .drifted.csv files OR imdb dataset (without year)
+    use_escapechar_first = path.endswith(".drifted.csv") or "/imdb/" in path or "\\imdb\\" in path
+
+    if use_escapechar_first:
+        strategies = [
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+            {"doublequote": True},                        # Standard CSV (fallback)
+        ]
+    else:
+        strategies = [
+            {"doublequote": True},                        # Standard CSV (most common)
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+        ]
+
+    last_df = None
+    for strategy in strategies:
         try:
-            return pd.read_csv(path, low_memory=False, on_bad_lines='skip', **strategy)
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                df = pd.read_csv(path, low_memory=False, on_bad_lines='warn', **strategy)
+
+            # If no warnings, this strategy works - return immediately
+            if len(w) == 0:
+                return df
+            # Otherwise save and try next strategy
+            last_df = df
         except:
             continue
+
+    # All strategies had warnings, return last successful one
+    if last_df is not None:
+        return last_df
     raise RuntimeError(f"Failed to load {path}")
 
 
@@ -77,7 +106,16 @@ def is_numerical_column(series: pd.Series, threshold: int = 1):
 
 
 def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True):
-    """Calculate correlation difference between two dataframes."""
+    """Calculate correlation difference between two dataframes.
+
+    Returns dict with keys:
+        - 'pearson': mean absolute loss for pearson correlation
+        - 'spearman': mean absolute loss for spearman correlation
+        - 'pearson_abs': mean absolute correlation value of df1 (base)
+        - 'spearman_abs': mean absolute correlation value of df1 (base)
+        - 'pearson_abs_gen': mean absolute correlation value of df2 (generated)
+        - 'spearman_abs_gen': mean absolute correlation value of df2 (generated)
+    """
     if verbose:
         print("\n" + "=" * 60)
         print("CORRELATION ANALYSIS")
@@ -92,8 +130,23 @@ def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True)
         mean_abs_loss = loss.mean().mean()
         results[corr_type] = mean_abs_loss
 
+        # Calculate mean absolute correlation values (excluding diagonal)
+        # Fill diagonal with 0 to exclude self-correlation (always 1)
+        corr1_no_diag = corr1.copy()
+        corr2_no_diag = corr2.copy()
+        np.fill_diagonal(corr1_no_diag.values, 0)
+        np.fill_diagonal(corr2_no_diag.values, 0)
+
+        abs_corr1 = corr1_no_diag.abs().mean().mean()
+        abs_corr2 = corr2_no_diag.abs().mean().mean()
+        results[f'{corr_type}_abs'] = abs_corr1
+        results[f'{corr_type}_abs_gen'] = abs_corr2
+
         if verbose:
-            print(f"[{corr_type}] mean absolute loss: {mean_abs_loss:.6f}")
+            ratio = mean_abs_loss / abs_corr1 if abs_corr1 > 0 else 0
+            print(f"[{corr_type}] mean absolute loss: {mean_abs_loss:.6f}, "
+                  f"abs_corr(base)={abs_corr1:.4f}, abs_corr(gen)={abs_corr2:.4f}, "
+                  f"loss/abs_ratio={ratio:.4f}")
 
     return results
 
@@ -327,7 +380,7 @@ def main():
     # Batch mode
     parser.add_argument("--src-dir", type=str, default=None, help="Source dataset directory (batch mode)")
     parser.add_argument("--dst-dir", type=str, default=None, help="Destination dataset directory (batch mode)")
-    parser.add_argument("--output", type=str, default="drift_reference.csv", help="Output CSV file (batch mode)")
+    parser.add_argument("--output", type=str, default="drift_ref.csv", help="Output CSV file (batch mode)")
 
     args = parser.parse_args()
 
@@ -373,7 +426,7 @@ def main():
     calc_correlation(df1, df2)
     mean_drift = calc_drift(df1, df2, columns)
     print("\n" + "=" * 60)
-    print(f"TARGET DRIFT VALUE: {mean_drift:.2f}")
+    print(f"TARGET DRIFT VALUE: {mean_drift:.6f}")
     print(f"Use: gd {args.dataset_name or 'DATASET'} {args.table_name or 'TABLE'} {mean_drift:.2f} --auto")
     print("=" * 60)
 

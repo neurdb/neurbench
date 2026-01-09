@@ -14,6 +14,48 @@ from scipy.spatial import distance
 CORR_TYPES: List[Literal["pearson", "kendall", "spearman"]] = ["pearson", "spearman"]
 
 
+def load_csv(path: str, **kwargs) -> pd.DataFrame:
+    """
+    Smart CSV loader that auto-detects the correct quoting strategy.
+    If first strategy has warnings/skipped lines, try next one.
+    """
+    import warnings
+
+    # Use escapechar first for: .drifted.csv files OR imdb dataset (without year)
+    use_escapechar_first = path.endswith(".drifted.csv") or "/imdb/" in path or "\\imdb\\" in path
+
+    if use_escapechar_first:
+        strategies = [
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+            {"doublequote": True},                        # Standard CSV (fallback)
+        ]
+    else:
+        strategies = [
+            {"doublequote": True},                        # Standard CSV (most common)
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+        ]
+
+    last_df = None
+    for strategy in strategies:
+        try:
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                df = pd.read_csv(path, low_memory=False, on_bad_lines='warn', **strategy, **kwargs)
+
+            # If no warnings, this strategy works - return immediately
+            if len(w) == 0:
+                return df
+            # Otherwise save and try next strategy
+            last_df = df
+        except Exception:
+            continue
+
+    # All strategies had warnings, return last successful one
+    if last_df is not None:
+        return last_df
+    raise RuntimeError(f"Failed to load {path}")
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset-name", type=str, default="imdb")
 parser.add_argument("--table-name", type=str, default="nosuchtable")
@@ -43,20 +85,10 @@ assert os.path.exists(save_dir)
 
 drifted_data_path = os.path.join(save_dir, f"{args.table_name}.drifted.csv")
 
-try:
-    original_data = pd.read_csv(
-        dataset_path, doublequote=False, escapechar="\\", low_memory=False
-    )
-except:
-    original_data = pd.read_csv(dataset_path, doublequote=True, low_memory=False)
+original_data = load_csv(dataset_path)
 print(original_data.head())
 
-try:
-    drifted_data = pd.read_csv(
-        drifted_data_path, doublequote=False, escapechar="\\", low_memory=False
-    )
-except:
-    drifted_data = pd.read_csv(drifted_data_path, doublequote=True, low_memory=False)
+drifted_data = load_csv(drifted_data_path)
 print(drifted_data.head())
 
 if args.enable_corr:

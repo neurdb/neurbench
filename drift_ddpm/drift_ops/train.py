@@ -150,10 +150,6 @@ def controller_training(
     opt = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.00001)
     # opt_cond = optim.AdamW(controller.parameters(), lr=lr, weight_decay=0.0)
 
-    # Pre-compute FULL reference correlation (not batch) for stable target
-    # This solves the batch vs full-dataset correlation discrepancy
-    full_ref_corr = pearson(real_x).fill_diagonal_(0.0).nan_to_num_(1.0).to(device)
-    print(f"Pre-computed full reference correlation matrix: {full_ref_corr.shape}")
 
     sta = time.time()
 
@@ -197,10 +193,10 @@ def controller_training(
         if torch.isinf(loss):
             continue
 
-        # Use pre-computed FULL reference correlation as target (not batch)
-        # This ensures training target matches evaluation target
+        # Preserve correlation structure: keep generated corr close to input corr
+        p_corr_xt = pearson(xt).fill_diagonal_(0.0).nan_to_num_(1.0)
         p_corr_xc = pearson(xc).fill_diagonal_(0.0).nan_to_num_(1.0)
-        p_loss_corr = F.mse_loss(full_ref_corr, p_corr_xc)
+        p_loss_corr = F.mse_loss(p_corr_xt, p_corr_xc)
 
         mse_real = F.mse_loss(xc, real)
 

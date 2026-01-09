@@ -31,6 +31,63 @@ def load_pickle(path):
     return data
 
 
+def detect_trend(base_data: np.ndarray, ref_data: np.ndarray, top_ratio: float = 0.1) -> str:
+    """
+    Detect the distribution change trend from base to ref.
+
+    Compares head concentration (top N% cumulative share) to determine
+    if the distribution is sharpening (head gets richer) or flattening.
+
+    Args:
+        base_data: Original/base data (e.g., 2014 or 2015)
+        ref_data: Reference data (e.g., 2016 or 2017)
+        top_ratio: Ratio of top items to consider (default 10%)
+
+    Returns:
+        'sharpen' if head concentration increased, 'flatten' otherwise
+    """
+    def get_head_share(data, top_ratio):
+        _, counts = np.unique(data, return_counts=True)
+        probs = counts / counts.sum()
+        sorted_probs = np.sort(probs)[::-1]  # Descending
+        top_n = max(1, int(len(sorted_probs) * top_ratio))
+        return sorted_probs[:top_n].sum()
+
+    head_share_base = get_head_share(base_data, top_ratio)
+    head_share_ref = get_head_share(ref_data, top_ratio)
+
+    if head_share_ref > head_share_base:
+        print(f"[Trend Detector] Head concentration increased: "
+              f"{head_share_base:.2%} -> {head_share_ref:.2%} (sharpen)")
+        return 'sharpen'
+    else:
+        print(f"[Trend Detector] Head concentration decreased: "
+              f"{head_share_base:.2%} -> {head_share_ref:.2%} (flatten)")
+        return 'flatten'
+
+
+def detect_trend_and_solve(base_data: np.ndarray, ref_data: np.ndarray,
+                           target_drift: float) -> np.ndarray:
+    """
+    Detect historical trend (Base -> Ref) and generate synthetic distribution
+    that follows the same trend direction with target drift.
+
+    Args:
+        base_data: Original/base data (e.g., 2014 movie_ids) - for trend detection
+        ref_data: Reference data (e.g., 2017 movie_ids) - for value range
+        target_drift: Target JS divergence for the synthetic distribution
+
+    Returns:
+        synthetic_ref_data: Array for set_reference_distribution (uses ref's value range)
+    """
+    # 1. Detect trend direction from historical data
+    detected_mode = detect_trend(base_data, ref_data)
+
+    # 2. Generate synthetic distribution using REF's value range with detected mode
+    # This ensures generated values are within ref's range (e.g., includes new IDs in 2017)
+    return solve_target_distribution(ref_data, target_drift, mode=detected_mode)
+
+
 def solve_target_distribution(original_data: np.ndarray, target_drift: float,
                                mode: str = 'sharpen') -> np.ndarray:
     """
@@ -274,6 +331,25 @@ class DataWrapper:
         self.set_reference_distribution(col, synthetic_ref)
         print(f"[DataWrapper] Synthetic reference for '{col}': "
               f"target_drift={target_drift}, mode={mode}")
+
+    def set_trend_based_reference_distribution(self, col: str, base_data: np.ndarray,
+                                                ref_data: np.ndarray, target_drift: float):
+        """Set synthetic reference distribution based on detected historical trend.
+
+        Detects the trend direction (sharpen/flatten) from base->ref data,
+        then generates a synthetic distribution with target_drift following
+        that same trend direction.
+
+        Args:
+            col: Column name
+            base_data: Base data (e.g., 2014 movie_ids) - for trend detection
+            ref_data: Reference data (e.g., 2016 movie_ids) - for trend detection
+            target_drift: Target JS divergence for the synthetic distribution
+        """
+        synthetic_ref = detect_trend_and_solve(base_data, ref_data, target_drift)
+        self.set_reference_distribution(col, synthetic_ref)
+        print(f"[DataWrapper] Trend-based reference for '{col}': "
+              f"target_drift={target_drift}")
 
     def fit(self, dataframe, all_category=False):
         self.raw_dim = dataframe.shape[1]

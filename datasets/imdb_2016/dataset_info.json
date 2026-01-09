@@ -1,0 +1,64 @@
+{
+    "aka_name": {
+        "applicable_columns": [
+            "person_id"
+        ],
+        "n_samples": 1209869
+    },
+    "aka_title": {
+        "applicable_columns": [
+            "kind_id",
+            "production_year"
+        ],
+        "n_samples": 485231
+    },
+    "cast_info": null,
+    "char_name": null,
+    "comp_cast_type": null,
+    "company_name": null,
+    "company_type": null,
+    "complete_cast": null,
+    "info_type": null,
+    "keyword": null,
+    "kind_type": null,
+    "link_type": null,
+    "movie_companies": {
+        "applicable_columns": [
+            "movie_id",
+            "company_id"
+        ],
+        "n_samples": 4439677
+    },
+    "movie_info_idx": null,
+    "movie_info": null,
+    "movie_keyword": {
+        "applicable_columns": [
+            "movie_id",
+            "keyword_id"
+        ],
+        "n_samples": 6849416
+    },
+    "movie_link": {
+        "applicable_columns": [
+            "movie_id",
+            "linked_movie_id",
+            "link_type_id"
+        ],
+        "n_samples": 2390481
+    },
+    "name": null,
+    "person_info": {
+        "applicable_columns": [
+            "person_id",
+            "info_type_id"
+        ],
+        "n_samples": 3853547
+    },
+    "role_type": null,
+    "title": {
+        "applicable_columns": [
+            "production_year"
+        ],
+        "n_samples": 4068514
+    }
+}

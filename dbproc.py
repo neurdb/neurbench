@@ -27,6 +27,46 @@ warnings.filterwarnings("ignore")
 INFERENCE_BATCH_SIZE = 524288  # 262144
 
 
+def load_csv(path: str, **kwargs) -> pd.DataFrame:
+    """
+    Smart CSV loader that auto-detects the correct quoting strategy.
+    If first strategy has warnings/skipped lines, try next one.
+    """
+    # Use escapechar first for: .drifted.csv files OR imdb dataset (without year)
+    use_escapechar_first = path.endswith(".drifted.csv") or "/imdb/" in path or "\\imdb\\" in path
+
+    if use_escapechar_first:
+        strategies = [
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+            {"doublequote": True},                        # Standard CSV (fallback)
+        ]
+    else:
+        strategies = [
+            {"doublequote": True},                        # Standard CSV (most common)
+            {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
+        ]
+
+    last_df = None
+    for strategy in strategies:
+        try:
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                df = pd.read_csv(path, low_memory=False, on_bad_lines='warn', **strategy, **kwargs)
+
+            # If no warnings, this strategy works - return immediately
+            if len(w) == 0:
+                return df
+            # Otherwise save and try next strategy
+            last_df = df
+        except Exception:
+            continue
+
+    # All strategies had warnings, return last successful one
+    if last_df is not None:
+        return last_df
+    raise RuntimeError(f"Failed to load {path}")
+
+
 class ControllerDimAdapter(torch.nn.Module):
     """Wrapper to adapt controller from one dimension to another.
 
@@ -84,23 +124,7 @@ def main(args: argparse.Namespace):
     config = config[args.table_name]
 
     train_data_path = os.path.join(base_dir, f"{args.table_name}.csv")
-    # Try different CSV parsing strategies (C engine only for speed)
-    original_data = None
-    for strategy in [
-        {"doublequote": True},                        # Standard CSV (most common)
-        {"doublequote": False, "escapechar": "\\"},   # Backslash escaped
-    ]:
-        try:
-            original_data = pd.read_csv(
-                train_data_path, low_memory=False, on_bad_lines='warn', **strategy
-            )
-            print(f"Loaded with strategy: {strategy}")
-            break
-        except Exception as e:
-            print(f"Strategy {strategy} failed: {e}")
-            continue
-    if original_data is None:
-        raise RuntimeError(f"Failed to load {train_data_path} - check CSV format")
+    original_data = load_csv(train_data_path)
     print("Original data")
     print(original_data)
 
@@ -117,20 +141,7 @@ def main(args: argparse.Namespace):
     print(f"Using reference dataset: {real_base_dir}")
 
     real_drift_data_path = os.path.join(real_base_dir, f"{args.table_name}.csv")
-    original_real_drift_data = None
-    for strategy in [
-        {"doublequote": True},
-        {"doublequote": False, "escapechar": "\\"},
-    ]:
-        try:
-            original_real_drift_data = pd.read_csv(
-                real_drift_data_path, low_memory=False, on_bad_lines='warn', **strategy
-            )
-            break
-        except:
-            continue
-    if original_real_drift_data is None:
-        raise RuntimeError(f"Failed to load {real_drift_data_path}")
+    original_real_drift_data = load_csv(real_drift_data_path)
     print("Real Drift data")
     print(original_real_drift_data)
 
@@ -141,20 +152,7 @@ def main(args: argparse.Namespace):
     real_cond_data_path = os.path.join(
         real_base_dir, f"{args.table_name}.csv"
     )  # {args.table_name}
-    original_real_cond_data = None
-    for strategy in [
-        {"doublequote": True},
-        {"doublequote": False, "escapechar": "\\"},
-    ]:
-        try:
-            original_real_cond_data = pd.read_csv(
-                real_cond_data_path, low_memory=False, on_bad_lines='warn', **strategy
-            )
-            break
-        except:
-            continue
-    if original_real_cond_data is None:
-        raise RuntimeError(f"Failed to load {real_cond_data_path}")
+    original_real_cond_data = load_csv(real_cond_data_path)
     print("Conditional data")
     print(original_real_cond_data)
 
@@ -485,29 +483,50 @@ def main(args: argparse.Namespace):
     has_real_reference = (args.reference_dataset and
                           args.reference_dataset != args.dataset_name)
 
-    for col in config["applicable_columns"]:
+    # === BEFORE Frequency Preservation: measure drift and correlation ===
+    from calc_drift import calc_drift as measure_drift, calc_correlation
+    applicable_columns = config["applicable_columns"]
+
+    print("\n[BEFORE Freq Preservation] Measuring drift and correlation...")
+    before_df_partial = data_wrapper.Reverse(sample_data, skip_freq_preservation=True)
+    before_df_partial = before_df_partial[applicable_columns]
+
+    # Build full before_df with all columns (for correlation measurement)
+    before_df_full = original_real_drift_data.copy()
+    if len(before_df_full) > len(before_df_partial):
+        before_df_full = before_df_full.iloc[:len(before_df_partial)].reset_index(drop=True)
+    elif len(before_df_full) < len(before_df_partial):
+        repeat = (len(before_df_partial) // len(before_df_full)) + 1
+        before_df_full = pd.concat([before_df_full] * repeat, ignore_index=True).iloc[:len(before_df_partial)]
+    before_df_full[applicable_columns] = before_df_partial[applicable_columns].values
+
+    before_drift = measure_drift(train_data, before_df_full, applicable_columns, verbose=False)
+    before_corr = calc_correlation(train_data, before_df_full, verbose=False)
+    print(f"  BEFORE: drift={before_drift:.6f} (target={args.drift:.6f}, diff={abs(before_drift - args.drift):.6f})")
+    before_loss = before_corr.get('pearson', 0)
+    before_abs = before_corr.get('pearson_abs', 0)
+    before_ratio = before_loss / before_abs if before_abs > 0 else 0
+    print(f"  BEFORE: pearson_corr_loss={before_loss:.6f}, abs_corr={before_abs:.4f}, loss/abs_ratio={before_ratio:.4f}")
+
+    # === Set up Frequency Preservation ===
+    print("\n[Setting up Frequency Preservation]")
+    for col in applicable_columns:
         if col in data_wrapper.num_normalizer:
             # Only use frequency preservation for foreign key columns
             if col in FK_TO_TABLE:
+                base_col_data = train_data[col].dropna().values
                 if has_real_reference:
-                    # Use real reference data for frequency shape
-                    freq_shape_data = real_data[col].dropna().values
-                    # Use the unique IDs from ref data directly as valid_ids
-                    # This preserves:
-                    # 1. Frequency distribution shape (hotspot effect)
-                    # 2. Cross-table correlation (e.g., movie_keyword and movie_companies
-                    #    share ~82% of movie_ids in real data, random sampling would break this)
-                    # 3. Valid FK references
-                    valid_ids = np.unique(freq_shape_data)
-                    print(f"  {col}: FK column, using {len(valid_ids)} unique IDs from --ref "
-                          f"(total {len(freq_shape_data)} values)")
-                    data_wrapper.set_reference_distribution(col, freq_shape_data, valid_ids)
+                    # Have reference data: detect trend and generate synthetic distribution
+                    ref_col_data = real_data[col].dropna().values
+                    print(f"  {col}: FK column, using trend-based synthetic distribution "
+                          f"(base={len(base_col_data)}, ref={len(ref_col_data)} values)")
+                    data_wrapper.set_trend_based_reference_distribution(
+                        col, base_col_data, ref_col_data, args.drift)
                 else:
-                    # No real reference: use temperature scaling to synthesize target distribution
-                    original_col_data = train_data[col].dropna().values
+                    # No real reference: use auto mode
                     print(f"  {col}: FK column, synthesizing target distribution with drift={args.drift}")
                     data_wrapper.set_synthetic_reference_distribution(
-                        col, original_col_data, args.drift, mode='auto'
+                        col, base_col_data, args.drift, mode='auto'
                     )
             else:
                 # Non-FK columns (like production_year): skip frequency preservation
@@ -515,7 +534,27 @@ def main(args: argparse.Namespace):
                 print(f"  {col}: not a FK column, skip frequency preservation")
 
     sample_data = data_wrapper.Reverse(sample_data)
-    sample_data = sample_data[config["applicable_columns"]]
+    sample_data = sample_data[applicable_columns]
+
+    # === AFTER Frequency Preservation: measure drift and correlation ===
+    # Build full after_df with all columns (for correlation measurement)
+    after_df_full = original_real_drift_data.copy()
+    if len(after_df_full) > len(sample_data):
+        after_df_full = after_df_full.iloc[:len(sample_data)].reset_index(drop=True)
+    elif len(after_df_full) < len(sample_data):
+        repeat = (len(sample_data) // len(after_df_full)) + 1
+        after_df_full = pd.concat([after_df_full] * repeat, ignore_index=True).iloc[:len(sample_data)]
+    after_df_full[applicable_columns] = sample_data[applicable_columns].values
+
+    print("\n[AFTER Freq Preservation] Measuring drift and correlation...")
+    after_drift = measure_drift(train_data, after_df_full, applicable_columns, verbose=False)
+    after_corr = calc_correlation(train_data, after_df_full, verbose=False)
+    print(f"  AFTER:  drift={after_drift:.6f} (target={args.drift:.6f}, diff={abs(after_drift - args.drift):.6f})")
+    after_loss = after_corr.get('pearson', 0)
+    after_abs = after_corr.get('pearson_abs', 0)
+    after_ratio = after_loss / after_abs if after_abs > 0 else 0
+    print(f"  AFTER:  pearson_corr_loss={after_loss:.6f}, abs_corr={after_abs:.4f}, loss/abs_ratio={after_ratio:.4f}")
+    print(f"  CHANGE: drift {before_drift:.6f} -> {after_drift:.6f}, corr {before_corr.get('pearson', 0):.6f} -> {after_corr.get('pearson', 0):.6f}")
 
     # if len(original_data.index) > len(sample_data.index):
     # original_data = original_data[:len(sample_data.index)]
