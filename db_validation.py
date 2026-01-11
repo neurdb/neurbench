@@ -375,9 +375,16 @@ class DatabaseValidator:
 
         return clean_path
 
-    def import_generated_table(self, dbname: str, dataset_name: str, table_name: str) -> bool:
+    def import_generated_table(self, dbname: str, dataset_name: str, table_name: str,
+                               reference_dataset: str = None, variant_id: int = -1) -> bool:
         """Import generated CSV into table using psycopg2."""
-        csv_path = os.path.join("expdir", dataset_name, table_name, f"{table_name}.drifted.csv")
+        # Build path matching dbproc.py logic
+        dataset_dir = dataset_name
+        if reference_dataset and reference_dataset != dataset_name:
+            dataset_dir = f"{dataset_name}_ref_{reference_dataset}"
+        if variant_id > 0:
+            dataset_dir += f"-{variant_id}"
+        csv_path = os.path.join("expdir", dataset_dir, table_name, f"{table_name}.drifted.csv")
         if not os.path.exists(csv_path):
             print(f"Generated file not found: {csv_path}")
             return False
@@ -511,14 +518,17 @@ class DatabaseValidator:
         avg_ratio = sum(ratios) / len(ratios) if ratios else 1.0
         return total, passed, avg_ratio
 
-    def validate_single_table(self, dataset_name: str, table_name: str, threshold: float = 1.2, skip_real_queries: bool = False, dry_run: bool = False) -> TableValidationResult:
+    def validate_single_table(self, dataset_name: str, table_name: str, threshold: float = 1.2,
+                              skip_real_queries: bool = False, dry_run: bool = False,
+                              reference_dataset: str = None, variant_id: int = -1) -> TableValidationResult:
         print(f"\n{'='*60}")
         print(f"Validating table: {table_name}" + (" [DRY RUN - no table replacement]" if dry_run else ""))
         print(f"{'='*60}")
 
         # In dry_run mode, skip table import - just compare current db state
         if not dry_run:
-            if not self.import_generated_table(self.gen_db, dataset_name, table_name):
+            if not self.import_generated_table(self.gen_db, dataset_name, table_name,
+                                               reference_dataset=reference_dataset, variant_id=variant_id):
                 # Import failed - restore table and mark as import_failed
                 print(f"Import failed, restoring {table_name} from real database...")
                 self.restore_table(table_name)
@@ -565,7 +575,8 @@ class DatabaseValidator:
         return result
 
     def validate_all_tables(self, dataset_name: str, threshold: float = 1.2,
-                            force_reload: bool = False, dry_run: bool = False) -> Dict[str, TableValidationResult]:
+                            force_reload: bool = False, dry_run: bool = False,
+                            reference_dataset: str = None, variant_id: int = -1) -> Dict[str, TableValidationResult]:
         print(f"\n{'#'*60}")
         print(f"Validating all generated tables for {dataset_name}" + (" [DRY RUN]" if dry_run else ""))
         print(f"{'#'*60}")
@@ -600,7 +611,9 @@ class DatabaseValidator:
         failed_tables = []
         for table_name in generated_tables:
             # skip_real_queries=True since we already ran them above
-            result = self.validate_single_table(dataset_name, table_name, threshold, skip_real_queries=True, dry_run=dry_run)
+            result = self.validate_single_table(dataset_name, table_name, threshold,
+                                                skip_real_queries=True, dry_run=dry_run,
+                                                reference_dataset=reference_dataset, variant_id=variant_id)
             results[table_name] = result
             if not result.passed:
                 failed_tables.append(table_name)

@@ -721,6 +721,7 @@ def handle_generate_data(tokens: List[str]):
             failed_tables, import_failed_tables = _validate_and_get_failed_tables(
                 dataset_name, [table_name], validate_threshold,
                 reference_dataset=reference_dataset,
+                variant_id=variant_id,
                 dry_run=dry_run,
                 skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
             )
@@ -1105,6 +1106,7 @@ def _validate_and_get_failed_tables(
     real_db: str = "imdb_17v2",
     drift_ref: dict = None,  # {table_name: (drift, corr_loss)} for saving validation status
     reference_dataset: str = None,
+    variant_id: int = -1,
     dry_run: bool = False,
     validated_cache_tables: set = None,  # Tables already validated - import only, skip SQL
     skip_freq_preservation: bool = False,  # Skip frequency preservation (for non-drift-ref mode)
@@ -1175,8 +1177,9 @@ def _validate_and_get_failed_tables(
             print(f"\n--- Importing (validated cache): {table_name} ---")
             # Just import the data, skip SQL validation
             if not dry_run:
-                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset)
-                success = validator.import_generated_table(validator.gen_db, dataset_name, table_name)
+                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset, variant_id=variant_id)
+                success = validator.import_generated_table(validator.gen_db, dataset_name, table_name,
+                                                           reference_dataset=reference_dataset, variant_id=variant_id)
                 if success:
                     print(f"  ✓ Imported (already validated)")
                 else:
@@ -1189,9 +1192,10 @@ def _validate_and_get_failed_tables(
 
             # Ensure we have data generated with best cached params
             if not dry_run:
-                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset)
+                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset, variant_id=variant_id)
 
-            result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
+            result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run,
+                                                     reference_dataset=reference_dataset, variant_id=variant_id)
 
             passed = result.passed
             ratio = result.time_ratio
@@ -2066,6 +2070,7 @@ def _generate_with_drift_reference(
             failed_tables, import_failed_tables = _validate_and_get_failed_tables(
                 dataset_name, list(generated_tables), validate_threshold,
                 drift_ref=drift_ref, reference_dataset=reference_dataset,
+                variant_id=variant_id,
                 dry_run=dry_run,
                 validated_cache_tables=validated_cache_tables,
                 skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
@@ -3001,7 +3006,8 @@ def handle_validate_data(tokens: List[str]):
             validator.create_database(gen_db)
             validator.copy_all_tables(real_db, gen_db)
 
-        result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
+        result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run,
+                                                  reference_dataset=reference_dataset, variant_id=variant_id)
 
         if result.passed:
             print(f"\n[SUCCESS] Table {table_name} passed validation!")
@@ -3031,7 +3037,8 @@ def handle_validate_data(tokens: List[str]):
                     regenerate_with_best_cached_params(dataset_name, tbl, skip_freq_preservation=False, reference_dataset=reference_dataset, variant_id=variant_id)
 
         # Validate all tables
-        results = validator.validate_all_tables(dataset_name, threshold, force_reload=force_reload, dry_run=dry_run)
+        results = validator.validate_all_tables(dataset_name, threshold, force_reload=force_reload, dry_run=dry_run,
+                                                reference_dataset=reference_dataset, variant_id=variant_id)
         failed = [t for t, r in results.items() if not r.passed and not r.import_failed]
         import_failed = [t for t, r in results.items() if r.import_failed]
 
