@@ -161,7 +161,7 @@ def main(args):
 
 # Example Call:
 #
-# python3 run_test_queries.py --use_postgres --database_name imdbload --query_dir queries/join-order-benchmark --output_file test__postgres__job.txt
+# python3 run_test_queries.py --use_postgres --database_name imdbload --query_dir queries/job --output_file test__postgres__job.txt
 #
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

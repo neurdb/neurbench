@@ -175,10 +175,10 @@ cd /app/bao
 python3 run_queries.py --query_dir queries/job__base_query_split_1/train --output_file logs/train__bao__base_query_split_1.txt
 
 # Testing Bao
-python3 run_test_queries.py --use_bao --query_dir queries/join-order-benchmark --output_file logs/test__bao__job.txt
+python3 run_test_queries.py --use_bao --query_dir queries/job --output_file logs/test__bao__job.txt
 
 # Testing Postgres
-python3 run_test_queries.py --use_postgres --query_dir queries/join-order-benchmark --output_file logs/test__postgres__job.txt
+python3 run_test_queries.py --use_postgres --query_dir queries/job --output_file logs/test__postgres__job.txt
 
 # Use Ctrl+b d to exit the tmux session
 Ctrl+b d
