@@ -219,6 +219,8 @@ if args.enable_drift:
             drifted_col = categorical_dist_on_predefined_bins(drifted_data[col], bins)
             print("drifted col:")
             print(drifted_col.reset_index().sort_values(by="index"))
+            # Align original_col to bins order (categorical_dist returns freq-descending order)
+            original_col = original_col.reindex(bins)
 
         # print("original_col", original_col)
         # print("drifted_col", drifted_col)

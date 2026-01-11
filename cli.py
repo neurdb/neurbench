@@ -30,6 +30,21 @@ DRIFT_ERROR_TOLERANCE = 0.20    # Max drift_error (|actual - target| / target) f
 CORRELATION_TOLERANCE = 0.25    # Max correlation_loss for cache quality
 
 
+def get_dataset_dir(dataset_name: str, reference_dataset: str = None) -> str:
+    """Get dataset directory name with reference_dataset suffix."""
+    if reference_dataset and reference_dataset != dataset_name:
+        return f"{dataset_name}_ref_{reference_dataset}"
+    return dataset_name
+
+
+def get_expdir_path(dataset_name: str, table_name: str, reference_dataset: str = None, variant_id: int = -1) -> str:
+    """Get full expdir path for a table."""
+    dataset_dir = get_dataset_dir(dataset_name, reference_dataset)
+    if variant_id > 0:
+        dataset_dir += f"-{variant_id}"
+    return os.path.join("expdir", dataset_dir, table_name)
+
+
 def load_json(path):
     with open(path, "r") as f:
         data = json.load(f)
@@ -137,10 +152,9 @@ Core Commands:
                                        - drift: 0.0-1.0
                                        - query_set: query set name (e.g., join-order-benchmark)
   set                                Show current configuration
-  gd DATASET [TABLE] DRIFT [--auto] [--quick] [--gpus=0,1,2] [--validate] [--ops=MODE]
+  gd DATASET [TABLE] DRIFT [--auto] [--gpus=0,1,2] [--validate] [--ops=MODE]
                                      Generate data that drifts DRIFT on DATASET
                                        --auto: Auto-tune parameters for target drift
-                                       --quick: Quick tune (reuse existing models)
                                        --gpus=X,Y,Z: Use multiple GPUs for parallel execution
                                                      (only when TABLE is not specified)
                                        --validate: Validate with DB after generation, re-tune if needed
@@ -191,7 +205,6 @@ def _run_table_generation(
     drift: float,
     scale: float,
     auto_tune: bool,
-    quick_tune: bool,
     reference_dataset: Optional[str],
     device: int,
 ) -> dict:
@@ -226,10 +239,7 @@ def _run_table_generation(
                 verbose=True,
             )
 
-            if quick_tune:
-                tune_result = tuner.quick_tune(drift)
-            else:
-                tune_result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE)
+            tune_result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE)
 
             if tune_result:
                 result["success"] = True
@@ -240,10 +250,10 @@ def _run_table_generation(
             # Check for cached params first
             cached_params = get_cached_params_for_table(dataset_name, table_name, drift, reference_dataset)
             if cached_params:
-                cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
+                cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
                 cmd += f" --device={device} {cached_params.to_cmd_args()} --reuse{ref_arg}"
             else:
-                cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
+                cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
                 cmd += f" --device={device} --scale-factor={scale}{ref_arg}"
 
             ret = os.system(cmd)
@@ -317,6 +327,7 @@ def _validate_generation_results(
     dataset_name: str,
     tables: List[str],
     drift_ref: dict,
+    reference_dataset: str = None,
 ):
     """Validate generated data against original and compare with target."""
     import calc_drift
@@ -336,7 +347,7 @@ def _validate_generation_results(
         target_drift, target_corr = drift_ref.get(t, (None, None))
 
         orig_path = os.path.join(base_dir, f"{t}.csv")
-        gen_path = os.path.join("expdir", dataset_name, t, f"{t}.drifted.csv")
+        gen_path = os.path.join(get_expdir_path(dataset_name, t, reference_dataset), f"{t}.drifted.csv")
 
         if not os.path.exists(gen_path):
             print(f"  {t}: generated file not found")
@@ -440,14 +451,16 @@ def _merge_npy_with_freq_preservation(
             before_df = before_df_partial
 
         before_drift, before_corr = None, None
+        before_loss, before_base_abs, before_gen_abs = 0, 0, 0
         if train_data is not None:
             before_drift = measure_drift(train_data, before_df, applicable_columns, verbose=False)
             before_corr = calc_correlation(train_data, before_df, verbose=False)
             print(f"    BEFORE: drift={before_drift:.6f} (target={drift:.6f}, diff={abs(before_drift - drift):.6f})")
             before_loss = before_corr.get('pearson', 0)
-            before_abs = before_corr.get('pearson_abs', 0)
-            before_ratio = before_loss / before_abs if before_abs > 0 else 0
-            print(f"    BEFORE: pearson_corr_loss={before_loss:.6f}, abs_corr={before_abs:.4f}, loss/abs_ratio={before_ratio:.4f}")
+            before_base_abs = before_corr.get('pearson_abs', 0)
+            before_gen_abs = before_corr.get('pearson_abs_gen', 0)
+            before_ratio = before_loss / before_base_abs if before_base_abs > 0 else 0
+            print(f"    BEFORE: corr base={before_base_abs:.4f}, gen={before_gen_abs:.4f}, loss={before_loss:.4f}, ratio={before_ratio:.4f}")
 
         # === Set up Frequency Preservation ===
         print(f"\n    Setting up Frequency Preservation (trend-based)...")
@@ -500,11 +513,12 @@ def _merge_npy_with_freq_preservation(
             after_corr = calc_correlation(train_data, final_df, verbose=False)
             print(f"    AFTER:  drift={after_drift:.6f} (target={drift:.6f}, diff={abs(after_drift - drift):.6f})")
             after_loss = after_corr.get('pearson', 0)
-            after_abs = after_corr.get('pearson_abs', 0)
-            after_ratio = after_loss / after_abs if after_abs > 0 else 0
-            print(f"    AFTER:  pearson_corr_loss={after_loss:.6f}, abs_corr={after_abs:.4f}, loss/abs_ratio={after_ratio:.4f}")
+            after_base_abs = after_corr.get('pearson_abs', 0)
+            after_gen_abs = after_corr.get('pearson_abs_gen', 0)
+            after_ratio = after_loss / after_base_abs if after_base_abs > 0 else 0
+            print(f"    AFTER:  corr base={after_base_abs:.4f}, gen={after_gen_abs:.4f}, loss={after_loss:.4f}, ratio={after_ratio:.4f}")
             if before_drift is not None and before_corr is not None:
-                print(f"    CHANGE: drift {before_drift:.6f} -> {after_drift:.6f}, corr {before_corr.get('pearson', 0):.6f} -> {after_corr.get('pearson', 0):.6f}")
+                print(f"    CHANGE: drift {before_drift:.4f} -> {after_drift:.4f}, corr_loss {before_loss:.4f} -> {after_loss:.4f}")
 
         return final_df
 
@@ -520,10 +534,9 @@ def handle_generate_data(tokens: List[str]):
 
     if len(tokens) < 1:
         print("Error: Not enough arguments")
-        print("Usage: gd DATASET [TABLE] DRIFT [--auto] [--quick] [--ref=REFERENCE_DATASET] [--gpus=0,1,2]")
+        print("Usage: gd DATASET [TABLE] DRIFT [--auto] [--ref=REFERENCE_DATASET] [--gpus=0,1,2]")
         print("       gd DATASET --drift-ref=FILE [--gpus=0,1,2]")
         print("  --auto: Enable auto-tuning to find best parameters")
-        print("  --quick: Quick auto-tune (uses existing models, faster)")
         print("  --ref=X: Use dataset X as reference for drift direction (default: DATASET_2014)")
         print("  --gpus=X,Y,Z: Use multiple GPUs for parallel execution (when no TABLE specified)")
         print("  --drift-ref=FILE: Use drift reference file (per-table target drift values)")
@@ -537,7 +550,6 @@ def handle_generate_data(tokens: List[str]):
     drift = 0.0
     scale = 1.0
     auto_tune = False
-    quick_tune = False
     reference_dataset = None
     gpus = None  # List of GPU IDs for parallel execution
     drift_ref_file = None  # Drift reference file path
@@ -548,15 +560,13 @@ def handle_generate_data(tokens: List[str]):
     exclude_tables = []  # Tables to exclude from generation
     batch_size = 524288  # Samples per batch (default 512K)
     sample_steps = None  # DDIM sampling steps (None = use diffuser-timesteps)
+    variant_id = -1  # Variant ID for creating separate output directories
 
     # Parse flags
     remaining_tokens = []
     for t in tokens[1:]:
         if t == "--auto":
             auto_tune = True
-        elif t == "--quick":
-            quick_tune = True
-            auto_tune = True  # quick implies auto
         elif t == "--validate":
             validate_after = True
         elif t == "--dry-run":
@@ -567,8 +577,8 @@ def handle_generate_data(tokens: List[str]):
             ops_mode = "regene-only"
         elif t.startswith("--ops="):
             ops_mode = t[6:]  # Extract value after --ops=
-            if ops_mode not in ("all", "retain", "regene-only"):
-                print(f"Error: Invalid --ops value '{ops_mode}'. Must be: all, retain, regene-only")
+            if ops_mode not in ("all", "retain", "retrain", "retrain-only", "regene-only"):
+                print(f"Error: Invalid --ops value '{ops_mode}'. Must be: all, retain, retrain, retrain-only, regene-only")
                 return
         elif t.startswith("--validate-threshold="):
             validate_threshold = float(t[21:])
@@ -587,6 +597,8 @@ def handle_generate_data(tokens: List[str]):
             batch_size = int(t[13:])
         elif t.startswith("--sample-steps="):
             sample_steps = int(t[15:])
+        elif t.startswith("--variant-id="):
+            variant_id = int(t[13:])
         else:
             remaining_tokens.append(t)
 
@@ -601,7 +613,7 @@ def handle_generate_data(tokens: List[str]):
     # If using drift reference file, handle separately
     if drift_ref_file:
         _generate_with_drift_reference(
-            dataset_name, drift_ref_file, reference_dataset, quick_tune, gpus,
+            dataset_name, drift_ref_file, reference_dataset, gpus,
             single_table=specified_table,
             validate_after=validate_after,
             validate_threshold=validate_threshold,
@@ -610,6 +622,7 @@ def handle_generate_data(tokens: List[str]):
             exclude_tables=exclude_tables,
             batch_size=batch_size,
             sample_steps=sample_steps,
+            variant_id=variant_id,
         )
         return
 
@@ -667,6 +680,23 @@ def handle_generate_data(tokens: List[str]):
         if cache_status["validation_passed"] and ops_mode == "retain":
             print(f"\nAlready validated (validation_passed=True), skipping generation.")
             print(f"Use --ops=regene-only to regenerate, or --ops=all to retrain from scratch.")
+        elif ops_mode == "retrain":
+            # retrain mode: use cached/default params and force retrain (no tuning)
+            print(f"\n[ops=retrain] Force retrain with cached/default params (no tuning)...")
+            tuner = AutoTuner(
+                dataset_name=dataset_name,
+                table_name=table_name,
+                reference_dataset=reference_dataset,
+                device=device,
+                verbose=True,
+                sample_steps=sample_steps,
+                skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
+            )
+            success, output_path = tuner.generate_with_best_params(drift, use_cache=True, retrain=True)
+            if success:
+                print(f"Retrain completed: {output_path}")
+            else:
+                print(f"Retrain failed!")
         else:
             # Map ops_mode to internal flags:
             # - all: force retrain from scratch (no_cache=True)
@@ -675,11 +705,12 @@ def handle_generate_data(tokens: List[str]):
             force_regenerate = (ops_mode == "regene-only")
             no_cache = (ops_mode == "all")
             _generate_with_auto_tune(
-                dataset_name, table_name, drift, quick_tune, reference_dataset, device,
+                dataset_name, table_name, drift, reference_dataset, device,
                 force_regenerate=force_regenerate,
                 no_cache=no_cache,
                 require_validation=False,
                 sample_steps=sample_steps,
+                skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
             )
 
         # Run validation if requested
@@ -691,6 +722,7 @@ def handle_generate_data(tokens: List[str]):
                 dataset_name, [table_name], validate_threshold,
                 reference_dataset=reference_dataset,
                 dry_run=dry_run,
+                skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
             )
             if not failed_tables and not import_failed_tables:
                 print(f"\n✓ Table {table_name} passed validation!")
@@ -705,142 +737,268 @@ def handle_generate_data(tokens: List[str]):
         config: dict = load_json(os.path.join(base_dir, "dataset_info.json"))
         table_names = [t for t in config.keys() if config[t]]
 
-        # Check cache status for each table
-        tables_to_skip = []
-        tables_to_generate = []
+        # Filter out excluded tables
+        if exclude_tables:
+            table_names = [t for t in table_names if t not in exclude_tables]
+            print(f"Excluding tables: {exclude_tables}")
+
+        # Check cache status for each table and classify
+        tables_to_skip = set()        # Tables to skip (validation passed, ops=retain)
+        tables_generate_only = set()  # Tables with cache (generate only, no retrain)
+        tables_to_generate = {}       # {table: drift} - all tables to process
+
         for t in table_names:
             cache_status = _check_cache_status(dataset_name, t, drift, reference_dataset)
-            if cache_status["validation_passed"] and ops_mode == "retain":
-                tables_to_skip.append(t)
+            if ops_mode == "all":
+                # Force retrain all
+                tables_to_generate[t] = drift
+            elif cache_status["validation_passed"]:
+                if ops_mode == "retain":
+                    tables_to_skip.add(t)
+                else:  # regene-only
+                    tables_to_generate[t] = drift
+                    tables_generate_only.add(t)
+            elif cache_status["has_cache"]:
+                tables_to_generate[t] = drift
+                tables_generate_only.add(t)
             else:
-                tables_to_generate.append(t)
+                tables_to_generate[t] = drift
 
-        print_args(
-            dataset_name=dataset_name,
-            table_names=table_names,
-            drift=drift,
-            reference_dataset=reference_dataset or f"{dataset_name}_2014 (default)",
-            gpus=gpus if gpus else [0],
-            ops_mode=ops_mode,
-            tables_to_skip=tables_to_skip if tables_to_skip else "none",
-        )
+        # Print header
+        print(f"\n{'='*60}")
+        print(f"GENERATION MODE")
+        print(f"{'='*60}")
+        print(f"Dataset: {dataset_name}")
+        print(f"Target drift: {drift}")
+        print(f"Reference dataset: {reference_dataset or '(default)'}")
+        print(f"Tables to generate: {list(tables_to_generate.keys())}")
+        print(f"GPUs: {gpus if gpus else [0]}")
+        print(f"Operation mode: {ops_mode}")
+        print()
+
+        # Print per-table status
+        print("Target per table:")
+        for t in table_names:
+            cache_status = _check_cache_status(dataset_name, t, drift, reference_dataset)
+            if ops_mode == "all":
+                status_str = " [RETRAIN: --ops=all]"
+            elif t in tables_to_skip:
+                status_str = " [CACHE: validated, SKIP]"
+            elif cache_status["validation_passed"]:
+                status_str = " [CACHE: validated, REGEN]"
+            elif cache_status["has_cache"]:
+                status_str = " [CACHE: OK, generate only]"
+            else:
+                status_str = " [NO CACHE: auto-tune]"
+            print(f"  {t}: drift={drift:.4f}{status_str}")
+        print()
 
         if tables_to_skip:
-            print(f"\nSkipping {len(tables_to_skip)} validated table(s): {tables_to_skip}")
-            if ops_mode != "retain":
-                print(f"  (--ops={ops_mode} specified, will regenerate anyway)")
-                tables_to_generate = table_names
-                tables_to_skip = []
+            print(f"Skipping {len(tables_to_skip)} validated table(s): {list(tables_to_skip)}")
+            print()
 
         if not tables_to_generate:
-            print("\nAll tables already validated. Nothing to generate.")
+            print("All tables already validated. Nothing to generate.")
             print("Use --ops=regene-only to regenerate, or --ops=all to retrain.")
-        elif gpus and len(gpus) > 1:
-            # Multi-GPU parallel execution
-            print(f"\n{'='*60}")
-            print(f"Running parallel generation on GPUs: {gpus}")
-            print(f"Tables: {tables_to_generate}")
-            print(f"{'='*60}\n")
+            return
 
-            # Distribute tables across GPUs using subprocess
-            processes = []
-            table_gpu_assignments = []
+        # Start timing for generation
+        generation_start_time = time.time()
 
-            for i, t in enumerate(tables_to_generate):
-                gpu_id = gpus[i % len(gpus)]
-                table_gpu_assignments.append((t, gpu_id))
+        if gpus and len(gpus) > 1:
+            # Multi-GPU parallel execution with two-phase structure
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import subprocess
 
-            print("Table -> GPU assignments:")
-            for t, gpu_id in table_gpu_assignments:
-                cache_status = _check_cache_status(dataset_name, t, drift, reference_dataset)
-                status_str = " [cached]" if cache_status["has_cache"] else ""
-                print(f"  {t} -> GPU {gpu_id}{status_str}")
-            print()
+            log_subdir = get_dataset_dir(dataset_name, reference_dataset)
+            if variant_id > 0:
+                log_subdir += f"-{variant_id}"
+            log_dir = os.path.join("gd_logs", log_subdir)
+            os.makedirs(log_dir, exist_ok=True)
+            generated_tables = set()
+            force_retrain_tables = set()
 
-            # Launch all processes - always use auto_tune.py (handles cache internally)
-            for t, gpu_id in table_gpu_assignments:
-                cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={t}"
-                cmd += f" --target-drift={drift} --device={gpu_id}"
-                if reference_dataset:
-                    cmd += f" --reference-dataset={reference_dataset}"
-                if quick_tune:
-                    cmd += " --quick"
-                # Map ops_mode to auto_tune.py flags
-                if ops_mode == "regene-only":
-                    cmd += " --force-regenerate"
-                elif ops_mode == "all":
-                    cmd += " --no-cache"
+            # Separate tables: those needing auto-tune vs those with cached params
+            tables_need_autotune = {t: d for t, d in tables_to_generate.items()
+                                    if t not in tables_generate_only}
+            tables_cached = {t: d for t, d in tables_to_generate.items()
+                             if t in tables_generate_only}
 
-                print(f"[GPU {gpu_id}] Starting: {t}")
+            # Phase 1: Auto-tune for tables without cache
+            if tables_need_autotune:
+                print(f"=== Phase 1: Auto-tune ({len(tables_need_autotune)} tables) ===")
+                print("These tables need auto-tune and will generate full tables directly.")
+                print()
 
-                # Create log file for each table
-                log_dir = "gd_logs"
-                os.makedirs(log_dir, exist_ok=True)
-                log_file = os.path.join(log_dir, f"{dataset_name}_{t}_{drift}.log")
+                def run_autotune(table_name, target_drift, gpu_id):
+                    cmd = f"python3 -u auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
+                    cmd += f" --target-drift={target_drift} --device={gpu_id}"
+                    if reference_dataset:
+                        cmd += f" --reference-dataset={reference_dataset}"
+                    if sample_steps:
+                        cmd += f" --sample-steps={sample_steps}"
+                    if variant_id > 0:
+                        cmd += f" --variant-id={variant_id}"
+                    # Map ops_mode to auto_tune.py flags
+                    if ops_mode == "all" or table_name in force_retrain_tables:
+                        cmd += " --no-cache"
+                    elif ops_mode == "regene-only":
+                        cmd += " --force-regenerate"
 
-                with open(log_file, "w") as f:
-                    proc = subprocess.Popen(
-                        cmd,
-                        shell=True,
-                        stdout=f,
-                        stderr=subprocess.STDOUT,
-                    )
-                    processes.append((t, gpu_id, proc, log_file))
+                    log_file = os.path.join(log_dir, f"{table_name}_{target_drift}.log")
+                    print(f"[GPU {gpu_id}] Auto-tune: {table_name} (log: {log_file})")
 
-            # Wait for all processes to complete
-            print(f"\nWaiting for {len(processes)} processes to complete...")
-            print(f"Logs are being written to: {log_dir}/")
-            print()
+                    env = os.environ.copy()
+                    env["PYTHONUNBUFFERED"] = "1"
+                    with open(log_file, "w", buffering=1) as f:
+                        proc = subprocess.Popen(cmd, shell=True, stdout=f, stderr=subprocess.STDOUT, env=env)
+                        ret = proc.wait()
 
-            completed = 0
-            failed = []
-            for t, gpu_id, proc, log_file in processes:
-                ret = proc.wait()
-                completed += 1
-                if ret == 0:
-                    print(f"[{completed}/{len(processes)}] ✓ {t} (GPU {gpu_id}) completed successfully")
-                else:
-                    print(f"[{completed}/{len(processes)}] ✗ {t} (GPU {gpu_id}) failed (exit code {ret})")
-                    print(f"    Check log: {log_file}")
-                    failed.append(t)
+                    success = ret == 0
+                    status = "Done" if success else "FAIL"
+                    print(f"[GPU {gpu_id}] {status}: {table_name}")
+                    return table_name, success
 
-            print(f"\n{'='*60}")
-            print(f"Parallel generation complete: {len(processes) - len(failed)}/{len(processes)} succeeded")
+                # Assign tables to GPUs round-robin
+                autotune_tasks = list(tables_need_autotune.items())
+                failed = []
+                with ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+                    futures = {}
+                    for i, (t, target_drift) in enumerate(autotune_tasks):
+                        gpu_id = gpus[i % len(gpus)]
+                        futures[executor.submit(run_autotune, t, target_drift, gpu_id)] = t
+
+                    for future in as_completed(futures):
+                        table_name, success = future.result()
+                        if success:
+                            generated_tables.add(table_name)
+                            tables_generate_only.add(table_name)  # Now has cache
+                        else:
+                            failed.append(table_name)
+
+                print(f"=== Phase 1 complete ===\n")
+
+            # Phase 2: Generate with cached params for remaining tables
+            if tables_cached:
+                print(f"=== Phase 2: Generate with cached params ({len(tables_cached)} tables) ===")
+                print("These tables have cached params and will generate directly.")
+                print()
+
+                def run_generate(table_name, target_drift, gpu_id):
+                    # Use cached params via auto_tune.py with default behavior (uses cache)
+                    cmd = f"python3 -u auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
+                    cmd += f" --target-drift={target_drift} --device={gpu_id}"
+                    if reference_dataset:
+                        cmd += f" --reference-dataset={reference_dataset}"
+                    if sample_steps:
+                        cmd += f" --sample-steps={sample_steps}"
+                    if variant_id > 0:
+                        cmd += f" --variant-id={variant_id}"
+                    if ops_mode == "regene-only":
+                        cmd += " --force-regenerate"
+
+                    log_file = os.path.join(log_dir, f"{table_name}_{target_drift}.log")
+                    print(f"[GPU {gpu_id}] Generate: {table_name} (log: {log_file})")
+
+                    env = os.environ.copy()
+                    env["PYTHONUNBUFFERED"] = "1"
+                    with open(log_file, "w", buffering=1) as f:
+                        proc = subprocess.Popen(cmd, shell=True, stdout=f, stderr=subprocess.STDOUT, env=env)
+                        ret = proc.wait()
+
+                    success = ret == 0
+                    status = "Done" if success else "FAIL"
+                    print(f"[GPU {gpu_id}] {status}: {table_name}")
+                    return table_name, success
+
+                # Assign tables to GPUs round-robin
+                generate_tasks = list(tables_cached.items())
+                with ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+                    futures = {}
+                    for i, (t, target_drift) in enumerate(generate_tasks):
+                        gpu_id = gpus[i % len(gpus)]
+                        futures[executor.submit(run_generate, t, target_drift, gpu_id)] = t
+
+                    for future in as_completed(futures):
+                        table_name, success = future.result()
+                        if success:
+                            generated_tables.add(table_name)
+                        else:
+                            failed.append(table_name)
+
+                print(f"=== Phase 2 complete ===\n")
+
             if failed:
                 print(f"Failed tables: {failed}")
-            print(f"{'='*60}")
 
         else:
-            # Sequential execution
+            # Sequential execution with two-phase structure
             device = gpus[0] if gpus else 0
-            # Map ops_mode to internal flags
-            force_regenerate = (ops_mode == "regene-only")
-            no_cache = (ops_mode == "all")
 
-            for t in tables_to_generate:
-                print(f"\n{'='*60}")
-                print(f"Generating data for {dataset_name}.{t} on GPU {device}...")
-                print(f"{'='*60}")
+            # Separate tables: those needing auto-tune vs those with cached params
+            tables_need_autotune = [t for t in tables_to_generate.keys()
+                                    if t not in tables_generate_only]
+            tables_cached = [t for t in tables_to_generate.keys()
+                             if t in tables_generate_only]
 
-                # Always use auto-tune logic - it handles cache internally
-                _generate_with_auto_tune(
-                    dataset_name, t, drift, quick_tune, reference_dataset, device,
-                    force_regenerate=force_regenerate,
-                    no_cache=no_cache,
-                    require_validation=False,
-                    sample_steps=sample_steps,
-                )
+            # Phase 1: Auto-tune for tables without cache
+            if tables_need_autotune:
+                print(f"=== Phase 1: Auto-tune ({len(tables_need_autotune)} tables) ===")
+                for t in tables_need_autotune:
+                    print(f"\n{'='*60}")
+                    print(f"[Phase 1] Auto-tuning {dataset_name}.{t} on GPU {device}...")
+                    print(f"{'='*60}")
 
-                print(f"Data generation complete for {dataset_name}.{t}")
+                    _generate_with_auto_tune(
+                        dataset_name, t, drift, reference_dataset, device,
+                        force_regenerate=False,
+                        no_cache=(ops_mode == "all"),
+                        require_validation=False,
+                        sample_steps=sample_steps,
+                        skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
+                    )
+                    print(f"Auto-tune complete for {dataset_name}.{t}")
+                print(f"=== Phase 1 complete ===\n")
 
-    print("\nData generation complete")
+            # Phase 2: Generate with cached params
+            if tables_cached:
+                print(f"=== Phase 2: Generate with cached params ({len(tables_cached)} tables) ===")
+                for t in tables_cached:
+                    print(f"\n{'='*60}")
+                    print(f"[Phase 2] Generating {dataset_name}.{t} on GPU {device}...")
+                    print(f"{'='*60}")
+
+                    _generate_with_auto_tune(
+                        dataset_name, t, drift, reference_dataset, device,
+                        force_regenerate=True,
+                        no_cache=False,
+                        require_validation=False,
+                        sample_steps=sample_steps,
+                        skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
+                    )
+                    print(f"Generation complete for {dataset_name}.{t}")
+                print(f"=== Phase 2 complete ===\n")
+
+        # Print total time
+        generation_total_time = time.time() - generation_start_time
+        hours, remainder = divmod(generation_total_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        print(f"\n{'='*60}")
+        print(f"All tables processed")
+        if hours > 0:
+            print(f"Total time: {int(hours)}h {int(minutes)}m {seconds:.1f}s")
+        elif minutes > 0:
+            print(f"Total time: {int(minutes)}m {seconds:.1f}s")
+        else:
+            print(f"Total time: {seconds:.1f}s")
+        print(f"{'='*60}")
 
 
 def _generate_with_auto_tune(
     dataset_name: str,
     table_name: str,
     drift: float,
-    quick: bool = False,
     reference_dataset: str = None,
     device: int = 0,
     target_corr_loss: float = None,
@@ -848,12 +1006,14 @@ def _generate_with_auto_tune(
     no_cache: bool = False,
     require_validation: bool = False,
     sample_steps: int = None,
+    skip_freq_preservation: bool = False,
 ) -> bool:
     """Generate data with automatic parameter tuning.
 
     Args:
         force_regenerate: If True, use cached params to regenerate (don't skip), train only if no cache.
         no_cache: If True, ignore cache and force retrain (for validation-failed retries).
+        skip_freq_preservation: If True, skip frequency preservation (for non-drift-ref mode).
 
     Returns:
         True if used validated cache (skip validation), False otherwise
@@ -877,6 +1037,8 @@ def _generate_with_auto_tune(
         verbose=True,
         target_corr_loss=target_corr_loss,
         sample_steps=sample_steps,
+        force_cache_update=no_cache,  # ops=all: always update cache with new result
+        skip_freq_preservation=skip_freq_preservation,
     )
 
     # --force-regenerate: use cached params to regenerate, train only if no cache
@@ -893,10 +1055,7 @@ def _generate_with_auto_tune(
         else:
             print("No cached params found, will train...")
 
-    if quick:
-        result = tuner.quick_tune(drift, use_cache=not no_cache)
-    else:
-        result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE, use_cache=not no_cache, require_validation=require_validation)
+    result = tuner.tune(drift, max_iterations=50, tolerance=DRIFT_ERROR_TOLERANCE, use_cache=not no_cache, require_validation=require_validation)
 
     used_validated_cache = False
 
@@ -918,7 +1077,7 @@ def _generate_with_auto_tune(
             print(f"  Using validated cache (skip validation)")
 
         # Ensure we have data generated with best params
-        output_path = os.path.join("expdir", dataset_name, table_name, f"{table_name}.drifted.csv")
+        output_path = os.path.join(get_expdir_path(dataset_name, table_name, reference_dataset), f"{table_name}.drifted.csv")
         if not os.path.exists(output_path):
             # File doesn't exist, generate with best cached params
             print(f"\nGenerating data with cached parameters...")
@@ -926,12 +1085,13 @@ def _generate_with_auto_tune(
         else:
             # File exists, check if it was generated with best params
             # (last iteration might not be the best one)
-            regenerate_with_best_cached_params(dataset_name, table_name)
+            regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset)
     else:
         print(f"\nAuto-tuning failed. Using default parameters.")
         ref_arg = f" --reference-dataset={reference_dataset}" if reference_dataset else ""
+        skip_freq_arg = " --skip-freq-preservation" if skip_freq_preservation else ""
         os.system(
-            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}{ref_arg}"
+            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}{ref_arg}{skip_freq_arg}"
         )
 
     return used_validated_cache
@@ -947,6 +1107,7 @@ def _validate_and_get_failed_tables(
     reference_dataset: str = None,
     dry_run: bool = False,
     validated_cache_tables: set = None,  # Tables already validated - import only, skip SQL
+    skip_freq_preservation: bool = False,  # Skip frequency preservation (for non-drift-ref mode)
 ) -> Tuple[List[str], List[str]]:
     """
     Validate generated tables against real database.
@@ -1014,7 +1175,7 @@ def _validate_and_get_failed_tables(
             print(f"\n--- Importing (validated cache): {table_name} ---")
             # Just import the data, skip SQL validation
             if not dry_run:
-                regenerate_with_best_cached_params(dataset_name, table_name)
+                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset)
                 success = validator.import_generated_table(validator.gen_db, dataset_name, table_name)
                 if success:
                     print(f"  ✓ Imported (already validated)")
@@ -1028,7 +1189,7 @@ def _validate_and_get_failed_tables(
 
             # Ensure we have data generated with best cached params
             if not dry_run:
-                regenerate_with_best_cached_params(dataset_name, table_name)
+                regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset)
 
             result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run)
 
@@ -1141,7 +1302,6 @@ def _generate_with_drift_reference(
     dataset_name: str,
     drift_ref_file: str,
     reference_dataset: Optional[str],
-    quick_tune: bool,
     gpus: Optional[List[int]],
     single_table: Optional[str] = None,
     validate_after: bool = False,
@@ -1152,6 +1312,7 @@ def _generate_with_drift_reference(
     exclude_tables: Optional[List[str]] = None,
     batch_size: int = 524288,
     sample_steps: Optional[int] = None,
+    variant_id: int = -1,
 ):
     """Generate data using drift reference file (per-table target drift and correlation)."""
     # Load drift reference, filtering by dataset_name (src) and reference_dataset (dst)
@@ -1205,6 +1366,12 @@ def _generate_with_drift_reference(
         if ops_mode == "all":
             # Force retrain: ignore all cache
             status_str = " [RETRAIN: --ops=all]"
+        elif ops_mode == "retrain":
+            # Force retrain with cached/default params (no tuning)
+            if cache_status["has_cache"]:
+                status_str = " [RETRAIN: cached params]"
+            else:
+                status_str = " [RETRAIN: default params]"
         elif cache_status["has_cache"]:
             if cache_status["validation_passed"]:
                 if ops_mode == "regene-only":
@@ -1231,6 +1398,7 @@ def _generate_with_drift_reference(
         if ops_mode != "retain":
             print(f"  (--ops={ops_mode} specified, will regenerate anyway)")
             tables_to_skip.clear()
+            tables_generate_only.clear()  # Also clear generate-only tables for full retrain
         print()
 
     # Track tables that need to be generated (exclude skipped ones)
@@ -1255,12 +1423,183 @@ def _generate_with_drift_reference(
     # Start timing
     generation_start_time = time.time()
 
+    # Special handling for ops=retrain: use cached/default params, force retrain, no tuning
+    if ops_mode == "retrain":
+        print(f"\n=== ops=retrain: Force retrain with cached/default params (no tuning) ===")
+
+        if gpus and len(gpus) > 1:
+            # Parallel retrain: one table per GPU
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import subprocess
+
+            log_subdir = get_dataset_dir(dataset_name, reference_dataset)
+            if variant_id > 0:
+                log_subdir += f"-{variant_id}"
+            log_dir = os.path.join("gd_logs", log_subdir)
+            os.makedirs(log_dir, exist_ok=True)
+
+            def run_retrain(table_name, target_drift, target_corr, gpu_id):
+                cmd = f"python3 -u auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
+                cmd += f" --target-drift={target_drift} --device={gpu_id}"
+                cmd += " --retrain-only"  # Use cached/default params, force retrain, no tuning
+                if reference_dataset:
+                    cmd += f" --reference-dataset={reference_dataset}"
+                if target_corr is not None:
+                    cmd += f" --target-corr-loss={target_corr}"
+                if sample_steps:
+                    cmd += f" --sample-steps={sample_steps}"
+                if variant_id > 0:
+                    cmd += f" --variant-id={variant_id}"
+
+                log_file = os.path.join(log_dir, f"{table_name}_retrain.log")
+                print(f"[GPU {gpu_id}] Retrain: {table_name} (log: {log_file})")
+
+                env = os.environ.copy()
+                env["PYTHONUNBUFFERED"] = "1"
+                with open(log_file, "w", buffering=1) as f:
+                    proc = subprocess.Popen(cmd, shell=True, stdout=f, stderr=subprocess.STDOUT, env=env)
+                    ret = proc.wait()
+
+                success = ret == 0
+                status = "Done" if success else "FAIL"
+                print(f"[GPU {gpu_id}] {status}: {table_name}")
+                return table_name, success
+
+            # Assign tables to GPUs round-robin
+            retrain_tasks = list(tables_to_generate.items())
+            with ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+                futures = {}
+                for i, (t, (drift, corr)) in enumerate(retrain_tasks):
+                    gpu_id = gpus[i % len(gpus)]
+                    futures[executor.submit(run_retrain, t, drift, corr, gpu_id)] = t
+
+                for future in as_completed(futures):
+                    table_name, success = future.result()
+                    if success:
+                        generated_tables.add(table_name)
+        else:
+            # Single GPU: sequential retrain
+            device = gpus[0] if gpus else 0
+            for t, (target_drift, target_corr) in list(tables_to_generate.items()):
+                print(f"\n[Retrain] {t}: drift={target_drift}")
+                tuner = AutoTuner(
+                    dataset_name=dataset_name,
+                    table_name=t,
+                    reference_dataset=reference_dataset,
+                    device=device,
+                    verbose=True,
+                    target_corr_loss=target_corr,
+                    sample_steps=sample_steps,
+                )
+                success, output_path = tuner.generate_with_best_params(target_drift, use_cache=True, retrain=True)
+                if success:
+                    generated_tables.add(t)
+                    print(f"Retrain completed: {output_path}")
+                else:
+                    print(f"Retrain failed!")
+
+        # Print timing and exit (no validation loop for retrain mode)
+        generation_end_time = time.time()
+        generation_time = generation_end_time - generation_start_time
+        hours, remainder = divmod(generation_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        print(f"\n{'='*60}")
+        print(f"GENERATION COMPLETE (ops=retrain)")
+        print(f"{'='*60}")
+        print(f"Total time: {int(hours)}h {int(minutes)}m {seconds:.1f}s")
+        print(f"Tables generated: {len(generated_tables)}/{len(drift_ref)}")
+        return
+
+    # Special handling for ops=retrain-only: only train, skip generation
+    if ops_mode == "retrain-only":
+        print(f"\n=== ops=retrain-only: Train only, skip generation ===")
+
+        if gpus and len(gpus) > 1:
+            # Parallel training: one table per GPU
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import subprocess
+
+            log_subdir = get_dataset_dir(dataset_name, reference_dataset)
+            if variant_id > 0:
+                log_subdir += f"-{variant_id}"
+            log_dir = os.path.join("gd_logs", log_subdir)
+            os.makedirs(log_dir, exist_ok=True)
+
+            def run_train_only(table_name, target_drift, target_corr, gpu_id):
+                cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
+                cmd += f" --drift={target_drift} --device={gpu_id}"
+                cmd += " --retrain-diffuser --retrain-controller --train-only"
+                if reference_dataset:
+                    cmd += f" --reference-dataset={reference_dataset}"
+                if variant_id > 0:
+                    cmd += f" --variant-id={variant_id}"
+
+                log_file = os.path.join(log_dir, f"{table_name}_train.log")
+                print(f"[GPU {gpu_id}] Train: {table_name} (log: {log_file})")
+
+                env = os.environ.copy()
+                env["PYTHONUNBUFFERED"] = "1"
+                with open(log_file, "w", buffering=1) as f:
+                    proc = subprocess.Popen(cmd, shell=True, stdout=f, stderr=subprocess.STDOUT, env=env)
+                    ret = proc.wait()
+
+                success = ret == 0
+                status = "Done" if success else "FAIL"
+                print(f"[GPU {gpu_id}] {status}: {table_name}")
+                return table_name, success
+
+            # Assign tables to GPUs round-robin
+            train_tasks = list(tables_to_generate.items())
+            with ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+                futures = {}
+                for i, (t, (drift, corr)) in enumerate(train_tasks):
+                    gpu_id = gpus[i % len(gpus)]
+                    futures[executor.submit(run_train_only, t, drift, corr, gpu_id)] = t
+
+                for future in as_completed(futures):
+                    table_name, success = future.result()
+                    if success:
+                        generated_tables.add(table_name)
+        else:
+            # Single GPU: sequential training
+            device = gpus[0] if gpus else 0
+            for t, (target_drift, target_corr) in list(tables_to_generate.items()):
+                print(f"\n[Train] {t}: drift={target_drift}")
+                tuner = AutoTuner(
+                    dataset_name=dataset_name,
+                    table_name=t,
+                    reference_dataset=reference_dataset,
+                    device=device,
+                    verbose=True,
+                    target_corr_loss=target_corr,
+                    sample_steps=sample_steps,
+                )
+                success, _ = tuner.generate_with_best_params(target_drift, use_cache=True, retrain=True, train_only=True)
+                if success:
+                    generated_tables.add(t)
+                    print(f"Training completed for {t}")
+                else:
+                    print(f"Training failed for {t}!")
+
+        # Print timing and exit
+        generation_end_time = time.time()
+        generation_time = generation_end_time - generation_start_time
+        hours, remainder = divmod(generation_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        print(f"\n{'='*60}")
+        print(f"TRAINING COMPLETE (ops=retrain-only)")
+        print(f"{'='*60}")
+        print(f"Total time: {int(hours)}h {int(minutes)}m {seconds:.1f}s")
+        print(f"Tables trained: {len(generated_tables)}/{len(drift_ref)}")
+        return
+
     while tables_to_generate:
         # Separate tables: those needing auto-tune vs those with cached params
+        # force_retrain_tables: validation failed, need full retrain (go to auto-tune, not cached)
         tables_need_autotune = {t: v for t, v in tables_to_generate.items()
-                                if t not in tables_generate_only and t not in force_retrain_tables}
+                                if t not in tables_generate_only or t in force_retrain_tables}
         tables_cached = {t: v for t, v in tables_to_generate.items()
-                         if t in tables_generate_only or t in force_retrain_tables}
+                         if t in tables_generate_only and t not in force_retrain_tables}
 
         # Phase 1: Run auto-tune for tables without cache (generates full table, no chunking)
         if tables_need_autotune:
@@ -1272,20 +1611,30 @@ def _generate_with_drift_reference(
                 from concurrent.futures import ThreadPoolExecutor, as_completed
                 import subprocess
 
-                log_dir = "gd_logs"
+                log_subdir = get_dataset_dir(dataset_name, reference_dataset)
+                if variant_id > 0:
+                    log_subdir += f"-{variant_id}"
+                log_dir = os.path.join("gd_logs", log_subdir)
                 os.makedirs(log_dir, exist_ok=True)
 
-                def run_autotune(table_name, target_drift, gpu_id):
-                    cmd = f"python3 auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
+                def run_autotune(table_name, target_drift, target_corr, gpu_id):
+                    cmd = f"python3 -u auto_tune.py --dataset-name={dataset_name} --table-name={table_name}"
                     cmd += f" --target-drift={target_drift} --device={gpu_id}"
                     if reference_dataset:
                         cmd += f" --reference-dataset={reference_dataset}"
-                    if quick_tune:
-                        cmd += " --quick"
+                    if target_corr is not None:
+                        cmd += f" --target-corr-loss={target_corr}"
                     if sample_steps:
                         cmd += f" --sample-steps={sample_steps}"
+                    if variant_id > 0:
+                        cmd += f" --variant-id={variant_id}"
+                    # Map ops_mode to auto_tune.py flags, or force no-cache for retrain tables
+                    if ops_mode == "all" or table_name in force_retrain_tables:
+                        cmd += " --no-cache"
+                    elif ops_mode == "regene-only":
+                        cmd += " --force-regenerate"
 
-                    log_file = os.path.join(log_dir, f"{dataset_name}_{table_name}_autotune.log")
+                    log_file = os.path.join(log_dir, f"{table_name}_autotune.log")
                     print(f"[GPU {gpu_id}] Auto-tune: {table_name} (log: {log_file})")
 
                     env = os.environ.copy()
@@ -1305,7 +1654,7 @@ def _generate_with_drift_reference(
                     futures = {}
                     for i, (t, (drift, corr)) in enumerate(autotune_tasks):
                         gpu_id = gpus[i % len(gpus)]
-                        futures[executor.submit(run_autotune, t, drift, gpu_id)] = t
+                        futures[executor.submit(run_autotune, t, drift, corr, gpu_id)] = t
 
                     for future in as_completed(futures):
                         table_name, success = future.result()
@@ -1316,12 +1665,12 @@ def _generate_with_drift_reference(
             else:
                 # Single GPU: sequential auto-tune
                 device = gpus[0] if gpus else 0
-                # Map ops_mode to internal flags
-                force_regenerate = (ops_mode == "regene-only")
-                no_cache = (ops_mode == "all")
                 for t, (target_drift, target_corr) in list(tables_need_autotune.items()):
+                    # Map ops_mode to internal flags, or force no-cache for retrain tables
+                    force_regenerate = (ops_mode == "regene-only")
+                    no_cache = (ops_mode == "all") or (t in force_retrain_tables)
                     _generate_with_auto_tune(
-                        dataset_name, t, target_drift, quick_tune, reference_dataset, device,
+                        dataset_name, t, target_drift, reference_dataset, device,
                         force_regenerate=force_regenerate, no_cache=no_cache,
                         target_corr_loss=target_corr,
                         sample_steps=sample_steps,
@@ -1448,7 +1797,10 @@ def _generate_with_drift_reference(
             print()
 
             # Launch processes using work pool pattern
-            log_dir = "gd_logs"
+            log_subdir = get_dataset_dir(dataset_name, reference_dataset)
+            if variant_id > 0:
+                log_subdir += f"-{variant_id}"
+            log_dir = os.path.join("gd_logs", log_subdir)
             os.makedirs(log_dir, exist_ok=True)
             from concurrent.futures import ThreadPoolExecutor, as_completed
             from queue import Queue
@@ -1471,7 +1823,7 @@ def _generate_with_drift_reference(
                 """Run a single batch on specified GPU."""
                 # Phase 2: All tables have cached params, use dbproc.py directly
                 cached_params = get_cached_params_for_table(dataset_name, table_name, target_drift, reference_dataset)
-                cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
+                cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
                 cmd += f" --drift={target_drift} --device={gpu_id}"
                 cmd += f" --sample-start={sample_start} --sample-count={sample_count}"
                 if cached_params:
@@ -1481,11 +1833,13 @@ def _generate_with_drift_reference(
                     cmd += f" --reference-dataset={reference_dataset}"
                 if sample_steps:
                     cmd += f" --sample-steps={sample_steps}"
+                if variant_id > 0:
+                    cmd += f" --variant-id={variant_id}"
 
                 batch_str = f"{table_name}[{batch_idx}]"
                 print(f"[GPU {gpu_id}] Start: {batch_str}")
 
-                log_file_path = os.path.join(log_dir, f"{dataset_name}_{table_name}_b{batch_idx}.log")
+                log_file_path = os.path.join(log_dir, f"{table_name}_b{batch_idx}.log")
                 env = os.environ.copy()
                 env["PYTHONUNBUFFERED"] = "1"
 
@@ -1581,7 +1935,7 @@ def _generate_with_drift_reference(
             # Post-process: merge if needed, then apply freq preservation if needed
             print("\n=== Post-processing ===")
             for t, n_batches in table_batch_counts.items():
-                save_dir = f"expdir/{dataset_name}/{t}"
+                save_dir = get_expdir_path(dataset_name, t, reference_dataset, variant_id)
                 target_drift = drift_ref.get(t, (0.3, None))[0]
 
                 # Collect .npy files
@@ -1679,13 +2033,13 @@ def _generate_with_drift_reference(
                 print(f"Generating: {table_name} (drift={target_drift:.4f}{corr_str}) on GPU {device}{mode_str}")
                 print(f"{'='*60}")
 
-                # Force no-cache for validation-failed tables
-                no_cache = table_name in force_retrain_tables
+                # Force no-cache for ops=all or validation-failed tables
+                no_cache = (ops_mode == "all") or (table_name in force_retrain_tables)
 
                 # Pass target_corr_loss from drift_ref.csv (base vs ref correlation loss)
                 # Auto-tune will compare measured (base vs generated) with target (base vs ref)
                 used_validated_cache = _generate_with_auto_tune(
-                    dataset_name, table_name, target_drift, quick_tune, reference_dataset, device,
+                    dataset_name, table_name, target_drift, reference_dataset, device,
                     target_corr_loss=target_corr, no_cache=no_cache, require_validation=validate_after,
                     sample_steps=sample_steps,
                 )
@@ -1714,6 +2068,7 @@ def _generate_with_drift_reference(
                 drift_ref=drift_ref, reference_dataset=reference_dataset,
                 dry_run=dry_run,
                 validated_cache_tables=validated_cache_tables,
+                skip_freq_preservation=False,  # Use synthetic distribution for freq preservation
             )
 
             # Handle import failures (don't retry - data format error)
@@ -2369,20 +2724,23 @@ def handle_lcc(tokens: List[str]):
         print("To build LCC, run: cd benchmarks/lcc && MODE=perf make -j dbtest")
 
 
-def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force_if_not_validated: bool = True) -> bool:
+def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force_if_not_validated: bool = True, skip_freq_preservation: bool = False, reference_dataset: str = None, variant_id: int = -1) -> bool:
     """
     Check if cache has better params than last generation. If so, regenerate.
 
     Args:
         force_if_not_validated: If True, force regenerate when validation_passed is False or missing.
                                 This ensures we always use best params for tables that haven't passed validation.
+        skip_freq_preservation: If True, skip frequency preservation (for non-drift-ref mode).
+        reference_dataset: Reference dataset name for path construction.
+        variant_id: Variant ID for path construction.
 
     Returns True if regeneration was done, False otherwise.
     """
     import json
     import subprocess
 
-    metadata_path = os.path.join("expdir", dataset_name, table_name, "last_generation.json")
+    metadata_path = os.path.join(get_expdir_path(dataset_name, table_name, reference_dataset, variant_id), "last_generation.json")
     if not os.path.exists(metadata_path):
         print(f"  No generation metadata found, will validate current data")
         return False
@@ -2456,7 +2814,7 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force
         print(f"  Regenerating with retrain using best cached params...")
 
         # Build command with all cached params
-        cmd = f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
+        cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name}"
         cmd += f" --drift={target_drift}"
         cmd += f" --scale-factor={cached_scale_factor}"
         # Controller params
@@ -2477,6 +2835,9 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force
 
         if reference_dataset:
             cmd += f" --reference-dataset={reference_dataset}"
+
+        if skip_freq_preservation:
+            cmd += " --skip-freq-preservation"
 
         print(f"  Running: {cmd}")
 
@@ -2500,12 +2861,12 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force
         return False
 
 
-def update_cache_validation(dataset_name: str, table_name: str, passed: bool, time_ratio: float):
+def update_cache_validation(dataset_name: str, table_name: str, passed: bool, time_ratio: float, reference_dataset: str = None, variant_id: int = -1):
     """Update tuning cache with validation result based on last_generation.json metadata."""
     import json
 
     # Check for last_generation.json
-    metadata_path = os.path.join("expdir", dataset_name, table_name, "last_generation.json")
+    metadata_path = os.path.join(get_expdir_path(dataset_name, table_name, reference_dataset, variant_id), "last_generation.json")
     if not os.path.exists(metadata_path):
         print(f"  No generation metadata found at {metadata_path}")
         return False
@@ -2575,6 +2936,8 @@ def handle_validate_data(tokens: List[str]):
     threshold = 1.2  # 20% performance threshold (same as gd --validate)
     force_reload = False
     dry_run = False
+    reference_dataset = None
+    variant_id = -1
 
     # Parse flags
     remaining_tokens = []
@@ -2585,6 +2948,10 @@ def handle_validate_data(tokens: List[str]):
             real_db = t[10:]
         elif t.startswith("--threshold="):
             threshold = float(t[12:])
+        elif t.startswith("--ref="):
+            reference_dataset = t[6:]
+        elif t.startswith("--variant-id="):
+            variant_id = int(t[13:])
         elif t == "--force-reload":
             force_reload = True
         elif t == "--dry-run":
@@ -2619,7 +2986,7 @@ def handle_validate_data(tokens: List[str]):
         # Check if we need to regenerate with best cached params
         if not dry_run:
             print(f"\nChecking for best cached params...")
-            regenerate_with_best_cached_params(dataset_name, table_name)
+            regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=False, reference_dataset=reference_dataset, variant_id=variant_id)
 
         # Validate single table - setup database if not exists
         if validator.database_exists(gen_db):
@@ -2640,14 +3007,14 @@ def handle_validate_data(tokens: List[str]):
             print(f"\n[SUCCESS] Table {table_name} passed validation!")
             # Update cache with validation result (skip in dry_run mode)
             if not dry_run:
-                update_cache_validation(dataset_name, table_name, True, result.time_ratio)
+                update_cache_validation(dataset_name, table_name, True, result.time_ratio, reference_dataset=reference_dataset, variant_id=variant_id)
         elif result.import_failed:
             print(f"\n[IMPORT FAILED] Table {table_name} - data import error, check CSV format")
         else:
             print(f"\n[FAILED] Table {table_name} failed validation (time_ratio={result.time_ratio:.2f}x)")
             # Update cache with failed validation (skip in dry_run mode)
             if not dry_run:
-                update_cache_validation(dataset_name, table_name, False, result.time_ratio)
+                update_cache_validation(dataset_name, table_name, False, result.time_ratio, reference_dataset=reference_dataset, variant_id=variant_id)
     else:
         # Get list of driftable tables
         info_path = os.path.join("datasets", dataset_name, "dataset_info.json")
@@ -2661,7 +3028,7 @@ def handle_validate_data(tokens: List[str]):
             if not dry_run:
                 print(f"\nChecking for best cached params for {len(driftable_tables)} tables...")
                 for tbl in driftable_tables:
-                    regenerate_with_best_cached_params(dataset_name, tbl)
+                    regenerate_with_best_cached_params(dataset_name, tbl, skip_freq_preservation=False, reference_dataset=reference_dataset, variant_id=variant_id)
 
         # Validate all tables
         results = validator.validate_all_tables(dataset_name, threshold, force_reload=force_reload, dry_run=dry_run)
@@ -2673,7 +3040,7 @@ def handle_validate_data(tokens: List[str]):
             print("\nUpdating tuning cache...")
             for tbl, result in results.items():
                 if not result.import_failed:
-                    update_cache_validation(dataset_name, tbl, result.passed, result.time_ratio)
+                    update_cache_validation(dataset_name, tbl, result.passed, result.time_ratio, reference_dataset=reference_dataset, variant_id=variant_id)
 
         if len(failed) == 0 and len(import_failed) == 0:
             print("\n[SUCCESS] All tables passed validation!")

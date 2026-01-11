@@ -89,7 +89,7 @@ def detect_trend_and_solve(base_data: np.ndarray, ref_data: np.ndarray,
 
 
 def solve_target_distribution(original_data: np.ndarray, target_drift: float,
-                               mode: str = 'sharpen') -> np.ndarray:
+                               mode: str = 'sharpen', use_binning: bool = True) -> np.ndarray:
     """
     Generate a synthetic reference distribution with a specific JS divergence from original.
 
@@ -110,19 +110,47 @@ def solve_target_distribution(original_data: np.ndarray, target_drift: float,
     from scipy.spatial.distance import jensenshannon
     from scipy.special import softmax
 
-    # 1. Get original probability distribution P
+    # 1. Get original probability distribution P (per unique value)
     unique_vals, counts = np.unique(original_data, return_counts=True)
     p_probs = counts / counts.sum()
+    total_rows = len(original_data)
 
-    # 2. Define function: input temperature T, return JS divergence
-    def get_js_dist(t):
-        if t <= 0:
-            return 1.0
-        # Temperature scaling: q_i = p_i^(1/t) / Z
-        # Compute in log domain for numerical stability
-        log_p = np.log(p_probs + 1e-10)
-        q_probs = softmax(log_p / t)
-        return jensenshannon(p_probs, q_probs)
+    if use_binning:
+        # Use same binning strategy as calc_drift (20 bins for numerical columns)
+        n_bins = 20
+        val_min, val_max = unique_vals.min(), unique_vals.max()
+        bin_edges = np.linspace(val_min, val_max, n_bins + 1)
+
+        # Assign each unique value to a bin (0 to n_bins-1)
+        bin_indices = np.clip(np.digitize(unique_vals, bin_edges[1:]), 0, n_bins - 1)
+
+        # Aggregate p_probs into bins (pre-compute for reuse)
+        p_binned = np.zeros(n_bins)
+        for i, prob in enumerate(p_probs):
+            p_binned[bin_indices[i]] += prob
+
+        # 2. Define function: input temperature T, return JS divergence (binned, like calc_drift numerical)
+        def get_js_dist(t):
+            if t <= 0:
+                return 1.0
+            log_p = np.log(p_probs + 1e-10)
+            q_probs = softmax(log_p / t)
+
+            # Aggregate q_probs into same bins
+            q_binned = np.zeros(n_bins)
+            for i, prob in enumerate(q_probs):
+                q_binned[bin_indices[i]] += prob
+
+            return jensenshannon(p_binned, q_binned)
+    else:
+        # Use all unique values (like calc_drift categorical branch)
+        # 2. Define function: input temperature T, return JS divergence (categorical, all unique values)
+        def get_js_dist(t):
+            if t <= 0:
+                return 1.0
+            log_p = np.log(p_probs + 1e-10)
+            q_probs = softmax(log_p / t)
+            return jensenshannon(p_probs, q_probs)
 
     # 3. Binary search to find optimal temperature T
     def find_temperature(low, high, target_js):

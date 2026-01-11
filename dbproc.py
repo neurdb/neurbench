@@ -109,9 +109,23 @@ def main(args: argparse.Namespace):
     print("=" * 80)
     total_start = time.time()
 
-    save_dir = os.path.join("expdir", args.dataset_name, args.table_name)
+    # Timing tracking
+    timing = {
+        "diffuser_train": 0.0,
+        "controller_train": 0.0,
+        "generation": 0.0,
+        "total": 0.0,
+    }
+
+    # Build save_dir with reference_dataset/variant_id suffix to avoid overwriting
+    # e.g., expdir/imdb_ref_imdb_2017/aka_name/ or expdir/imdb-1/aka_name/
+    dataset_dir = args.dataset_name
+    if args.reference_dataset and args.reference_dataset != args.dataset_name:
+        dataset_dir = f"{args.dataset_name}_ref_{args.reference_dataset}"
     if args.variant_id > 0:
-        save_dir += f"-{args.variant_id}"
+        dataset_dir += f"-{args.variant_id}"
+
+    save_dir = os.path.join("expdir", dataset_dir, args.table_name)
 
     print("save_dir", save_dir)
     os.makedirs(save_dir, exist_ok=True)
@@ -133,12 +147,20 @@ def main(args: argparse.Namespace):
     print(train_data)
 
     # Reference dataset: use specified reference or default to {dataset_name}
+    # Check if we have a meaningful reference dataset (different from source)
+    has_reference = args.reference_dataset and args.reference_dataset != args.dataset_name
     if args.reference_dataset:
         real_base_dir = os.path.join("datasets", args.reference_dataset)
     else:
         real_base_dir = os.path.join("datasets", args.dataset_name)
 
     print(f"Using reference dataset: {real_base_dir}")
+
+    # Disable RealMSE loss if no meaningful reference dataset
+    if not has_reference:
+        if args.loss_weight_real > 0:
+            print(f"[INFO] No reference dataset specified (--ref), disabling RealMSE loss (was {args.loss_weight_real})")
+            args.loss_weight_real = 0.0
 
     real_drift_data_path = os.path.join(real_base_dir, f"{args.table_name}.csv")
     original_real_drift_data = load_csv(real_drift_data_path)
@@ -148,16 +170,6 @@ def main(args: argparse.Namespace):
     real_data = original_real_drift_data[config["applicable_columns"]]
     print("Real Drift Data with drifting columns")
     print(real_data)
-
-    real_cond_data_path = os.path.join(
-        real_base_dir, f"{args.table_name}.csv"
-    )  # {args.table_name}
-    original_real_cond_data = load_csv(real_cond_data_path)
-    print("Conditional data")
-    print(original_real_cond_data)
-
-    # condition_data = original_real_cond_data[["id"]] ## TODO: for different table need to load different column
-    # synthetic_data = original_data[["movie_id"]]
 
     if args.fillna:
         train_data.fillna(0.0, inplace=True)
@@ -248,7 +260,8 @@ def main(args: argparse.Namespace):
             lambda_s=args.lambda_s,
         )
         diffuser_end = time.time()
-        print(f"[TIMING] Diffuser training took: {diffuser_end - diffuser_start:.2f} seconds")
+        timing["diffuser_train"] = diffuser_end - diffuser_start
+        print(f"[TIMING] Diffuser training took: {timing['diffuser_train']:.2f} seconds")
 
     diffuser = torch.load(os.path.join(save_dir, "diffuser.pt"))
 
@@ -313,14 +326,31 @@ def main(args: argparse.Namespace):
                 bs=args.controller_bs,
                 # New parameters for better training
                 drift_range=(args.drift_range_min, args.drift_range_max),
+                loss_weight_drift=args.loss_weight_drift,
                 loss_weight_corr=args.loss_weight_corr,
                 loss_weight_real=args.loss_weight_real,
             )
             controller_end = time.time()
-            print(f"[TIMING] Controller training took: {controller_end - controller_start:.2f} seconds")
+            timing["controller_train"] = controller_end - controller_start
+            print(f"[TIMING] Controller training took: {timing['controller_train']:.2f} seconds")
 
         controller = torch.load(os.path.join(save_dir, "controller.pt"))
     # controller_cond = torch.load(os.path.join(save_dir, "controller_cond.pt"))
+
+    # --train-only: exit after training, skip generation
+    if args.train_only:
+        total_end = time.time()
+        timing["total"] = total_end - total_start
+
+        print("=" * 80)
+        print("[TIMING SUMMARY] (train-only mode)")
+        print(f"  Diffuser Training:   {timing['diffuser_train']:.2f} seconds")
+        print(f"  Controller Training: {timing['controller_train']:.2f} seconds")
+        print(f"  Training Total:      {timing['diffuser_train'] + timing['controller_train']:.2f} seconds")
+        print(f"  Total:               {timing['total']:.2f} seconds")
+        print("=" * 80)
+        print(f"[TIMING] Training completed (train-only mode) at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        return
 
     """ oversampling. To avoid randomness, reseed everything. """
     deterministic.seed_everything(args.random_state)
@@ -432,7 +462,8 @@ def main(args: argparse.Namespace):
         sample_data = torch.cat(all_data, dim=0)
 
     oversampling_end = time.time()
-    print(f"[TIMING] Total oversampling took: {oversampling_end - oversampling_start:.2f} seconds")
+    timing["generation"] = oversampling_end - oversampling_start
+    print(f"[TIMING] Total oversampling took: {timing['generation']:.2f} seconds")
 
     sample_data = sample_data.cpu().numpy()
 
@@ -501,40 +532,47 @@ def main(args: argparse.Namespace):
     before_df_full[applicable_columns] = before_df_partial[applicable_columns].values
 
     before_drift = measure_drift(train_data, before_df_full, applicable_columns, verbose=False)
-    before_corr = calc_correlation(train_data, before_df_full, verbose=False)
+    # Use original_data (all columns except 'id') for correlation
+    before_corr = calc_correlation(original_data, before_df_full, verbose=False)
     print(f"  BEFORE: drift={before_drift:.6f} (target={args.drift:.6f}, diff={abs(before_drift - args.drift):.6f})")
     before_loss = before_corr.get('pearson', 0)
-    before_abs = before_corr.get('pearson_abs', 0)
-    before_ratio = before_loss / before_abs if before_abs > 0 else 0
-    print(f"  BEFORE: pearson_corr_loss={before_loss:.6f}, abs_corr={before_abs:.4f}, loss/abs_ratio={before_ratio:.4f}")
+    before_base_abs = before_corr.get('pearson_abs', 0)
+    before_gen_abs = before_corr.get('pearson_abs_gen', 0)
+    before_ratio = before_loss / before_base_abs if before_base_abs > 0 else 0
+    print(f"  BEFORE: corr base={before_base_abs:.4f}, gen={before_gen_abs:.4f}, loss={before_loss:.4f}, ratio={before_ratio:.4f}")
 
     # === Set up Frequency Preservation ===
-    print("\n[Setting up Frequency Preservation]")
-    for col in applicable_columns:
-        if col in data_wrapper.num_normalizer:
-            # Only use frequency preservation for foreign key columns
-            if col in FK_TO_TABLE:
-                base_col_data = train_data[col].dropna().values
-                if has_real_reference:
-                    # Have reference data: detect trend and generate synthetic distribution
-                    ref_col_data = real_data[col].dropna().values
-                    print(f"  {col}: FK column, using trend-based synthetic distribution "
-                          f"(base={len(base_col_data)}, ref={len(ref_col_data)} values)")
-                    data_wrapper.set_trend_based_reference_distribution(
-                        col, base_col_data, ref_col_data, args.drift)
+    if args.skip_freq_preservation:
+        print("\n[Frequency Preservation] SKIPPED (--skip-freq-preservation)")
+        sample_data = data_wrapper.Reverse(sample_data, skip_freq_preservation=True)
+        sample_data = sample_data[applicable_columns]
+    else:
+        print("\n[Setting up Frequency Preservation]")
+        for col in applicable_columns:
+            if col in data_wrapper.num_normalizer:
+                # Only use frequency preservation for foreign key columns
+                if col in FK_TO_TABLE:
+                    base_col_data = train_data[col].dropna().values
+                    if has_real_reference:
+                        # Have reference data: detect trend and generate synthetic distribution
+                        ref_col_data = real_data[col].dropna().values
+                        print(f"  {col}: FK column, using trend-based synthetic distribution "
+                              f"(base={len(base_col_data)}, ref={len(ref_col_data)} values)")
+                        data_wrapper.set_trend_based_reference_distribution(
+                            col, base_col_data, ref_col_data, args.drift)
+                    else:
+                        # No real reference: use auto mode
+                        print(f"  {col}: FK column, synthesizing target distribution with drift={args.drift}")
+                        data_wrapper.set_synthetic_reference_distribution(
+                            col, base_col_data, args.drift, mode='auto'
+                        )
                 else:
-                    # No real reference: use auto mode
-                    print(f"  {col}: FK column, synthesizing target distribution with drift={args.drift}")
-                    data_wrapper.set_synthetic_reference_distribution(
-                        col, base_col_data, args.drift, mode='auto'
-                    )
-            else:
-                # Non-FK columns (like production_year): skip frequency preservation
-                # Let the model's inverse_transform handle the drift naturally
-                print(f"  {col}: not a FK column, skip frequency preservation")
+                    # Non-FK columns (like production_year): skip frequency preservation
+                    # Let the model's inverse_transform handle the drift naturally
+                    print(f"  {col}: not a FK column, skip frequency preservation")
 
-    sample_data = data_wrapper.Reverse(sample_data)
-    sample_data = sample_data[applicable_columns]
+        sample_data = data_wrapper.Reverse(sample_data)
+        sample_data = sample_data[applicable_columns]
 
     # === AFTER Frequency Preservation: measure drift and correlation ===
     # Build full after_df with all columns (for correlation measurement)
@@ -548,13 +586,15 @@ def main(args: argparse.Namespace):
 
     print("\n[AFTER Freq Preservation] Measuring drift and correlation...")
     after_drift = measure_drift(train_data, after_df_full, applicable_columns, verbose=False)
-    after_corr = calc_correlation(train_data, after_df_full, verbose=False)
+    # Use original_data (all columns except 'id') for correlation
+    after_corr = calc_correlation(original_data, after_df_full, verbose=False)
     print(f"  AFTER:  drift={after_drift:.6f} (target={args.drift:.6f}, diff={abs(after_drift - args.drift):.6f})")
     after_loss = after_corr.get('pearson', 0)
-    after_abs = after_corr.get('pearson_abs', 0)
-    after_ratio = after_loss / after_abs if after_abs > 0 else 0
-    print(f"  AFTER:  pearson_corr_loss={after_loss:.6f}, abs_corr={after_abs:.4f}, loss/abs_ratio={after_ratio:.4f}")
-    print(f"  CHANGE: drift {before_drift:.6f} -> {after_drift:.6f}, corr {before_corr.get('pearson', 0):.6f} -> {after_corr.get('pearson', 0):.6f}")
+    after_base_abs = after_corr.get('pearson_abs', 0)
+    after_gen_abs = after_corr.get('pearson_abs_gen', 0)
+    after_ratio = after_loss / after_base_abs if after_base_abs > 0 else 0
+    print(f"  AFTER:  corr base={after_base_abs:.4f}, gen={after_gen_abs:.4f}, loss={after_loss:.4f}, ratio={after_ratio:.4f}")
+    print(f"  CHANGE: drift {before_drift:.4f} -> {after_drift:.4f}, corr_loss {before_loss:.4f} -> {after_loss:.4f}")
 
     # if len(original_data.index) > len(sample_data.index):
     # original_data = original_data[:len(sample_data.index)]
@@ -589,11 +629,18 @@ def main(args: argparse.Namespace):
     print(f"[Output] Saved to {output_filename}")
 
     total_end = time.time()
-    total_time = total_end - total_start
+    timing["total"] = total_end - total_start
+
+    # Print timing summary in parseable format
+    print("=" * 80)
+    print("[TIMING SUMMARY]")
+    print(f"  Diffuser Training:   {timing['diffuser_train']:.2f} seconds")
+    print(f"  Controller Training: {timing['controller_train']:.2f} seconds")
+    print(f"  Training Total:      {timing['diffuser_train'] + timing['controller_train']:.2f} seconds")
+    print(f"  Generation:          {timing['generation']:.2f} seconds")
+    print(f"  Total:               {timing['total']:.2f} seconds")
     print("=" * 80)
     print(f"[TIMING] Data generation pipeline completed at {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"[TIMING] Total execution time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
-    print("=" * 80)
 
 
 if __name__ == "__main__":
@@ -674,10 +721,16 @@ if __name__ == "__main__":
                         help="Min drift for controller training (default: 0.05)")
     parser.add_argument("--drift-range-max", type=float, default=0.75,
                         help="Max drift for controller training (default: 0.75)")
+    parser.add_argument("--loss-weight-drift", type=float, default=1.0,
+                        help="Weight for drift loss (default: 1.0)")
     parser.add_argument("--loss-weight-corr", type=float, default=0.8,
                         help="Weight for correlation loss (default: 0.8)")
     parser.add_argument("--loss-weight-real", type=float, default=0.1,
                         help="Weight for RealMSE loss (default: 0.1)")
+    parser.add_argument("--skip-freq-preservation", action="store_true", default=False,
+                        help="Skip frequency preservation (for non-drift-ref mode)")
+    parser.add_argument("--train-only", action="store_true", default=False,
+                        help="Only train diffuser and controller, skip generation")
 
     # parser.add_argument("--cond", action="store_true", default=False)
 

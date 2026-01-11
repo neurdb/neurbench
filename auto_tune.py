@@ -21,20 +21,27 @@ from scipy.spatial.distance import jensenshannon
 # Add drift_ddpm to path for imports
 sys.path.append("drift_ddpm")
 
-# Import from nrbench for find_q fallback
-try:
-    from nrbench.drift import find_q
-    from nrbench.sample import sample_from_distribution
-    from nrbench import dist as nrbench_dist
-    NRBENCH_AVAILABLE = True
-except ImportError:
-    NRBENCH_AVAILABLE = False
-
-
 # Tolerance constants
 DRIFT_RELATIVE_TOLERANCE = 0.20  # 20% relative error
 DRIFT_ABSOLUTE_TOLERANCE = 0.05  # ±0.05 absolute difference
-CORR_TOLERANCE = 0.15            # Correlation error tolerance
+CORR_TOLERANCE = 0.15            # Correlation error tolerance (when target_corr_loss is set)
+CORR_TOLERANCE_BASE = 0.10       # Base correlation tolerance (when no reference)
+CORR_TOLERANCE_SCALE = 0.4       # Scale factor: tolerance = base + scale * drift
+
+
+def get_corr_tolerance(target_drift: float, has_target_corr: bool) -> float:
+    """Get correlation tolerance, scaled by drift when no reference dataset.
+
+    When has_target_corr=True (have reference): use fixed CORR_TOLERANCE
+    When has_target_corr=False (no reference): scale tolerance with drift
+        - drift=0.1 → tolerance = 0.10 + 0.04 = 0.14
+        - drift=0.3 → tolerance = 0.10 + 0.12 = 0.22
+        - drift=0.5 → tolerance = 0.10 + 0.20 = 0.30
+    """
+    if has_target_corr:
+        return CORR_TOLERANCE
+    else:
+        return CORR_TOLERANCE_BASE + CORR_TOLERANCE_SCALE * target_drift
 
 
 def is_drift_ok(actual_drift: float, target_drift: float, rel_tol: float = DRIFT_RELATIVE_TOLERANCE, abs_tol: float = DRIFT_ABSOLUTE_TOLERANCE) -> bool:
@@ -72,10 +79,10 @@ class TuningParams:
     # Controller training improvement parameters
     drift_range_min: float = 0.05
     drift_range_max: float = 0.75
-    # Balanced defaults: Drift~0.005, PCorr~0.001, RealMSE~0.65
-    # weight_corr=5 -> PCorr*5 ≈ 0.005, weight_real=0.008 -> RealMSE*0.008 ≈ 0.005
-    loss_weight_corr: float = 5.0
-    loss_weight_real: float = 0.008
+    # Three loss weights for controller training
+    loss_weight_drift: float = 1.0   # Weight for drift loss
+    loss_weight_corr: float = 0.8    # Weight for correlation loss
+    loss_weight_real: float = 0.1    # Weight for RealMSE loss
 
     def to_cmd_args(self) -> str:
         """Convert to command line arguments."""
@@ -93,6 +100,7 @@ class TuningParams:
             f"--lambda-s={self.lambda_s}",
             f"--drift-range-min={self.drift_range_min}",
             f"--drift-range-max={self.drift_range_max}",
+            f"--loss-weight-drift={self.loss_weight_drift}",
             f"--loss-weight-corr={self.loss_weight_corr}",
             f"--loss-weight-real={self.loss_weight_real}",
         ]
@@ -111,7 +119,7 @@ class TuningResult:
     timestamp: str = ""
     validation_passed: bool = False  # Whether DB validation passed
     validation_ratio: float = 0.0  # Query time ratio from validation
-    fallback_type: str = ""  # Type of fallback used: "year_offset", "find_q", "row_mixing", or "" for normal
+    fallback_type: str = ""  # Type of fallback used: "year_offset", "row_mixing", or "" for normal
 
     def __post_init__(self):
         if not self.timestamp:
@@ -134,12 +142,18 @@ class TableTuningCache:
         return self.best_params.get(key)
 
     def update(self, result: TuningResult):
-        """Update cache with new result."""
+        """Update cache with new result (only if better)."""
         self.history.append(result)
         key = f"{result.target_drift:.2f}"
 
         if key not in self.best_params or result.score < self.best_params[key].score:
             self.best_params[key] = result
+
+    def clear(self, target_drift: float):
+        """Clear cached result for a specific target_drift (for ops=all mode)."""
+        key = f"{target_drift:.2f}"
+        if key in self.best_params:
+            del self.best_params[key]
 
     def update_validation_status(self, target_drift: float, passed: bool, ratio: float):
         """Update validation status for a cached result."""
@@ -267,6 +281,9 @@ class DataEvaluator:
             - abs_corr_base: Mean absolute correlation value of base data
             - abs_corr_gen: Mean absolute correlation value of generated data
         """
+        # Use calc_drift module for consistent drift calculation with dbproc.py
+        from calc_drift import calc_drift as measure_drift, calc_correlation
+
         # Cache original data (doesn't change), but not drifted (regenerated each iteration)
         original_data = self._load_csv(original_path, use_cache=True)
         drifted_data = self._load_csv(drifted_path, use_cache=False)
@@ -274,129 +291,16 @@ class DataEvaluator:
         dataset_info = self._load_dataset_info()
         drifted_columns = dataset_info.get("applicable_columns", [])
 
-        # Calculate drift (JS divergence)
-        divergences = []
-        for col in drifted_columns:
-            if col not in original_data.columns or col not in drifted_data.columns:
-                continue
+        # Calculate drift using calc_drift (same as dbproc.py) for consistency
+        mean_drift = measure_drift(original_data, drifted_data, drifted_columns, verbose=False)
 
-            col_data = original_data[col].dropna()
-            if len(col_data) == 0:
-                continue
-
-            try:
-                if self._is_numerical(col_data):
-                    original_dist = self._numerical_dist(col_data)
-                    bins = original_dist.index
-                    drifted_dist = self._numerical_dist_on_bins(drifted_data[col].dropna(), bins)
-                else:
-                    original_dist = self._categorical_dist(col_data)
-                    bins = sorted(original_dist.index)
-                    drifted_dist = self._categorical_dist_on_bins(drifted_data[col], bins)
-
-                jsd = distance.jensenshannon(original_dist.values, drifted_dist.values)
-                if np.isnan(jsd):
-                    jsd = 1.0
-                divergences.append(jsd)
-            except Exception as e:
-                print(f"Warning: Error computing drift for column {col}: {e}")
-                continue
-
-        mean_drift = np.mean(divergences) if divergences else 0.0
-
-        # Calculate correlation loss - compare BASE (original) vs GENERATED (drifted)
-        # This measures how much correlation changed from base to generated
-        # Then we compare this with target (base vs ref) from drift_ref.csv
-        corr_losses = []
-        abs_corrs_base = []
-        abs_corrs_gen = []
-
-        for corr_type in self.CORR_TYPES:
-            try:
-                original_corr = original_data.corr(method=corr_type, numeric_only=True)
-                drifted_corr = drifted_data.corr(method=corr_type, numeric_only=True)
-
-                # Align columns
-                common_cols = original_corr.columns.intersection(drifted_corr.columns)
-                if len(common_cols) > 0:
-                    original_corr = original_corr.loc[common_cols, common_cols]
-                    drifted_corr = drifted_corr.loc[common_cols, common_cols]
-
-                    loss = (drifted_corr - original_corr).abs()
-                    mean_loss = loss.mean().mean()
-                    if not np.isnan(mean_loss):
-                        corr_losses.append(mean_loss)
-
-                    # Calculate absolute correlation values (excluding diagonal)
-                    orig_no_diag = original_corr.copy()
-                    drift_no_diag = drifted_corr.copy()
-                    np.fill_diagonal(orig_no_diag.values, 0)
-                    np.fill_diagonal(drift_no_diag.values, 0)
-                    abs_corr_base = orig_no_diag.abs().mean().mean()
-                    abs_corr_gen = drift_no_diag.abs().mean().mean()
-                    if not np.isnan(abs_corr_base):
-                        abs_corrs_base.append(abs_corr_base)
-                    if not np.isnan(abs_corr_gen):
-                        abs_corrs_gen.append(abs_corr_gen)
-            except Exception as e:
-                print(f"Warning: Error computing {corr_type} correlation: {e}")
-                continue
-
-        mean_corr_loss = np.mean(corr_losses) if corr_losses else 0.0
-        mean_abs_corr_base = np.mean(abs_corrs_base) if abs_corrs_base else 0.0
-        mean_abs_corr_gen = np.mean(abs_corrs_gen) if abs_corrs_gen else 0.0
+        # Calculate correlation using calc_correlation (same as dbproc.py) for consistency
+        corr_result = calc_correlation(original_data, drifted_data, verbose=False)
+        mean_corr_loss = corr_result.get('pearson', 0.0)
+        mean_abs_corr_base = corr_result.get('pearson_abs', 0.0)
+        mean_abs_corr_gen = corr_result.get('pearson_abs_gen', 0.0)
 
         return mean_drift, mean_corr_loss, mean_abs_corr_base, mean_abs_corr_gen
-
-    def detect_mode_collapse(self, original_path: str, drifted_path: str, threshold: float = 0.1) -> Tuple[bool, List[str]]:
-        """
-        Detect mode collapse in generated data.
-
-        Mode collapse is detected when:
-        1. A column has much fewer unique values than expected
-        2. A single value dominates the column (>90% of rows)
-
-        Args:
-            original_path: Path to original CSV
-            drifted_path: Path to drifted CSV
-            threshold: Ratio threshold for unique values (default 0.1 = 10%)
-
-        Returns:
-            (is_collapsed, collapsed_columns): Whether collapse detected and which columns
-        """
-        original_data = self._load_csv(original_path, use_cache=True)
-        drifted_data = self._load_csv(drifted_path, use_cache=False)
-
-        dataset_info = self._load_dataset_info()
-        applicable_columns = dataset_info.get("applicable_columns", [])
-
-        collapsed_columns = []
-
-        for col in applicable_columns:
-            if col not in original_data.columns or col not in drifted_data.columns:
-                continue
-
-            orig_nunique = original_data[col].nunique()
-            drift_nunique = drifted_data[col].nunique()
-
-            if orig_nunique == 0:
-                continue
-
-            # Check 1: Unique value ratio dropped significantly
-            ratio = drift_nunique / orig_nunique
-            if ratio < threshold:
-                collapsed_columns.append(f"{col} (unique: {drift_nunique}/{orig_nunique}, ratio={ratio:.2%})")
-                continue
-
-            # Check 2: Single value dominates (>90%)
-            value_counts = drifted_data[col].value_counts(normalize=True)
-            if len(value_counts) > 0 and value_counts.iloc[0] > 0.9:
-                dominant_val = value_counts.index[0]
-                dominant_pct = value_counts.iloc[0]
-                collapsed_columns.append(f"{col} (dominant: {dominant_val} @ {dominant_pct:.1%})")
-
-        is_collapsed = len(collapsed_columns) > 0
-        return is_collapsed, collapsed_columns
 
 
 class AutoTuner:
@@ -416,6 +320,9 @@ class AutoTuner:
         sample_start: int = 0,  # For chunked generation
         sample_count: int = -1,  # -1 means all samples
         sample_steps: int = None,  # DDIM sampling steps (None = use diffuser-timesteps)
+        force_cache_update: bool = False,  # Force update cache (for ops=all mode)
+        skip_freq_preservation: bool = False,  # Skip frequency preservation (for non-drift-ref mode)
+        variant_id: int = -1,  # Variant ID for separate output directories
     ):
         self.dataset_name = dataset_name
         self.table_name = table_name
@@ -427,6 +334,9 @@ class AutoTuner:
         self.sample_start = sample_start
         self.sample_count = sample_count
         self.sample_steps = sample_steps
+        self.force_cache_update = force_cache_update
+        self.skip_freq_preservation = skip_freq_preservation
+        self.variant_id = variant_id
         self.evaluator = DataEvaluator(dataset_name, table_name, reference_dataset)
         self.cache = self._load_cache()
 
@@ -509,7 +419,13 @@ class AutoTuner:
         Save metadata about the last generation for manual validation.
         This allows 'vd' command to know which cache entry to update.
         """
-        metadata_dir = os.path.join("expdir", self.dataset_name, self.table_name)
+        # Build path matching dbproc.py logic
+        dataset_dir = self.dataset_name
+        if self.reference_dataset and self.reference_dataset != self.dataset_name:
+            dataset_dir = f"{self.dataset_name}_ref_{self.reference_dataset}"
+        if self.variant_id > 0:
+            dataset_dir += f"-{self.variant_id}"
+        metadata_dir = os.path.join("expdir", dataset_dir, self.table_name)
         os.makedirs(metadata_dir, exist_ok=True)
         metadata_path = os.path.join(metadata_dir, "last_generation.json")
 
@@ -543,6 +459,7 @@ class AutoTuner:
         target_drift: float,
         retrain: bool = True,
         retrain_controller_only: bool = False,
+        train_only: bool = False,
     ) -> Tuple[bool, str]:
         """
         Run data generation with given parameters.
@@ -550,6 +467,7 @@ class AutoTuner:
         Args:
             retrain: If True, retrain both diffuser and controller
             retrain_controller_only: If True, only retrain controller (used when adjusting weight params)
+            train_only: If True, only train models, skip generation
 
         Returns:
             (success, output_path)
@@ -578,6 +496,9 @@ class AutoTuner:
         if self.reference_dataset:
             cmd += f" --reference-dataset={self.reference_dataset}"
 
+        if self.skip_freq_preservation:
+            cmd += " --skip-freq-preservation"
+
         if retrain_controller_only:
             cmd += " --retrain-controller"  # Only retrain controller (weight params don't affect diffuser)
             print("*** RETRAINING CONTROLLER ONLY (weight adjustment) ***")
@@ -585,6 +506,12 @@ class AutoTuner:
             cmd += " --retrain-diffuser --retrain-controller"
         else:
             cmd += " --reuse"
+
+        if train_only:
+            cmd += " --train-only"  # Only train, skip generation
+
+        if self.variant_id > 0:
+            cmd += f" --variant-id={self.variant_id}"
 
         if self.verbose:
             print(f"Running: {cmd}")
@@ -610,8 +537,14 @@ class AutoTuner:
             else:
                 output_filename = f"{self.table_name}.drifted.csv"
 
+            # Build output path matching dbproc.py logic
+            dataset_dir = self.dataset_name
+            if self.reference_dataset and self.reference_dataset != self.dataset_name:
+                dataset_dir = f"{self.dataset_name}_ref_{self.reference_dataset}"
+            if self.variant_id > 0:
+                dataset_dir += f"-{self.variant_id}"
             output_path = os.path.join(
-                "expdir", self.dataset_name, self.table_name,
+                "expdir", dataset_dir, self.table_name,
                 output_filename
             )
 
@@ -634,12 +567,11 @@ class AutoTuner:
         target_drift: float,
         retrain: bool = True,
         retrain_controller_only: bool = False,
-        check_mode_collapse: bool = True,
     ) -> Tuple[Optional[TuningResult], bool]:
         """Evaluate a set of parameters.
 
         Returns:
-            (result, mode_collapsed): TuningResult and whether mode collapse was detected
+            (result, False): TuningResult and placeholder for compatibility
         """
         success, output_path = self._run_generation(params, target_drift, retrain, retrain_controller_only)
 
@@ -649,16 +581,6 @@ class AutoTuner:
         original_path = os.path.join(
             "datasets", self.dataset_name, f"{self.table_name}.csv"
         )
-
-        # Check for mode collapse first
-        mode_collapsed = False
-        if check_mode_collapse:
-            is_collapsed, collapsed_cols = self.evaluator.detect_mode_collapse(original_path, output_path)
-            if is_collapsed:
-                mode_collapsed = True
-                print(f"\n⚠️  MODE COLLAPSE DETECTED!")
-                for col_info in collapsed_cols:
-                    print(f"    - {col_info}")
 
         actual_drift, corr_loss, abs_corr_base, abs_corr_gen = self.evaluator.evaluate(original_path, output_path)
         corr_ratio = corr_loss / abs_corr_base if abs_corr_base > 0 else 0
@@ -692,17 +614,15 @@ class AutoTuner:
             print(f"Target drift: {target_drift:.4f}")
             print(f"Actual drift: {actual_drift:.4f}")
             print(f"Drift error: {drift_error:.2%}")  # Relative error
-            print(f"Correlation loss: {corr_loss:.4f}, abs_corr(base)={abs_corr_base:.4f}, abs_corr(gen)={abs_corr_gen:.4f}, loss/abs_ratio={corr_ratio:.4f}")
+            print(f"Correlation: base={abs_corr_base:.4f}, gen={abs_corr_gen:.4f}, loss={corr_loss:.4f}, ratio={corr_ratio:.4f}")
             if self.target_corr_loss is not None:
                 corr_error = abs(self.target_corr_loss - corr_loss)  # Absolute error
                 print(f"Target corr loss: {self.target_corr_loss:.4f}")
                 print(f"Corr error: {corr_error:.4f} (tolerance: 0.10)")
             print(f"Score: {score:.4f}")
-            if mode_collapsed:
-                print(f"⚠️  Mode collapse detected - results may be unreliable")
             print("-" * 25)
 
-        return result, mode_collapsed
+        return result, False
 
     def _get_initial_scale_factor(self, target_drift: float) -> float:
         """Estimate initial scale_factor based on target drift."""
@@ -750,70 +670,6 @@ class AutoTuner:
             print(f"Warning: Could not check table info: {e}")
             return False, None
 
-    def _is_all_id_columns_table(self) -> Tuple[bool, List[str]]:
-        """Check if all applicable columns are ID columns (foreign keys).
-
-        ID columns are problematic for DDPM because:
-        1. They're discrete identifiers, not continuous values
-        2. They have very large value ranges (millions)
-        3. There's no natural "drift" direction
-
-        Returns:
-            (is_all_id, columns): True and list of columns if all are IDs, else (False, [])
-        """
-        info_path = f"datasets/{self.dataset_name}/dataset_info.json"
-        try:
-            with open(info_path, "r") as f:
-                info = json.load(f)
-            table_info = info.get(self.table_name, {})
-            if not table_info:
-                return False, []
-
-            columns = table_info.get("applicable_columns", [])
-            if not columns:
-                return False, []
-
-            # Check if all columns look like ID columns
-            id_patterns = ["_id", "id"]
-            all_ids = True
-            for col in columns:
-                col_lower = col.lower()
-                is_id = any(col_lower.endswith(p) or col_lower == "id" for p in id_patterns)
-                if not is_id:
-                    all_ids = False
-                    break
-
-            if all_ids and len(columns) >= 2:
-                return True, columns
-            return False, []
-        except Exception as e:
-            print(f"Warning: Could not check table info: {e}")
-            return False, []
-
-    def _get_conservative_id_params(self) -> TuningParams:
-        """Get conservative parameters for all-ID tables.
-
-        These tables are prone to mode collapse with aggressive parameters.
-        Use very low scale_factor and correlation weight.
-        """
-        return TuningParams(
-            diffuser_lr=0.0018,
-            diffuser_steps=30000,
-            diffuser_bs=2048,
-            diffuser_timesteps=1000,
-            controller_lr=0.0005,
-            controller_steps=15000,
-            controller_bs=1024,
-            controller_dim=(512, 512),
-            scale_factor=1.5,  # Very low to prevent mode collapse
-            lambda_p=1.0,
-            lambda_s=1.0,
-            drift_range_min=0.05,
-            drift_range_max=0.50,
-            loss_weight_corr=0.5,  # Low to preserve diversity
-            loss_weight_real=0.2,
-        )
-
     def _compute_year_offset(self, year_column: str) -> int:
         """Compute year offset based on source and reference dataset distributions.
 
@@ -826,12 +682,12 @@ class AutoTuner:
 
         try:
             # Load source data
-            src_df = self._load_csv(src_path, usecols=[year_column])
+            src_df = self.evaluator._load_csv(src_path, usecols=[year_column])
             src_years = src_df[year_column].dropna()
             src_years = src_years[src_years > 1800]  # Filter valid years
 
             # Load reference data
-            ref_df = self._load_csv(ref_path, usecols=[year_column])
+            ref_df = self.evaluator._load_csv(ref_path, usecols=[year_column])
             ref_years = ref_df[year_column].dropna()
             ref_years = ref_years[ref_years > 1800]  # Filter valid years
 
@@ -886,7 +742,7 @@ class AutoTuner:
         try:
             # Load reference data
             try:
-                df_original = self._load_csv(ref_path)
+                df_original = self.evaluator._load_csv(ref_path)
             except RuntimeError:
                 print(f"Failed to load {ref_path}")
                 return None
@@ -894,7 +750,13 @@ class AutoTuner:
             print(f"Loaded {len(df_original)} rows from {ref_path}")
 
             original_path = f"datasets/{self.dataset_name}/{self.table_name}.csv"
-            output_dir = os.path.join("expdir", self.dataset_name, self.table_name)
+            # Build path matching dbproc.py logic
+            dataset_dir = self.dataset_name
+            if self.reference_dataset and self.reference_dataset != self.dataset_name:
+                dataset_dir = f"{self.dataset_name}_ref_{self.reference_dataset}"
+            if self.variant_id > 0:
+                dataset_dir += f"-{self.variant_id}"
+            output_dir = os.path.join("expdir", dataset_dir, self.table_name)
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, f"{self.table_name}.drifted.csv")
 
@@ -943,11 +805,12 @@ class AutoTuner:
                 history.append((current_offset, actual_drift, drift_error))
 
                 print(f"  Actual drift: {actual_drift:.4f}, Target: {target_drift:.4f}")
-                print(f"  Drift error: {drift_error:.2%}, Corr loss: {corr_loss:.4f}, abs_corr(base)={abs_corr_base:.4f}, loss/abs_ratio={corr_ratio:.4f}")
+                print(f"  Drift error: {drift_error:.2%}, corr base={abs_corr_base:.4f}, gen={abs_corr_gen:.4f}, loss={corr_loss:.4f}, ratio={corr_ratio:.4f}")
 
                 # Check if we meet tolerance (relative <= 20% OR absolute <= 0.05)
                 drift_ok = is_drift_ok(actual_drift, target_drift)
-                corr_ok = corr_error <= CORR_TOLERANCE
+                corr_tol = get_corr_tolerance(target_drift, self.target_corr_loss is not None)
+                corr_ok = corr_error <= corr_tol
 
                 result = TuningResult(
                     params=TuningParams(scale_factor=float(current_offset)),  # Store offset in scale_factor field
@@ -1041,338 +904,12 @@ class AutoTuner:
                     corr_ok = corr_error <= 0.10
 
                 if not (drift_ok and corr_ok):
-                    print(f"\nYear offset fallback didn't meet tolerance (drift_error={best_result.drift_error:.2%})")
-                    print("Trying find_q distribution-based fallback...")
-                    find_q_result = self._apply_find_q_fallback(
-                        year_column, target_drift, tolerance
-                    )
-                    if find_q_result and find_q_result.drift_error < best_result.drift_error:
-                        print("find_q fallback achieved better result!")
-                        return find_q_result
-                    else:
-                        print("Keeping year offset result (better or find_q failed)")
+                    print(f"\nYear offset fallback: best effort (drift_error={best_result.drift_error:.2%})")
 
             return best_result
 
         except Exception as e:
             print(f"Fallback failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-
-    def _apply_find_q_fallback(
-        self,
-        year_column: str,
-        target_drift: float,
-        tolerance: float = 0.20,
-    ) -> Optional[TuningResult]:
-        """Apply find_q distribution-based fallback.
-
-        Uses scipy.optimize to find a target distribution q where
-        jensenshannon(p, q) = target_drift, then samples from q.
-
-        This is an alternative to year offset when more precise drift control is needed.
-        """
-        if not NRBENCH_AVAILABLE:
-            print("nrbench not available, skipping find_q fallback")
-            return None
-
-        print(f"\n{'='*60}")
-        print(f"FALLBACK: find_q Distribution Method")
-        print(f"{'='*60}")
-
-        try:
-            # Load original data
-            ref_dataset = self.reference_dataset or f"{self.dataset_name}_2017"
-            ref_path = f"datasets/{ref_dataset}/{self.table_name}.csv"
-            original_path = f"datasets/{self.dataset_name}/{self.table_name}.csv"
-            output_dir = os.path.join("expdir", self.dataset_name, self.table_name)
-            os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, f"{self.table_name}.drifted.csv")
-
-            # Load reference data
-            try:
-                df = self._load_csv(ref_path)
-            except RuntimeError:
-                print(f"Failed to load {ref_path}")
-                return None
-
-            print(f"Loaded {len(df)} rows from {ref_path}")
-
-            # Get year column series
-            series = df[year_column].dropna()
-            series = series[series > 1800]  # Filter valid years
-
-            # Compute distribution using categorical dist (each year is a category)
-            year_counts = series.value_counts().sort_index()
-            p = (year_counts / year_counts.sum()).values
-            values = year_counts.index.values
-
-            print(f"Year range: {values.min()} - {values.max()} ({len(values)} unique years)")
-            print(f"Finding target distribution q for drift={target_drift}...")
-
-            # Find target distribution
-            q = find_q(p, target_drift, skewed=True)
-
-            # Verify achieved drift
-            achieved_drift = jensenshannon(p, q)
-            print(f"Achieved JS divergence: {achieved_drift:.4f}")
-
-            # Sample from target distribution
-            num_samples = len(df)
-            sampled_values, _ = sample_from_distribution(list(q), list(values), num_samples)
-
-            # Replace year column with sampled values
-            # Only replace valid years, keep NaN and invalid years as-is
-            df_new = df.copy()
-            valid_mask = df_new[year_column].notna() & (df_new[year_column] > 1800)
-
-            # Truncate or extend sampled values to match valid count
-            valid_count = valid_mask.sum()
-            if len(sampled_values) >= valid_count:
-                new_years = sampled_values[:valid_count]
-            else:
-                # Repeat if not enough samples
-                new_years = (sampled_values * (valid_count // len(sampled_values) + 1))[:valid_count]
-
-            df_new.loc[valid_mask, year_column] = new_years
-
-            # Save
-            df_new.to_csv(output_path, index=False, doublequote=False, escapechar="\\")
-
-            # Evaluate
-            actual_drift, corr_loss, abs_corr_base, abs_corr_gen = self.evaluator.evaluate(original_path, output_path)
-            corr_ratio = corr_loss / abs_corr_base if abs_corr_base > 0 else 0
-            drift_error = abs(actual_drift - target_drift) / target_drift if target_drift > 0 else abs(actual_drift)
-
-            print(f"Actual drift: {actual_drift:.4f}, Target: {target_drift:.4f}")
-            print(f"Drift error: {drift_error:.2%}, Corr loss: {corr_loss:.4f}, abs_corr(base)={abs_corr_base:.4f}, loss/abs_ratio={corr_ratio:.4f}")
-
-            # Compute score
-            if self.target_corr_loss is not None:
-                corr_error = abs(self.target_corr_loss - corr_loss)
-                score = drift_error * 2.0 + corr_error * 1.5
-            else:
-                score = drift_error * 2.0 + corr_loss * 1.0
-
-            result = TuningResult(
-                params=TuningParams(),  # Default params for fallback
-                target_drift=target_drift,
-                actual_drift=actual_drift,
-                correlation_loss=corr_loss,
-                drift_error=drift_error,
-                score=score,
-            )
-
-            # Check if meets tolerance (relative <= 20% OR absolute <= 0.05)
-            drift_ok = is_drift_ok(actual_drift, target_drift)
-            if drift_ok:
-                print(f"✓ find_q fallback SUCCESS!")
-            else:
-                print(f"find_q fallback: drift_error={drift_error:.2%}, abs_diff={abs(actual_drift - target_drift):.4f}")
-
-            # Save metadata
-            self._save_last_generation_metadata(
-                result.params, target_drift, actual_drift, corr_loss, abs_corr_base, abs_corr_gen
-            )
-
-            return result
-
-        except Exception as e:
-            print(f"find_q fallback failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-
-    def _apply_id_table_fallback(
-        self,
-        id_columns: List[str],
-        target_drift: float,
-        tolerance: float = 0.20,
-        max_attempts: int = 20,
-    ) -> Optional[TuningResult]:
-        """Apply row-mixing fallback for all-ID tables.
-
-        For tables where all columns are IDs (foreign keys), DDPM is not suitable.
-        Instead, we mix rows from source and reference datasets at certain ratios
-        to achieve target drift while preserving correlations.
-
-        This works by:
-        1. Sample some rows from source (original values)
-        2. Sample remaining rows from reference (drifted values)
-        3. Binary search to find the mixing ratio that achieves target drift
-        """
-        print(f"\n{'='*60}")
-        print(f"FALLBACK: Row-Mixing Method for All-ID Table")
-        print(f"{'='*60}")
-        print(f"ID columns: {id_columns}")
-
-        try:
-            # Load source and reference data
-            ref_dataset = self.reference_dataset or f"{self.dataset_name}_2017"
-            src_path = f"datasets/{self.dataset_name}/{self.table_name}.csv"
-            ref_path = f"datasets/{ref_dataset}/{self.table_name}.csv"
-
-            output_dir = os.path.join("expdir", self.dataset_name, self.table_name)
-            os.makedirs(output_dir, exist_ok=True)
-            output_path = os.path.join(output_dir, f"{self.table_name}.drifted.csv")
-
-            # Load datasets
-            try:
-                src_df = self._load_csv(src_path)
-                ref_df = self._load_csv(ref_path)
-            except RuntimeError:
-                print(f"Failed to load datasets")
-                return None
-
-            print(f"Source: {len(src_df)} rows, Reference: {len(ref_df)} rows")
-
-            # Use source row count as target
-            target_rows = len(src_df)
-
-            # Get applicable columns for drift calculation
-            info_path = f"datasets/{self.dataset_name}/dataset_info.json"
-            with open(info_path, "r") as f:
-                info = json.load(f)
-            applicable_cols = info.get(self.table_name, {}).get("applicable_columns", id_columns)
-
-            def compute_drift_for_ratio(ref_ratio: float) -> Tuple[float, pd.DataFrame]:
-                """Compute JS divergence for a given reference ratio."""
-                # Sample rows from each dataset
-                n_ref = int(target_rows * ref_ratio)
-                n_src = target_rows - n_ref
-
-                # Sample with replacement if needed
-                if n_src > 0:
-                    src_sample = src_df.sample(n=n_src, replace=(n_src > len(src_df)))
-                else:
-                    src_sample = pd.DataFrame()
-
-                if n_ref > 0:
-                    ref_sample = ref_df.sample(n=n_ref, replace=(n_ref > len(ref_df)))
-                else:
-                    ref_sample = pd.DataFrame()
-
-                # Combine
-                mixed_df = pd.concat([src_sample, ref_sample], ignore_index=True)
-
-                # Shuffle to mix rows
-                mixed_df = mixed_df.sample(frac=1.0).reset_index(drop=True)
-
-                # Reset ID column to sequential
-                mixed_df['id'] = range(1, len(mixed_df) + 1)
-
-                # Compute JS divergence on applicable columns
-                drifts = []
-                for col in applicable_cols:
-                    if col not in mixed_df.columns or col not in ref_df.columns:
-                        continue
-
-                    mixed_vals = mixed_df[col].dropna()
-                    ref_vals = ref_df[col].dropna()
-
-                    if len(mixed_vals) == 0 or len(ref_vals) == 0:
-                        continue
-
-                    # Compute distributions
-                    all_vals = np.concatenate([mixed_vals, ref_vals])
-                    bins = min(100, len(np.unique(all_vals)))
-                    range_min, range_max = all_vals.min(), all_vals.max()
-
-                    mixed_hist, _ = np.histogram(mixed_vals, bins=bins, range=(range_min, range_max), density=True)
-                    ref_hist, _ = np.histogram(ref_vals, bins=bins, range=(range_min, range_max), density=True)
-
-                    # Add small epsilon to avoid division by zero
-                    mixed_hist = mixed_hist + 1e-10
-                    ref_hist = ref_hist + 1e-10
-
-                    # Normalize
-                    mixed_hist = mixed_hist / mixed_hist.sum()
-                    ref_hist = ref_hist / ref_hist.sum()
-
-                    js = jensenshannon(mixed_hist, ref_hist)
-                    drifts.append(js)
-
-                avg_drift = np.mean(drifts) if drifts else 0.0
-                return avg_drift, mixed_df
-
-            # Binary search to find the right mixing ratio
-            low_ratio, high_ratio = 0.0, 1.0
-            best_result = None
-            best_df = None
-            best_drift_error = float('inf')
-
-            print(f"Searching for mixing ratio to achieve drift={target_drift}...")
-
-            for attempt in range(max_attempts):
-                mid_ratio = (low_ratio + high_ratio) / 2
-                actual_drift, mixed_df = compute_drift_for_ratio(mid_ratio)
-                drift_error = abs(actual_drift - target_drift) / target_drift if target_drift > 0 else abs(actual_drift)
-
-                print(f"  Attempt {attempt+1}: ref_ratio={mid_ratio:.3f}, drift={actual_drift:.4f}, error={drift_error:.2%}")
-
-                if drift_error < best_drift_error:
-                    best_drift_error = drift_error
-                    best_df = mixed_df
-                    best_result = (mid_ratio, actual_drift)
-
-                if is_drift_ok(actual_drift, target_drift):
-                    print(f"  ✓ Found acceptable solution!")
-                    break
-
-                # Adjust search bounds
-                if actual_drift < target_drift:
-                    # Need more drift -> more reference data
-                    low_ratio = mid_ratio
-                else:
-                    # Need less drift -> less reference data
-                    high_ratio = mid_ratio
-
-            if best_df is None:
-                print("Failed to find acceptable mixing ratio")
-                return None
-
-            ref_ratio, actual_drift = best_result
-
-            # Save the mixed data
-            best_df.to_csv(output_path, index=False, doublequote=False, escapechar="\\")
-            print(f"Saved mixed data to {output_path}")
-
-            # Compute correlation (for ID tables, this is typically 0)
-            corr_loss = 0.0  # ID correlations don't have semantic meaning
-
-            result = TuningResult(
-                params=TuningParams(),  # Default params for fallback
-                target_drift=target_drift,
-                actual_drift=actual_drift,
-                correlation_loss=corr_loss,
-                drift_error=best_drift_error,
-                score=best_drift_error,  # Simple score for fallback
-            )
-
-            # Update cache
-            self.cache.update(result)
-            self._save_cache()
-
-            print(f"\nRow-mixing fallback result:")
-            print(f"  Reference ratio: {ref_ratio:.2%}")
-            print(f"  Actual drift: {actual_drift:.4f}")
-            print(f"  Drift error: {best_drift_error:.2%}")
-
-            if is_drift_ok(actual_drift, target_drift):
-                print(f"✓ Row-mixing fallback SUCCESS!")
-            else:
-                print(f"Row-mixing fallback: best effort (error={best_drift_error:.2%}, abs_diff={abs(actual_drift - target_drift):.4f})")
-
-            # Save metadata
-            self._save_last_generation_metadata(
-                result.params, target_drift, actual_drift, corr_loss
-            )
-
-            return result
-
-        except Exception as e:
-            print(f"Row-mixing fallback failed: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1415,6 +952,12 @@ class AutoTuner:
         print(f"Stop only on tolerance: {stop_only_on_tolerance}")
         print(f"{'='*60}\n")
 
+        # Clear cache for this target_drift if force_cache_update (ops=all mode)
+        if self.force_cache_update:
+            self.cache.clear(target_drift)
+            self._save_cache()
+            print(f"Cleared cache for drift={target_drift:.2f} (ops=all mode)")
+
         # Check cache first
         if use_cache:
             cached = self.cache.get_best_params(target_drift)
@@ -1425,7 +968,8 @@ class AutoTuner:
                     corr_error = abs(cached.correlation_loss - self.target_corr_loss)
                 else:
                     corr_error = cached.correlation_loss  # Target is 0, so error = loss itself
-                corr_ok = corr_error <= CORR_TOLERANCE
+                corr_tol = get_corr_tolerance(target_drift, self.target_corr_loss is not None)
+                corr_ok = corr_error <= corr_tol
 
                 if corr_ok:
                     # Cache meets tolerance - use it regardless of validation status
@@ -1436,17 +980,7 @@ class AutoTuner:
                         print(f"Using cached parameters (drift_error={cached.drift_error:.2%}, corr_error={corr_error:.4f}, pending validation)")
                     return cached
                 else:
-                    print(f"Cache found but corr_error too high ({corr_error:.4f} > {CORR_TOLERANCE}), re-tuning...")
-
-        # Check if this is an all-ID columns table (prone to mode collapse)
-        is_all_id, id_columns = self._is_all_id_columns_table()
-        if is_all_id:
-            print(f"\n⚠️  NOTE: All-ID columns table detected: {id_columns}")
-            print(f"    Will use conservative parameters and monitor for mode collapse.\n")
-
-        # Track mode collapse retries
-        mode_collapse_retries = 0
-        max_mode_collapse_retries = 3
+                    print(f"Cache found but corr_error too high ({corr_error:.4f} > {corr_tol:.2f}), re-tuning...")
 
         best_result = None
 
@@ -1476,209 +1010,103 @@ class AutoTuner:
         consecutive_small_gradient = 0
         gradient_history = []  # Track gradient values for diagnostics
 
-        # Adaptive drift_range adjustment
-        drift_range_expansion = 0.0  # Start with ±0.15, can expand up to ±0.40
+        # === SIMPLIFIED TUNING: Each mode adjusts ONE parameter ===
+        # normal: adjust scale_factor
+        # corr_focus: adjust loss_weight_corr (increase to improve correlation)
+        # drift_focus: adjust loss_weight_drift (increase to improve drift control)
+        #
+        # Focus mode has two phases:
+        # 1. "scan": try candidate values until no improvement for 2 consecutive attempts
+        # 2. "bisect": binary search within the best range found
 
-        # === STEP-BY-STEP TUNING PHASES (Adaptive) ===
-        # Each phase adjusts one parameter with trend detection:
-        # - If improving: continue in same direction (or expand range)
-        # - If worsening: stop phase and use best value found
+        # Candidate values for focus modes (scan phase)
+        CORR_WEIGHT_VALUES = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0]
+        # Drift weight: increase when drift too low, decrease when drift too high
+        DRIFT_WEIGHT_UP_VALUES = [2.0, 4.0, 8.0, 16.0, 32.0]    # Increase from default 1.0
+        DRIFT_WEIGHT_DOWN_VALUES = [0.5, 0.2, 0.1, 0.05, 0.02]  # Decrease from default 1.0
 
-        # Corr Focus phases: parameter name, initial candidates, can_expand_up, can_expand_down
-        # Defaults: weight_corr=5, weight_real=0.008, batch_size=512, dim=(512,512), steps=10000
-        # To improve correlation: increase weight_corr or decrease weight_real
-        CORR_FOCUS_PHASES = [
-            ("weight_corr", [8, 12, 20, 30, 50, 80], True, False),  # Increase from default 5
-            ("weight_real", [0.005, 0.003, 0.001, 0.0005], False, True),  # Decrease from default 0.008
-            ("batch_size", [1024, 2048, 4096, 8192], True, False),  # Skip default 512
-            ("dim", [(768, 768), (1024, 768), (1024, 1024), (1024, 1024, 512), (1024, 1024, 1024)], True, False),  # Skip default (512,512)
-            ("steps", [12000, 15000, 20000, 25000, 30000, 40000], True, False),
-        ]
-
-        # Drift Focus phases
-        # Defaults: weight_corr=5, weight_real=0.008, dim=(512,512)
-        # To improve drift: decrease weight_corr or increase weight_real
-        DRIFT_FOCUS_PHASES = [
-            ("weight_corr", [3, 2, 1, 0.5, 0.2, 0.1], False, True),  # Decrease from default 5
-            ("weight_real", [0.01, 0.02, 0.05, 0.1], True, False),  # Increase from default 0.008
-            ("drift_range", [0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50], True, False),
-            ("dim", [(768, 768), (1024, 768), (1024, 1024), (1024, 1024, 512)], True, False),  # Skip default (512,512)
-        ]
-
-        # Phase tracking for focus modes
-        corr_focus_phase = 0
+        # Corr focus state
+        corr_focus_phase = "scan"  # "scan" or "bisect"
         corr_focus_attempt = 0
-        corr_focus_best_params = {
-            "weight_corr": 5.0, "weight_real": 0.008, "batch_size": 512, "dim": (512, 512),
-            "steps": 15000, "lr": 0.001,
-        }
-        # Trend tracking within phase
-        corr_focus_phase_best_value = None
-        corr_focus_phase_best_corr = float('inf')
-        corr_focus_phase_history = []  # List of (value, corr_loss) for trend detection
-        corr_focus_consecutive_worse = 0  # Count consecutive worsening results
+        corr_focus_no_improve = 0
+        corr_focus_bisect_low = 0.8
+        corr_focus_bisect_high = CORR_WEIGHT_VALUES[-1]  # Start with full range
+        best_corr_weight = 0.8
+        best_corr_loss_in_focus = float('inf')
 
-        drift_focus_phase = 0
+        # Drift focus state
+        drift_focus_phase = "scan"
+        drift_focus_direction = "up"  # "up" (drift too low) or "down" (drift too high)
         drift_focus_attempt = 0
-        drift_focus_best_params = {
-            "weight_corr": 5.0, "weight_real": 0.008, "batch_size": 512, "dim": (512, 512),
-            "steps": 15000, "lr": 0.001,
-        }
-        drift_focus_phase_best_value = None
-        drift_focus_phase_best_drift_error = float('inf')
-        drift_focus_phase_history = []
-        drift_focus_consecutive_worse = 0
+        drift_focus_no_improve = 0
+        drift_focus_bisect_low = 1.0
+        drift_focus_bisect_high = DRIFT_WEIGHT_UP_VALUES[-1]  # Will be updated based on direction
+        best_drift_weight = 1.0
+        best_drift_error_in_focus = float('inf')
 
         for i in range(max_iterations):
             # === DETERMINE PARAMS BASED ON MODE ===
+            # Default values
+            ctrl_drift_weight = best_drift_weight
+            ctrl_corr_weight = best_corr_weight
+            # RealMSE only useful when reference dataset is different from source
+            has_reference = self.reference_dataset and self.reference_dataset != self.dataset_name
+            ctrl_real_weight = 0.1 if has_reference else 0.0
 
             if mode == "normal":
                 retrain_controller_only = False
                 if i == 0:
                     # First iteration: train with default params
                     should_retrain = True
-                    ctrl_dim = (512, 512)
-                    ctrl_steps = 15000
-                    ctrl_lr = 0.0008
-                    ctrl_corr_weight = 5.0  # Balanced default: PCorr*5 ≈ 0.005
-                    ctrl_real_weight = 0.008  # Balanced default: RealMSE*0.008 ≈ 0.005
-                    ctrl_bs = 512
                 else:
                     # Normal: just adjust scale_factor, no retrain
                     should_retrain = False
-                    ctrl_dim = (512, 512)
-                    ctrl_steps = 12000
-                    ctrl_lr = 0.001
-                    ctrl_corr_weight = 5.0  # Balanced default
-                    ctrl_real_weight = 0.008  # Balanced default
-                    ctrl_bs = 512
 
             elif mode == "corr_focus":
-                # Corr Focus: step-by-step adjustment to strengthen correlation
-                # Only retrain controller - diffuser is not affected by weight/dim/steps params
+                # Corr Focus: adjust loss_weight_corr only
                 should_retrain = False
                 retrain_controller_only = True
-
-                # Get current phase info
-                phase_name, phase_values, can_expand_up, can_expand_down = CORR_FOCUS_PHASES[corr_focus_phase]
-                current_value = phase_values[min(corr_focus_attempt, len(phase_values) - 1)]
-
-                # Use best params found so far, override the current phase param
-                ctrl_corr_weight = corr_focus_best_params["weight_corr"]
-                ctrl_real_weight = corr_focus_best_params["weight_real"]
-                ctrl_bs = corr_focus_best_params["batch_size"]
-                ctrl_dim = corr_focus_best_params["dim"]
-                ctrl_steps = corr_focus_best_params["steps"]
-                ctrl_lr = corr_focus_best_params["lr"]
-
-                # Override the current phase parameter
-                if phase_name == "weight_corr":
-                    ctrl_corr_weight = current_value
-                elif phase_name == "weight_real":
-                    ctrl_real_weight = current_value
-                elif phase_name == "batch_size":
-                    ctrl_bs = current_value
-                elif phase_name == "dim":
-                    ctrl_dim = current_value
-                elif phase_name == "steps":
-                    ctrl_steps = current_value
-
-                print(f"*** Corr Focus Mode (phase {corr_focus_phase + 1}/{len(CORR_FOCUS_PHASES)}: {phase_name}) ***")
-                print(f"  Trying {phase_name}={current_value} (attempt {corr_focus_attempt + 1})")
-                print(f"  Current best: weight_corr={corr_focus_best_params['weight_corr']}, "
-                      f"weight_real={corr_focus_best_params['weight_real']}, "
-                      f"bs={corr_focus_best_params['batch_size']}, dim={corr_focus_best_params['dim']}")
-                if corr_focus_phase_history:
-                    trend = "improving" if len(corr_focus_phase_history) < 2 or corr_focus_phase_history[-1][1] < corr_focus_phase_history[-2][1] else "worsening"
-                    print(f"  Trend: {trend} (consecutive_worse={corr_focus_consecutive_worse})")
+                if corr_focus_phase == "scan":
+                    ctrl_corr_weight = CORR_WEIGHT_VALUES[min(corr_focus_attempt, len(CORR_WEIGHT_VALUES) - 1)]
+                    print(f"*** Corr Focus [scan]: trying weight_corr={ctrl_corr_weight} (attempt {corr_focus_attempt + 1}/{len(CORR_WEIGHT_VALUES)}) ***")
+                else:  # bisect
+                    ctrl_corr_weight = (corr_focus_bisect_low + corr_focus_bisect_high) / 2
+                    print(f"*** Corr Focus [bisect]: trying weight_corr={ctrl_corr_weight:.2f} (range [{corr_focus_bisect_low:.2f}, {corr_focus_bisect_high:.2f}]) ***")
 
             elif mode == "drift_focus":
-                # Drift Focus: step-by-step adjustment to strengthen drift control
-                # Only retrain controller - diffuser is not affected by weight/dim/drift_range params
+                # Drift Focus: adjust loss_weight_drift only
+                # Direction: "up" when drift too low, "down" when drift too high
                 should_retrain = False
                 retrain_controller_only = True
-
-                # Get current phase info
-                phase_name, phase_values, can_expand_up, can_expand_down = DRIFT_FOCUS_PHASES[drift_focus_phase]
-                current_value = phase_values[min(drift_focus_attempt, len(phase_values) - 1)]
-
-                # Use best params found so far, override the current phase param
-                ctrl_corr_weight = drift_focus_best_params["weight_corr"]
-                ctrl_real_weight = drift_focus_best_params["weight_real"]
-                ctrl_bs = drift_focus_best_params["batch_size"]
-                ctrl_dim = drift_focus_best_params["dim"]
-                ctrl_steps = drift_focus_best_params["steps"]
-                ctrl_lr = drift_focus_best_params["lr"]
-
-                # Override the current phase parameter
-                if phase_name == "weight_corr":
-                    ctrl_corr_weight = current_value
-                elif phase_name == "weight_real":
-                    ctrl_real_weight = current_value
-                elif phase_name == "drift_range":
-                    drift_range_expansion = current_value
-                elif phase_name == "dim":
-                    ctrl_dim = current_value
-
-                print(f"*** Drift Focus Mode (phase {drift_focus_phase + 1}/{len(DRIFT_FOCUS_PHASES)}: {phase_name}) ***")
-                print(f"  Trying {phase_name}={current_value} (attempt {drift_focus_attempt + 1})")
-                print(f"  Current best: weight_corr={drift_focus_best_params['weight_corr']}, "
-                      f"weight_real={drift_focus_best_params['weight_real']}, dim={drift_focus_best_params['dim']}")
-                if drift_focus_phase_history:
-                    trend = "improving" if len(drift_focus_phase_history) < 2 or drift_focus_phase_history[-1][1] < drift_focus_phase_history[-2][1] else "worsening"
-                    print(f"  Trend: {trend} (consecutive_worse={drift_focus_consecutive_worse})")
-
-            # Set drift_range centered on target (with adaptive expansion)
-            base_range = 0.15 + drift_range_expansion
-            drift_range_min = max(0.01, target_drift - base_range)
-            drift_range_max = min(0.95, target_drift + base_range)
+                drift_weight_values = DRIFT_WEIGHT_UP_VALUES if drift_focus_direction == "up" else DRIFT_WEIGHT_DOWN_VALUES
+                if drift_focus_phase == "scan":
+                    ctrl_drift_weight = drift_weight_values[min(drift_focus_attempt, len(drift_weight_values) - 1)]
+                    dir_str = "↑" if drift_focus_direction == "up" else "↓"
+                    print(f"*** Drift Focus [scan {dir_str}]: trying weight_drift={ctrl_drift_weight} (attempt {drift_focus_attempt + 1}/{len(drift_weight_values)}) ***")
+                else:  # bisect
+                    ctrl_drift_weight = (drift_focus_bisect_low + drift_focus_bisect_high) / 2
+                    dir_str = "↑" if drift_focus_direction == "up" else "↓"
+                    print(f"*** Drift Focus [bisect {dir_str}]: trying weight_drift={ctrl_drift_weight:.4f} (range [{drift_focus_bisect_low:.4f}, {drift_focus_bisect_high:.4f}]) ***")
 
             params = TuningParams(
                 scale_factor=current_sf,
-                controller_lr=ctrl_lr,
-                controller_steps=ctrl_steps,
-                controller_bs=ctrl_bs,
-                controller_dim=ctrl_dim,
-                drift_range_min=drift_range_min,
-                drift_range_max=drift_range_max,
+                loss_weight_drift=ctrl_drift_weight,
                 loss_weight_corr=ctrl_corr_weight,
                 loss_weight_real=ctrl_real_weight,
             )
 
             print(f"\n[Iteration {i+1}/{max_iterations}] mode={mode}")
             train_mode = "controller_only" if retrain_controller_only else ("full" if should_retrain else "none")
-            print(f"Params: sf={current_sf:.4f}, dim={ctrl_dim}, bs={ctrl_bs}, "
-                  f"corr_w={ctrl_corr_weight:.2f}, real_w={ctrl_real_weight:.2f}, "
-                  f"train={train_mode}")
+            print(f"Params: sf={current_sf:.4f}, drift_w={ctrl_drift_weight:.2f}, "
+                  f"corr_w={ctrl_corr_weight:.2f}, real_w={ctrl_real_weight:.2f}, train={train_mode}")
 
-            result, mode_collapsed = self._evaluate_params(params, target_drift, retrain=should_retrain, retrain_controller_only=retrain_controller_only)
+            result, _ = self._evaluate_params(params, target_drift, retrain=should_retrain, retrain_controller_only=retrain_controller_only)
 
             if result is None:
                 print("Evaluation failed, trying different scale_factor...")
                 current_sf = (sf_low + sf_high) / 2
                 iterations_without_improvement += 1
                 continue
-
-            # Handle mode collapse - reduce scale_factor and corr_weight
-            if mode_collapsed:
-                mode_collapse_retries += 1
-                print(f"\n⚠️  Mode collapse detected (retry {mode_collapse_retries}/{max_mode_collapse_retries})")
-                if mode_collapse_retries <= max_mode_collapse_retries:
-                    # Reduce aggressive parameters
-                    current_sf = max(sf_low, current_sf * 0.5)
-                    ctrl_corr_weight = max(0.5, ctrl_corr_weight * 0.5)
-                    print(f"    Reducing: scale_factor -> {current_sf:.4f}, corr_weight -> {ctrl_corr_weight:.2f}")
-                    should_retrain = True  # Force retrain with new params
-                    retrain_controller_only = False  # Need full retrain for mode collapse
-                    continue
-                else:
-                    print(f"    Max retries reached. Trying row-mixing fallback...")
-                    is_all_id, id_columns = self._is_all_id_columns_table()
-                    if is_all_id:
-                        fallback_result = self._apply_id_table_fallback(id_columns, target_drift, tolerance)
-                        if fallback_result:
-                            return fallback_result
-                    print("    Continuing with best effort...")
 
             # Track history
             history.append((current_sf, result.actual_drift, result.drift_error))
@@ -1689,7 +1117,7 @@ class AutoTuner:
                 'corr_loss': result.correlation_loss,
             })
 
-            # Update cache
+            # Update cache (don't force during iteration)
             self.cache.update(result)
             self._save_cache()
 
@@ -1709,45 +1137,62 @@ class AutoTuner:
                 corr_error = abs(result.correlation_loss - self.target_corr_loss)
             else:
                 corr_error = result.correlation_loss  # Target is 0
-            corr_ok = corr_error <= CORR_TOLERANCE
+            corr_tol = get_corr_tolerance(target_drift, self.target_corr_loss is not None)
+            corr_ok = corr_error <= corr_tol
 
             print(f"Result: drift_error={result.drift_error:.2%} ({'OK' if drift_ok else 'BAD'}), "
                   f"corr_error={corr_error:.4f} ({'OK' if corr_ok else 'BAD'})")
 
-            # === TRACK BEST VALUE AND TREND WITHIN CURRENT PHASE ===
+            # === TRACK BEST IN FOCUS MODES ===
             if mode == "corr_focus":
-                phase_name, phase_values, _, _ = CORR_FOCUS_PHASES[corr_focus_phase]
-                current_value = phase_values[min(corr_focus_attempt, len(phase_values) - 1)]
-
-                # Record in history for trend detection
-                corr_focus_phase_history.append((current_value, result.correlation_loss))
-
-                # Track best corr_loss in this phase
-                if result.correlation_loss < corr_focus_phase_best_corr:
-                    corr_focus_phase_best_corr = result.correlation_loss
-                    corr_focus_phase_best_value = current_value
-                    corr_focus_consecutive_worse = 0  # Reset worse counter
-                    print(f"  → New best in phase {phase_name}: {current_value} (corr_loss={result.correlation_loss:.4f})")
+                prev_best = best_corr_loss_in_focus
+                if result.correlation_loss < best_corr_loss_in_focus:
+                    # Record the previous best weight before updating
+                    prev_best_weight = best_corr_weight
+                    best_corr_loss_in_focus = result.correlation_loss
+                    best_corr_weight = ctrl_corr_weight
+                    corr_focus_no_improve = 0
+                    # Update bisect range: best is between prev and current
+                    if corr_focus_phase == "scan" and corr_focus_attempt > 0:
+                        corr_focus_bisect_low = prev_best_weight
+                        corr_focus_bisect_high = ctrl_corr_weight
+                    print(f"  → New best corr_weight={best_corr_weight:.2f} (corr_loss={result.correlation_loss:.4f})")
                 else:
-                    corr_focus_consecutive_worse += 1
-                    print(f"  → No improvement (corr_loss={result.correlation_loss:.4f}, best={corr_focus_phase_best_corr:.4f})")
+                    corr_focus_no_improve += 1
+                    print(f"  → No improvement (corr_loss={result.correlation_loss:.4f}, best={best_corr_loss_in_focus:.4f}, no_improve={corr_focus_no_improve})")
+                    if corr_focus_phase == "bisect":
+                        # Bisect: narrow range based on which half is better
+                        mid = (corr_focus_bisect_low + corr_focus_bisect_high) / 2
+                        if best_corr_weight < mid:
+                            corr_focus_bisect_high = mid
+                        else:
+                            corr_focus_bisect_low = mid
 
             elif mode == "drift_focus":
-                phase_name, phase_values, _, _ = DRIFT_FOCUS_PHASES[drift_focus_phase]
-                current_value = phase_values[min(drift_focus_attempt, len(phase_values) - 1)]
-
-                # Record in history for trend detection
-                drift_focus_phase_history.append((current_value, result.drift_error))
-
-                # Track best drift_error in this phase
-                if result.drift_error < drift_focus_phase_best_drift_error:
-                    drift_focus_phase_best_drift_error = result.drift_error
-                    drift_focus_phase_best_value = current_value
-                    drift_focus_consecutive_worse = 0  # Reset worse counter
-                    print(f"  → New best in phase {phase_name}: {current_value} (drift_error={result.drift_error:.2%})")
+                prev_best = best_drift_error_in_focus
+                if result.drift_error < best_drift_error_in_focus:
+                    prev_best_weight = best_drift_weight
+                    best_drift_error_in_focus = result.drift_error
+                    best_drift_weight = ctrl_drift_weight
+                    drift_focus_no_improve = 0
+                    if drift_focus_phase == "scan" and drift_focus_attempt > 0:
+                        # Ensure bisect_low < bisect_high regardless of direction
+                        if drift_focus_direction == "up":
+                            drift_focus_bisect_low = prev_best_weight
+                            drift_focus_bisect_high = ctrl_drift_weight
+                        else:  # down direction: values decrease
+                            drift_focus_bisect_low = ctrl_drift_weight
+                            drift_focus_bisect_high = prev_best_weight
+                    print(f"  → New best drift_weight={best_drift_weight:.4f} (drift_error={result.drift_error:.2%})")
                 else:
-                    drift_focus_consecutive_worse += 1
-                    print(f"  → No improvement (drift_error={result.drift_error:.2%}, best={drift_focus_phase_best_drift_error:.2%})")
+                    drift_focus_no_improve += 1
+                    print(f"  → No improvement (drift_error={result.drift_error:.2%}, best={best_drift_error_in_focus:.2%}, no_improve={drift_focus_no_improve})")
+                    if drift_focus_phase == "bisect":
+                        mid = (drift_focus_bisect_low + drift_focus_bisect_high) / 2
+                        if best_drift_weight < mid:
+                            drift_focus_bisect_high = mid
+                        else:
+                            drift_focus_bisect_low = mid
 
             # === SUCCESS ===
             if drift_ok and corr_ok:
@@ -1756,187 +1201,118 @@ class AutoTuner:
 
             # === MODE TRANSITIONS ===
             if drift_ok and not corr_ok:
-                # Drift is OK, need to improve correlation → Corr Focus Mode
+                # Drift OK, correlation bad → Corr Focus Mode
                 if mode == "normal":
                     print(f"\n→ Drift OK but correlation bad, entering Corr Focus Mode")
                     mode = "corr_focus"
-                    corr_focus_phase = 0
+                    corr_focus_phase = "scan"
                     corr_focus_attempt = 0
-                    corr_focus_phase_best_value = None
-                    corr_focus_phase_best_corr = float('inf')
-                    corr_focus_phase_history = []
-                    corr_focus_consecutive_worse = 0
-                    # Initialize best params from current normal mode params
-                    corr_focus_best_params = {
-                        "weight_corr": 5.0, "weight_real": 0.008, "batch_size": 512, "dim": (512, 512),
-                        "steps": 15000, "lr": 0.001,
-                    }
+                    corr_focus_no_improve = 0
+                    corr_focus_bisect_low = 0.8
+                    corr_focus_bisect_high = CORR_WEIGHT_VALUES[-1]  # Max candidate value
+                    best_corr_loss_in_focus = result.correlation_loss
+                    best_corr_weight = 0.8
                 elif mode == "drift_focus":
-                    # Drift Focus succeeded! But now corr is bad.
-                    print(f"\n✓ Drift Focus succeeded! Drift is now OK.")
-                    print(f"  But correlation is bad - switching to Corr Focus Mode")
+                    print(f"\n✓ Drift Focus succeeded! Switching to Corr Focus Mode")
                     mode = "corr_focus"
-                    corr_focus_phase = 0
+                    corr_focus_phase = "scan"
                     corr_focus_attempt = 0
-                    corr_focus_phase_best_value = None
-                    corr_focus_phase_best_corr = float('inf')
-                    corr_focus_phase_history = []
-                    corr_focus_consecutive_worse = 0
-                    # Carry over successful drift_focus params as starting point
-                    corr_focus_best_params = drift_focus_best_params.copy()
+                    corr_focus_no_improve = 0
+                    corr_focus_bisect_low = 0.8
+                    corr_focus_bisect_high = CORR_WEIGHT_VALUES[-1]
+                    best_corr_loss_in_focus = result.correlation_loss
+                    best_corr_weight = 0.8
                 elif mode == "corr_focus":
-                    # Still in corr_focus, check if should advance or stop phase
-                    phase_name, phase_values, can_expand_up, can_expand_down = CORR_FOCUS_PHASES[corr_focus_phase]
-
-                    # Check if we should stop this phase early (trend is worsening)
-                    should_stop_phase = corr_focus_consecutive_worse >= 2
-                    at_end_of_list = corr_focus_attempt >= len(phase_values) - 1
-
-                    if should_stop_phase:
-                        print(f"\n  ⚡ Early stop: {phase_name} worsening for {corr_focus_consecutive_worse} attempts")
-
-                    if should_stop_phase or at_end_of_list:
-                        # Save best value and move to next phase
-                        best_val = corr_focus_phase_best_value or phase_values[0]
-                        if phase_name == "weight_corr":
-                            corr_focus_best_params["weight_corr"] = best_val
-                        elif phase_name == "weight_real":
-                            corr_focus_best_params["weight_real"] = best_val
-                        elif phase_name == "batch_size":
-                            corr_focus_best_params["batch_size"] = best_val
-                        elif phase_name == "dim":
-                            corr_focus_best_params["dim"] = best_val
-                        elif phase_name == "steps":
-                            corr_focus_best_params["steps"] = best_val
-
-                        print(f"\n  Phase {phase_name} done. Best value: {best_val} (corr_loss={corr_focus_phase_best_corr:.4f})")
-                        corr_focus_phase += 1
-                        corr_focus_attempt = 0
-                        # Reset phase tracking for next phase
-                        corr_focus_phase_best_value = None
-                        corr_focus_phase_best_corr = float('inf')
-                        corr_focus_phase_history = []
-                        corr_focus_consecutive_worse = 0
-
-                        if corr_focus_phase >= len(CORR_FOCUS_PHASES):
-                            print(f"\n✗ GIVING UP: Tried all corr_focus phases")
-
-                            # Check if this is a single year column table - try fallback
-                            is_year_table, year_col = self._is_single_year_column_table()
-                            if is_year_table and year_col:
-                                print(f"\nDetected single year column table, trying fallback...")
-                                fallback_result = self._apply_year_offset_fallback(year_col, target_drift)
-                                if fallback_result:
-                                    self.cache.update(fallback_result)
-                                    self._save_cache()
-                                    if best_result is None or fallback_result.score < best_result.score:
+                    if corr_focus_phase == "scan":
+                        # Check if should switch to bisect or continue scan
+                        if corr_focus_no_improve >= 2 or corr_focus_attempt >= len(CORR_WEIGHT_VALUES) - 1:
+                            if corr_focus_bisect_high - corr_focus_bisect_low > 0.5:
+                                print(f"\n→ Scan done, switching to bisect in range [{corr_focus_bisect_low:.2f}, {corr_focus_bisect_high:.2f}]")
+                                corr_focus_phase = "bisect"
+                                corr_focus_no_improve = 0
+                            else:
+                                print(f"\n✗ GIVING UP: Corr focus exhausted")
+                                is_year_table, year_col = self._is_single_year_column_table()
+                                if is_year_table and year_col:
+                                    fallback_result = self._apply_year_offset_fallback(year_col, target_drift)
+                                    if fallback_result and (best_result is None or fallback_result.score < best_result.score):
                                         best_result = fallback_result
-                                        print(f"Fallback improved result! Score: {fallback_result.score:.4f}")
+                                break
+                        else:
+                            corr_focus_attempt += 1
+                    else:  # bisect phase
+                        if corr_focus_bisect_high - corr_focus_bisect_low < 0.5 or corr_focus_no_improve >= 3:
+                            print(f"\n✗ GIVING UP: Bisect converged at corr_weight={best_corr_weight:.2f}")
                             break
-                    else:
-                        # Continue to next attempt in this phase
-                        corr_focus_attempt += 1
-                # Keep scale_factor fixed, will retrain with adjusted params
                 continue
 
             elif not drift_ok and corr_ok:
-                # Correlation is OK, need to improve drift
+                # Correlation OK, drift bad
                 if mode == "normal":
-                    # Check if drift is insensitive to scale_factor
                     if consecutive_small_gradient >= 3:
-                        print(f"\n→ Corr OK but drift not responding to sf (gradient too small for {consecutive_small_gradient} iterations)")
-                        print(f"  Entering Drift Focus Mode to retrain with different controller params")
+                        # Determine direction: drift too high → decrease weight, drift too low → increase weight
+                        drift_too_high = result.actual_drift > target_drift
+                        drift_focus_direction = "down" if drift_too_high else "up"
+                        dir_str = "↓ (drift too high)" if drift_too_high else "↑ (drift too low)"
+                        print(f"\n→ Corr OK but drift not responding to sf, entering Drift Focus Mode {dir_str}")
                         mode = "drift_focus"
-                        drift_focus_phase = 0
+                        drift_focus_phase = "scan"
                         drift_focus_attempt = 0
-                        drift_focus_phase_best_value = None
-                        drift_focus_phase_best_drift_error = float('inf')
-                        drift_focus_phase_history = []
-                        drift_focus_consecutive_worse = 0
-                        drift_focus_best_params = {
-                            "weight_corr": 5.0, "weight_real": 0.008, "batch_size": 512, "dim": (512, 512),
-                            "steps": 15000, "lr": 0.001,
-                        }
+                        drift_focus_no_improve = 0
+                        # Set bisect range based on direction
+                        if drift_focus_direction == "up":
+                            drift_focus_bisect_low = 1.0
+                            drift_focus_bisect_high = DRIFT_WEIGHT_UP_VALUES[-1]
+                        else:
+                            drift_focus_bisect_low = DRIFT_WEIGHT_DOWN_VALUES[-1]
+                            drift_focus_bisect_high = 1.0
+                        best_drift_error_in_focus = result.drift_error
+                        best_drift_weight = 1.0
                         consecutive_small_gradient = 0
-                        # Reset sf search bounds for fresh start after retrain
-                        sf_low = 0.001
-                        sf_high = 30.0
+                        sf_low, sf_high = 0.001, 30.0
                         current_sf = self._get_initial_scale_factor(target_drift)
                         continue
-                    # Otherwise, stay in normal mode - sf adjustment will handle it
                 elif mode == "corr_focus":
-                    # Correlation was fixed by corr_focus! But now drift is bad.
-                    print(f"\n✓ Corr Focus succeeded! Correlation is now OK.")
-                    print(f"  But drift is bad - returning to normal mode to try sf adjustment")
+                    print(f"\n✓ Corr Focus succeeded! Returning to normal mode for sf adjustment")
                     mode = "normal"
                     consecutive_small_gradient = 0
-                    # Reset sf search bounds since model changed
-                    sf_low = 0.001
-                    sf_high = 30.0
+                    sf_low, sf_high = 0.001, 30.0
                     current_sf = self._get_initial_scale_factor(target_drift)
-                    # Fall through to sf adjustment below
                 elif mode == "drift_focus":
-                    # Still in drift_focus, check if should advance or stop phase
-                    phase_name, phase_values, can_expand_up, can_expand_down = DRIFT_FOCUS_PHASES[drift_focus_phase]
-
-                    # Check if we should stop this phase early (trend is worsening)
-                    should_stop_phase = drift_focus_consecutive_worse >= 2
-                    at_end_of_list = drift_focus_attempt >= len(phase_values) - 1
-
-                    if should_stop_phase:
-                        print(f"\n  ⚡ Early stop: {phase_name} worsening for {drift_focus_consecutive_worse} attempts")
-
-                    if should_stop_phase or at_end_of_list:
-                        # Save best value and move to next phase
-                        best_val = drift_focus_phase_best_value or phase_values[0]
-                        if phase_name == "weight_corr":
-                            drift_focus_best_params["weight_corr"] = best_val
-                        elif phase_name == "weight_real":
-                            drift_focus_best_params["weight_real"] = best_val
-                        elif phase_name == "drift_range":
-                            drift_range_expansion = best_val  # Keep the best drift_range
-                        elif phase_name == "dim":
-                            drift_focus_best_params["dim"] = best_val
-
-                        print(f"\n  Phase {phase_name} done. Best value: {best_val} (drift_error={drift_focus_phase_best_drift_error:.2%})")
-                        drift_focus_phase += 1
-                        drift_focus_attempt = 0
-                        # Reset phase tracking for next phase
-                        drift_focus_phase_best_value = None
-                        drift_focus_phase_best_drift_error = float('inf')
-                        drift_focus_phase_history = []
-                        drift_focus_consecutive_worse = 0
-
-                        if drift_focus_phase >= len(DRIFT_FOCUS_PHASES):
-                            print(f"\n✗ GIVING UP: Tried all drift_focus phases")
-
-                            # Check if this is a single year column table - try fallback
-                            is_year_table, year_col = self._is_single_year_column_table()
-                            if is_year_table and year_col:
-                                print(f"\nDetected single year column table, trying fallback...")
-                                fallback_result = self._apply_year_offset_fallback(year_col, target_drift)
-                                if fallback_result:
-                                    self.cache.update(fallback_result)
-                                    self._save_cache()
-                                    if best_result is None or fallback_result.score < best_result.score:
+                    drift_weight_values = DRIFT_WEIGHT_UP_VALUES if drift_focus_direction == "up" else DRIFT_WEIGHT_DOWN_VALUES
+                    # Threshold for bisect: use relative threshold for small values
+                    bisect_threshold = 0.5 if drift_focus_direction == "up" else 0.05
+                    if drift_focus_phase == "scan":
+                        if drift_focus_no_improve >= 2 or drift_focus_attempt >= len(drift_weight_values) - 1:
+                            bisect_range = abs(drift_focus_bisect_high - drift_focus_bisect_low)
+                            if bisect_range > bisect_threshold:
+                                print(f"\n→ Scan done, switching to bisect in range [{drift_focus_bisect_low:.4f}, {drift_focus_bisect_high:.4f}]")
+                                drift_focus_phase = "bisect"
+                                drift_focus_no_improve = 0
+                            else:
+                                print(f"\n✗ GIVING UP: Drift focus exhausted")
+                                is_year_table, year_col = self._is_single_year_column_table()
+                                if is_year_table and year_col:
+                                    fallback_result = self._apply_year_offset_fallback(year_col, target_drift)
+                                    if fallback_result and (best_result is None or fallback_result.score < best_result.score):
                                         best_result = fallback_result
-                                        print(f"Fallback improved result! Score: {fallback_result.score:.4f}")
+                                break
+                        else:
+                            drift_focus_attempt += 1
+                    else:  # bisect phase
+                        bisect_range = abs(drift_focus_bisect_high - drift_focus_bisect_low)
+                        if bisect_range < bisect_threshold or drift_focus_no_improve >= 3:
+                            print(f"\n✗ GIVING UP: Bisect converged at drift_weight={best_drift_weight:.4f}")
                             break
-                    else:
-                        # Continue to next attempt in this phase
-                        drift_focus_attempt += 1
                     continue
 
             elif not drift_ok and not corr_ok:
-                # Both bad - stay in normal mode, adjust scale_factor
-                # If we were in a focus mode but now both are bad, something went wrong
+                # Both bad - return to normal mode
                 if mode != "normal":
-                    print(f"Warning: Was in {mode} but now both drift and corr are bad, returning to normal")
+                    print(f"Warning: Was in {mode} but both are bad, returning to normal")
                     mode = "normal"
                     consecutive_small_gradient = 0
-                    # Reset sf search bounds since model changed
-                    sf_low = 0.001
-                    sf_high = 30.0
+                    sf_low, sf_high = 0.001, 30.0
                     current_sf = self._get_initial_scale_factor(target_drift)
 
             # === ADJUST SCALE_FACTOR (only in normal mode or when drift is bad) ===
@@ -1981,8 +1357,6 @@ class AutoTuner:
                                 print(f"  → Triggering retrain with different controller params")
                                 should_retrain = True
                                 retrain_controller_only = False  # Need full retrain
-                                # Try expanding drift_range for controller training
-                                drift_range_expansion = min(0.25, drift_range_expansion + 0.05)
                         else:
                             if drift_diff > 0:
                                 sf_high = current_sf
@@ -2081,96 +1455,6 @@ class AutoTuner:
 
         return best_result
 
-    def quick_tune(
-        self,
-        target_drift: float,
-        use_cache: bool = True,
-    ) -> Optional[TuningResult]:
-        """
-        Quick tuning - only adjust scale_factor using existing models.
-        Much faster than full tune() as it doesn't retrain models.
-
-        Args:
-            target_drift: Target drift value
-            use_cache: Whether to use cached results
-
-        Returns:
-            Best TuningResult found
-        """
-        print(f"\n{'='*60}")
-        print(f"Quick-tuning for {self.dataset_name}.{self.table_name}")
-        print(f"Target drift: {target_drift}")
-        print(f"Reference dataset: {self.reference_dataset or f'{self.dataset_name}_2014 (default)'}")
-        print(f"{'='*60}\n")
-
-        # Check cache - same logic as tune()
-        if use_cache:
-            cached = self.cache.get_best_params(target_drift)
-            if cached and is_drift_ok(cached.actual_drift, target_drift):
-                # Check correlation error
-                # correlation_loss = |base - generated|, compare with target_corr_loss from drift_ref
-                if self.target_corr_loss is not None:
-                    corr_error = abs(cached.correlation_loss - self.target_corr_loss)
-                else:
-                    corr_error = cached.correlation_loss  # Target is 0
-                corr_ok = corr_error <= CORR_TOLERANCE
-
-                if corr_ok:
-                    if cached.validation_passed:
-                        print(f"Using cached parameters (drift_error={cached.drift_error:.2%}, corr_error={corr_error:.4f}, validated=✓)")
-                    else:
-                        print(f"Using cached parameters (drift_error={cached.drift_error:.2%}, corr_error={corr_error:.4f}, pending validation)")
-                    return cached
-                else:
-                    print(f"Cache found but corr_error too high ({corr_error:.4f} > {CORR_TOLERANCE}), searching...")
-
-        # Check if this is an all-ID columns table (just warn, mode collapse detection will handle it)
-        is_all_id, id_columns = self._is_all_id_columns_table()
-        if is_all_id:
-            print(f"\n⚠️  NOTE: All-ID columns table detected: {id_columns}")
-            print(f"    Will monitor for mode collapse.\n")
-
-        # Check if models exist
-        model_dir = os.path.join("expdir", self.dataset_name, self.table_name)
-        diffuser_path = os.path.join(model_dir, "diffuser.pt")
-        controller_path = os.path.join(model_dir, "controller.pt")
-
-        if not os.path.exists(diffuser_path) or not os.path.exists(controller_path):
-            print("Models not found. Running full tune instead.")
-            return self.tune(target_drift, max_iterations=5)
-
-        # Quick search over scale factors only
-        if target_drift < 0.2:
-            scale_factors = [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-        elif target_drift < 0.4:
-            scale_factors = [4.0, 6.0, 8.0, 10.0, 12.0]
-        else:
-            scale_factors = [8.0, 10.0, 12.0, 14.0, 16.0, 20.0]
-
-        best_result = None
-
-        for sf in scale_factors:
-            params = TuningParams(scale_factor=sf)
-            print(f"Trying scale_factor={sf}")
-
-            result, mode_collapsed = self._evaluate_params(params, target_drift, retrain=False)
-
-            if result is None:
-                continue
-
-            # Skip mode-collapsed results in quick_tune
-            if mode_collapsed:
-                print(f"  Skipping due to mode collapse")
-                continue
-
-            self.cache.update(result)
-            self._save_cache()
-
-            if best_result is None or result.score < best_result.score:
-                best_result = result
-
-        return best_result
-
     def set_validation_status(self, target_drift: float, passed: bool, ratio: float):
         """Update validation status for a target drift and save cache."""
         self.cache.update_validation_status(target_drift, passed, ratio)
@@ -2183,6 +1467,8 @@ class AutoTuner:
         self,
         target_drift: float,
         use_cache: bool = True,
+        retrain: bool = False,
+        train_only: bool = False,
     ) -> Tuple[bool, str]:
         """
         Generate data using best known parameters.
@@ -2190,6 +1476,8 @@ class AutoTuner:
         Args:
             target_drift: Target drift value
             use_cache: Whether to use cached parameters
+            retrain: If True, force retrain with cached/default params (for ops=retrain mode)
+            train_only: If True, only train models, skip generation
 
         Returns:
             (success, output_path)
@@ -2208,7 +1496,7 @@ class AutoTuner:
             corr_loss = 0.0
             print("Using default params")
 
-        success, output_path = self._run_generation(params, target_drift, retrain=False)
+        success, output_path = self._run_generation(params, target_drift, retrain=retrain, train_only=train_only)
 
         if success:
             # Save metadata for manual validation
@@ -2280,7 +1568,6 @@ if __name__ == "__main__":
                         help="Iterations without improvement before retrain")
     parser.add_argument("--retrain-interval", type=int, default=10,
                         help="Retrain models every N iterations if not improving")
-    parser.add_argument("--quick", action="store_true", help="Quick tune (no retraining)")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--num-gpus", type=int, default=1,
                         help="Number of GPUs for parallel batch generation")
@@ -2296,6 +1583,12 @@ if __name__ == "__main__":
                         help="Number of samples to generate (-1 for all)")
     parser.add_argument("--sample-steps", type=int, default=None,
                         help="Number of DDIM sampling steps (default: use diffuser-timesteps)")
+    parser.add_argument("--skip-freq-preservation", action="store_true", default=False,
+                        help="Skip frequency preservation (for non-drift-ref mode)")
+    parser.add_argument("--retrain-only", action="store_true", default=False,
+                        help="Use cached/default params and force retrain (no tuning, for ops=retrain)")
+    parser.add_argument("--variant-id", type=int, default=-1,
+                        help="Variant ID for creating separate output directories")
 
     args = parser.parse_args()
 
@@ -2316,7 +1609,20 @@ if __name__ == "__main__":
         sample_start=args.sample_start,
         sample_count=args.sample_count,
         sample_steps=args.sample_steps,
+        skip_freq_preservation=args.skip_freq_preservation,
+        variant_id=args.variant_id,
     )
+
+    # --retrain-only: use cached/default params and force retrain (no tuning)
+    if args.retrain_only:
+        print(f"[--retrain-only] Using cached/default params, force retrain, no tuning...")
+        success, output_path = tuner.generate_with_best_params(args.target_drift, use_cache=True, retrain=True)
+        if success:
+            print(f"Retrain completed: {output_path}")
+            sys.exit(0)
+        else:
+            print("Retrain failed")
+            sys.exit(1)
 
     # --force-regenerate: use cached params to regenerate, train only if no cache
     if args.force_regenerate:
@@ -2332,28 +1638,31 @@ if __name__ == "__main__":
                 sys.exit(1)
         else:
             print("No cached params found, will train...")
-            # Fall through to normal tune/quick_tune
+            # Fall through to normal tune
 
-    if args.quick:
-        result = tuner.quick_tune(args.target_drift, use_cache=not args.no_cache)
-    else:
-        result = tuner.tune(
-            args.target_drift,
-            max_iterations=args.max_iterations,
-            tolerance=args.tolerance,
-            use_cache=not args.no_cache,
-            stop_only_on_tolerance=not args.no_stop_on_tolerance,
-            stagnation_limit=args.stagnation_limit,
-            retrain_interval=args.retrain_interval,
-            require_validation=args.require_validation,
-        )
+    result = tuner.tune(
+        args.target_drift,
+        max_iterations=args.max_iterations,
+        tolerance=args.tolerance,
+        use_cache=not args.no_cache,
+        stop_only_on_tolerance=not args.no_stop_on_tolerance,
+        stagnation_limit=args.stagnation_limit,
+        retrain_interval=args.retrain_interval,
+        require_validation=args.require_validation,
+    )
 
     if result:
         print(f"\nFinal result: drift_error={result.drift_error:.4f}, corr_loss={result.correlation_loss:.4f}")
 
         # Always ensure data is generated with best params
         # The last iteration might not be the best one, so we need to regenerate
-        metadata_path = os.path.join("expdir", args.dataset_name, args.table_name, "last_generation.json")
+        # Build path matching dbproc.py logic
+        dataset_dir = args.dataset_name
+        if args.reference_dataset and args.reference_dataset != args.dataset_name:
+            dataset_dir = f"{args.dataset_name}_ref_{args.reference_dataset}"
+        if args.variant_id > 0:
+            dataset_dir += f"-{args.variant_id}"
+        metadata_path = os.path.join("expdir", dataset_dir, args.table_name, "last_generation.json")
         need_regenerate = True
 
         if os.path.exists(metadata_path):

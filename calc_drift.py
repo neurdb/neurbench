@@ -72,11 +72,14 @@ def load_csv(path: str) -> pd.DataFrame:
 
 
 def numerical_dist(series: pd.Series, n_bins: int):
-    if all(isinstance(x, int) for x in series.dropna()):
+    """Get the distribution of numerical values, put them into n_bins bins."""
+    if all(isinstance(x, int) for x in series):
         edges = np.linspace(series.min(), series.max(), n_bins + 1)
         edges = np.unique(edges.astype(np.int64))
         if len(edges) <= n_bins:
-            n_bins = len(edges) - 1
+            raise ValueError(
+                "The number of unique bin edges is less than the number of requested bins."
+            )
         return pd.cut(series, bins=edges, precision=0, include_lowest=True).value_counts(normalize=True, sort=False)
     else:
         return series.value_counts(bins=n_bins, normalize=True, sort=False)
@@ -97,16 +100,31 @@ def categorical_dist_on_predefined_bins(series: pd.Series, bins: list):
 
 
 def is_numerical_column(series: pd.Series, threshold: int = 1):
-    for x in series.dropna():
+    # if there is PYTHON float (not numpy.float64), => numerical
+    for x in series:
         if isinstance(x, float):
             return True
-    if all(isinstance(x, int) for x in series.dropna()):
-        return series.nunique() >= threshold
+
+    # if all PYTHON int (not numpy.int64) + (unique values >= threshold) => numerical
+    if all(isinstance(x, int) for x in series):
+        unique_count = series.nunique()
+        if unique_count < threshold:
+            return False
+        else:
+            return True
+
+    # If the series contains non-integer/non-float types (including numpy.int64), return False
     return False
 
 
-def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True):
+def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True, exclude_columns: list = None):
     """Calculate correlation difference between two dataframes.
+
+    Args:
+        df1: First dataframe (base/original)
+        df2: Second dataframe (generated/target)
+        verbose: Whether to print detailed output
+        exclude_columns: Columns to exclude from correlation (default: ['id'])
 
     Returns dict with keys:
         - 'pearson': mean absolute loss for pearson correlation
@@ -116,15 +134,26 @@ def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True)
         - 'pearson_abs_gen': mean absolute correlation value of df2 (generated)
         - 'spearman_abs_gen': mean absolute correlation value of df2 (generated)
     """
+    # Default: exclude 'id' column (auto-incrementing, creates pseudo-correlation)
+    if exclude_columns is None:
+        exclude_columns = ['id']
+
+    # Filter out excluded columns
+    df1_filtered = df1.drop(columns=[c for c in exclude_columns if c in df1.columns], errors='ignore')
+    df2_filtered = df2.drop(columns=[c for c in exclude_columns if c in df2.columns], errors='ignore')
+
     if verbose:
+        excluded = [c for c in exclude_columns if c in df1.columns]
+        if excluded:
+            print(f"\n[Excluding columns from correlation: {excluded}]")
         print("\n" + "=" * 60)
         print("CORRELATION ANALYSIS")
         print("=" * 60)
 
     results = {}
     for corr_type in CORR_TYPES:
-        corr1 = df1.corr(method=corr_type, numeric_only=True)
-        corr2 = df2.corr(method=corr_type, numeric_only=True)
+        corr1 = df1_filtered.corr(method=corr_type, numeric_only=True)
+        corr2 = df2_filtered.corr(method=corr_type, numeric_only=True)
 
         loss = (corr2 - corr1).abs()
         mean_abs_loss = loss.mean().mean()
@@ -144,15 +173,32 @@ def calc_correlation(df1: pd.DataFrame, df2: pd.DataFrame, verbose: bool = True)
 
         if verbose:
             ratio = mean_abs_loss / abs_corr1 if abs_corr1 > 0 else 0
-            print(f"[{corr_type}] mean absolute loss: {mean_abs_loss:.6f}, "
+            print(f"\n[{corr_type}] mean absolute loss: {mean_abs_loss:.6f}, "
                   f"abs_corr(base)={abs_corr1:.4f}, abs_corr(gen)={abs_corr2:.4f}, "
                   f"loss/abs_ratio={ratio:.4f}")
+
+            # Print per-column-pair correlation details
+            cols = corr1.columns.tolist()
+            print(f"  {'col_i':<20} {'col_j':<20} {'base':>10} {'gen':>10} {'diff':>10}")
+            print(f"  {'-'*20} {'-'*20} {'-'*10} {'-'*10} {'-'*10}")
+            for i, col_i in enumerate(cols):
+                for j, col_j in enumerate(cols):
+                    if i < j:  # Only upper triangle (exclude diagonal and duplicates)
+                        base_val = corr1.loc[col_i, col_j]
+                        gen_val = corr2.loc[col_i, col_j] if col_j in corr2.columns and col_i in corr2.index else float('nan')
+                        diff = abs(gen_val - base_val) if not np.isnan(gen_val) else float('nan')
+                        print(f"  {col_i:<20} {col_j:<20} {base_val:>10.4f} {gen_val:>10.4f} {diff:>10.4f}")
 
     return results
 
 
 def calc_drift(df1: pd.DataFrame, df2: pd.DataFrame, columns: list, verbose: bool = True):
-    """Calculate JS divergence (drift) between two dataframes."""
+    """Calculate JS divergence (drift) between two dataframes.
+
+    Same logic as postproc.py:
+    - is_numerical_column True (float or Python int): use interval binning
+    - is_numerical_column False (numpy.int64/FK columns, strings): use unique values
+    """
     if verbose:
         print("\n" + "=" * 60)
         print("DRIFT ANALYSIS (JS Divergence)")
@@ -169,26 +215,34 @@ def calc_drift(df1: pd.DataFrame, df2: pd.DataFrame, columns: list, verbose: boo
         col_data = df1[col].dropna()
         if len(col_data) == 0:
             continue
-
+        # , threshold=len(col_data)):
         try:
             if is_numerical_column(col_data):
-                nunique = col_data.nunique()
-                n_bins = nunique - 1 if nunique < 20 else 20
-                if n_bins < 2:
-                    n_bins = 2
+                if verbose:
+                    print(f"processing numerical column {col}")
 
-                original_col = numerical_dist(col_data, n_bins)
+                if all(isinstance(x, int) for x in col_data):
+                    nunique = col_data.nunique()
+                    original_col = numerical_dist(
+                        col_data, nunique - 1 if nunique < 20 else 20
+                    )
+                else:
+                    original_col = numerical_dist(col_data, 20)
+
                 bins = sorted(
-                    [{"start": x.left, "end": x.right} for x in original_col.index if hasattr(x, 'left')],
+                    [{"start": x.left, "end": x.right} for x in original_col.index],
                     key=lambda x: x["start"],
                 )
-                if not bins:
-                    continue
                 drifted_col = numerical_dist_on_predefined_bins(df2[col], bins)
             else:
+                if verbose:
+                    print(f"processing categorical column {col}")
+
                 original_col = categorical_dist(col_data)
                 bins = sorted(original_col.index)
                 drifted_col = categorical_dist_on_predefined_bins(df2[col], bins)
+                # Align original_col to bins order (categorical_dist returns freq-descending order)
+                original_col = original_col.reindex(bins)
 
             jsd = distance.jensenshannon(original_col, drifted_col)
             if np.isnan(jsd):

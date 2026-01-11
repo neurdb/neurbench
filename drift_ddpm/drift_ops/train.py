@@ -87,8 +87,6 @@ def validate_no_nan(x: torch.Tensor):
 def controller_training(
     train_x,
     real_x,
-    # cond_x,
-    # synthetic_x,
     diffuser,
     save_path,
     cond_save_path,
@@ -100,6 +98,7 @@ def controller_training(
     bs=1024,
     # New parameters for better control
     drift_range=(0.05, 0.75),  # Range for expected drift during training
+    loss_weight_drift=1.0,     # Weight for drift loss
     loss_weight_corr=0.8,      # Weight for correlation loss
     loss_weight_real=0.1,      # Weight for RealMSE loss
 ):
@@ -107,24 +106,9 @@ def controller_training(
     train_x = torch.from_numpy(train_x).float()
     real_x = torch.from_numpy(real_x).float()
 
-    # train_cond_norm = torch.as_tensor(cond_x).float()  ## condition id
-    # train_data_norm = torch.as_tensor(synthetic_x).float()  ## real_x
-
     diffuser.to(device)
     diffuser.variables_to_device(device)
     diffuser.eval()
-
-    # print(f"train_cond_norm.shape: {train_cond_norm.shape}")
-    # print(f"train_data_norm.shape: {train_data_norm.shape}")
-
-    # cond_encoder = modules.MLPEncoder(
-    #     train_cond_norm.shape[1], d_hidden, 128, 0.0, 128, t_in=False
-    # )
-    # data_encoder = modules.MLPEncoder(
-    #     train_cond_norm.shape[1], d_hidden, 128, 0.0, 128, t_in=True
-    # )
-    # controller = modules.CondScorer(cond_encoder, data_encoder)
-    # controller.to(device)
 
     model = modules.Drifter(
         d_in=train_x.shape[1],
@@ -133,9 +117,6 @@ def controller_training(
     )
     ds = [train_x, real_x]
     print(train_x.shape, real_x.shape)
-
-    # ds = [train_x, real_x, train_cond_norm]
-    # print(train_x.shape, real_x.shape, train_cond_norm.shape)
 
     dl = du.prepare_fast_dataloader(ds, batch_size=bs, shuffle=True)
     schedule_sampler = create_named_schedule_sampler("uniform", diffuser.num_timesteps)
@@ -156,22 +137,13 @@ def controller_training(
     for step in range(steps):
         loss = torch.zeros(1).to(device)
 
-        # [x, real, tcond] = next(dl)
         [x, real] = next(dl)
         x = x.to(device)
         real = real.to(device)
-        # tcond = tcond.to(device)
 
         t, _ = schedule_sampler.sample(1, device)
 
         expected_drift = torch.FloatTensor(1).uniform_(drift_range[0], drift_range[1]).to(device)
-        # expected_drift = expected_drift / t[0]
-        # if (
-        #     expected_drift < 1e-5
-        #     or expected_drift > (1 - 1e-5)
-        #     or torch.isinf(expected_drift)
-        # ):
-        #     continue
 
         xt = diffuser.gaussian_q_sample(x, t)
         hist_xt = histogram(
@@ -193,7 +165,6 @@ def controller_training(
         if torch.isinf(loss):
             continue
 
-        # Preserve correlation structure: keep generated corr close to input corr
         p_corr_xt = pearson(xt).fill_diagonal_(0.0).nan_to_num_(1.0)
         p_corr_xc = pearson(xc).fill_diagonal_(0.0).nan_to_num_(1.0)
         p_loss_corr = F.mse_loss(p_corr_xt, p_corr_xc)
@@ -214,9 +185,7 @@ def controller_training(
         #     # f"{s_loss_corr.item():8.6f} "
         # )
 
-        # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real + 0.1 * cond_loss
-        # total_loss = loss + 0.3 * p_loss_corr + 0.3 * mse_real
-        total_loss = loss + loss_weight_corr * p_loss_corr + loss_weight_real * mse_real
+        total_loss = loss_weight_drift * loss + loss_weight_corr * p_loss_corr + loss_weight_real * mse_real
 
         opt.zero_grad()
         # opt_cond.zero_grad()
