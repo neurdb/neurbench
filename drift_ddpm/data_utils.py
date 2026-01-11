@@ -31,6 +31,194 @@ def load_pickle(path):
     return data
 
 
+def detect_trend(base_data: np.ndarray, ref_data: np.ndarray, top_ratio: float = 0.1) -> str:
+    """
+    Detect the distribution change trend from base to ref.
+
+    Compares head concentration (top N% cumulative share) to determine
+    if the distribution is sharpening (head gets richer) or flattening.
+
+    Args:
+        base_data: Original/base data (e.g., 2014 or 2015)
+        ref_data: Reference data (e.g., 2016 or 2017)
+        top_ratio: Ratio of top items to consider (default 10%)
+
+    Returns:
+        'sharpen' if head concentration increased, 'flatten' otherwise
+    """
+    def get_head_share(data, top_ratio):
+        _, counts = np.unique(data, return_counts=True)
+        probs = counts / counts.sum()
+        sorted_probs = np.sort(probs)[::-1]  # Descending
+        top_n = max(1, int(len(sorted_probs) * top_ratio))
+        return sorted_probs[:top_n].sum()
+
+    head_share_base = get_head_share(base_data, top_ratio)
+    head_share_ref = get_head_share(ref_data, top_ratio)
+
+    if head_share_ref > head_share_base:
+        print(f"[Trend Detector] Head concentration increased: "
+              f"{head_share_base:.2%} -> {head_share_ref:.2%} (sharpen)")
+        return 'sharpen'
+    else:
+        print(f"[Trend Detector] Head concentration decreased: "
+              f"{head_share_base:.2%} -> {head_share_ref:.2%} (flatten)")
+        return 'flatten'
+
+
+def detect_trend_and_solve(base_data: np.ndarray, ref_data: np.ndarray,
+                           target_drift: float) -> np.ndarray:
+    """
+    Detect historical trend (Base -> Ref) and generate synthetic distribution
+    that follows the same trend direction with target drift.
+
+    Args:
+        base_data: Original/base data (e.g., 2014 movie_ids) - for trend detection
+        ref_data: Reference data (e.g., 2017 movie_ids) - for value range
+        target_drift: Target JS divergence for the synthetic distribution
+
+    Returns:
+        synthetic_ref_data: Array for set_reference_distribution (uses ref's value range)
+    """
+    # 1. Detect trend direction from historical data
+    detected_mode = detect_trend(base_data, ref_data)
+
+    # 2. Generate synthetic distribution using REF's value range with detected mode
+    # This ensures generated values are within ref's range (e.g., includes new IDs in 2017)
+    return solve_target_distribution(ref_data, target_drift, mode=detected_mode)
+
+
+def solve_target_distribution(original_data: np.ndarray, target_drift: float,
+                               mode: str = 'sharpen', use_binning: bool = True) -> np.ndarray:
+    """
+    Generate a synthetic reference distribution with a specific JS divergence from original.
+
+    Uses temperature scaling: Q_i ∝ P_i^(1/τ)
+    - τ = 1.0: distribution unchanged (JS ≈ 0)
+    - τ < 1.0 (sharpen/cool): head effect stronger, rich get richer
+    - τ > 1.0 (flatten/heat): distribution flatter, long tail effect
+
+    Args:
+        original_data: 1D array of values from original dataset (e.g., movie_ids)
+        target_drift: Target JS divergence (e.g., 0.3)
+        mode: 'sharpen' (head more concentrated), 'flatten' (more uniform),
+              or 'auto' (try both, pick closer)
+
+    Returns:
+        synthetic_ref_data: Array that can be passed to set_reference_distribution
+    """
+    from scipy.spatial.distance import jensenshannon
+    from scipy.special import softmax
+
+    # 1. Get original probability distribution P (per unique value)
+    unique_vals, counts = np.unique(original_data, return_counts=True)
+    p_probs = counts / counts.sum()
+    total_rows = len(original_data)
+
+    if use_binning:
+        # Use same binning strategy as calc_drift (20 bins for numerical columns)
+        n_bins = 20
+        val_min, val_max = unique_vals.min(), unique_vals.max()
+        bin_edges = np.linspace(val_min, val_max, n_bins + 1)
+
+        # Assign each unique value to a bin (0 to n_bins-1)
+        bin_indices = np.clip(np.digitize(unique_vals, bin_edges[1:]), 0, n_bins - 1)
+
+        # Aggregate p_probs into bins (pre-compute for reuse)
+        p_binned = np.zeros(n_bins)
+        for i, prob in enumerate(p_probs):
+            p_binned[bin_indices[i]] += prob
+
+        # 2. Define function: input temperature T, return JS divergence (binned, like calc_drift numerical)
+        def get_js_dist(t):
+            if t <= 0:
+                return 1.0
+            log_p = np.log(p_probs + 1e-10)
+            q_probs = softmax(log_p / t)
+
+            # Aggregate q_probs into same bins
+            q_binned = np.zeros(n_bins)
+            for i, prob in enumerate(q_probs):
+                q_binned[bin_indices[i]] += prob
+
+            return jensenshannon(p_binned, q_binned)
+    else:
+        # Use all unique values (like calc_drift categorical branch)
+        # 2. Define function: input temperature T, return JS divergence (categorical, all unique values)
+        def get_js_dist(t):
+            if t <= 0:
+                return 1.0
+            log_p = np.log(p_probs + 1e-10)
+            q_probs = softmax(log_p / t)
+            return jensenshannon(p_probs, q_probs)
+
+    # 3. Binary search to find optimal temperature T
+    def find_temperature(low, high, target_js):
+        best_t = 1.0
+        for _ in range(30):  # 30 iterations for precision
+            mid = (low + high) / 2
+            current_js = get_js_dist(mid)
+
+            if low < 1.0:  # sharpen mode: T < 1 means more peaked
+                if current_js < target_js:
+                    high = mid  # Need more peaked, smaller T
+                else:
+                    low = mid
+            else:  # flatten mode: T > 1 means flatter
+                if current_js < target_js:
+                    low = mid  # Need flatter, larger T
+                else:
+                    high = mid
+            best_t = mid
+        return best_t, get_js_dist(best_t)
+
+    # Try both modes if auto
+    if mode == 'auto':
+        t_sharpen, js_sharpen = find_temperature(0.01, 1.0, target_drift)
+        t_flatten, js_flatten = find_temperature(1.0, 20.0, target_drift)
+
+        # Pick the one closer to target
+        if abs(js_sharpen - target_drift) < abs(js_flatten - target_drift):
+            best_t, best_js = t_sharpen, js_sharpen
+            mode_used = 'sharpen'
+        else:
+            best_t, best_js = t_flatten, js_flatten
+            mode_used = 'flatten'
+    elif mode == 'sharpen':
+        best_t, best_js = find_temperature(0.01, 1.0, target_drift)
+        mode_used = 'sharpen'
+    else:  # flatten
+        best_t, best_js = find_temperature(1.0, 20.0, target_drift)
+        mode_used = 'flatten'
+
+    print(f"[solve_target_distribution] mode={mode_used}, T={best_t:.4f}, "
+          f"target_JS={target_drift:.4f}, achieved_JS={best_js:.4f}")
+
+    # 4. Generate target frequencies based on optimal T
+    log_p = np.log(p_probs + 1e-10)
+    target_probs = softmax(log_p / best_t)
+
+    # Convert probabilities back to counts (preserve total rows)
+    total_rows = len(original_data)
+    target_counts = (target_probs * total_rows).astype(int)
+
+    # Fix rounding errors
+    diff = total_rows - target_counts.sum()
+    if diff > 0:
+        # Add to highest frequency items
+        idx = np.argsort(-target_counts)[:diff]
+        target_counts[idx] += 1
+    elif diff < 0:
+        # Remove from highest frequency items
+        idx = np.argsort(-target_counts)[:-diff]
+        target_counts[idx] -= 1
+
+    # 5. Generate synthetic reference data (repeat each unique value by its target count)
+    synthetic_ref_data = np.repeat(unique_vals, target_counts)
+
+    return synthetic_ref_data
+
+
 def merge_wrapper(wrappers):
     if len(wrappers) == 1:
         return wrappers[0]
@@ -153,6 +341,43 @@ class DataWrapper:
         probs = sorted_counts / sorted_counts.sum()
         cumulative_probs = np.cumsum(probs)
         self.reference_distribution[col] = (unique_vals, cumulative_probs)
+
+    def set_synthetic_reference_distribution(self, col: str, original_data: np.ndarray,
+                                              target_drift: float, mode: str = 'sharpen'):
+        """Set synthetic reference distribution using temperature scaling.
+
+        When no real reference data is available, this method creates a synthetic
+        target distribution with a specific JS divergence from the original.
+
+        Args:
+            col: Column name
+            original_data: 1D array of values from original dataset
+            target_drift: Target JS divergence (e.g., 0.3)
+            mode: 'sharpen', 'flatten', or 'auto'
+        """
+        synthetic_ref = solve_target_distribution(original_data, target_drift, mode)
+        self.set_reference_distribution(col, synthetic_ref)
+        print(f"[DataWrapper] Synthetic reference for '{col}': "
+              f"target_drift={target_drift}, mode={mode}")
+
+    def set_trend_based_reference_distribution(self, col: str, base_data: np.ndarray,
+                                                ref_data: np.ndarray, target_drift: float):
+        """Set synthetic reference distribution based on detected historical trend.
+
+        Detects the trend direction (sharpen/flatten) from base->ref data,
+        then generates a synthetic distribution with target_drift following
+        that same trend direction.
+
+        Args:
+            col: Column name
+            base_data: Base data (e.g., 2014 movie_ids) - for trend detection
+            ref_data: Reference data (e.g., 2016 movie_ids) - for trend detection
+            target_drift: Target JS divergence for the synthetic distribution
+        """
+        synthetic_ref = detect_trend_and_solve(base_data, ref_data, target_drift)
+        self.set_reference_distribution(col, synthetic_ref)
+        print(f"[DataWrapper] Trend-based reference for '{col}': "
+              f"target_drift={target_drift}")
 
     def fit(self, dataframe, all_category=False):
         self.raw_dim = dataframe.shape[1]
@@ -282,8 +507,12 @@ class DataWrapper:
             cat_values[i] = self.all_distinct_values[col][int(val)]
         return cat_values
 
-    def ReverseToOrdi(self, data):
+    def ReverseToOrdi(self, data, skip_freq_preservation=False):
         reverse_data = []
+
+        # Backward compatibility: old pickled objects may not have reference_distribution
+        if not hasattr(self, 'reference_distribution'):
+            self.reference_distribution = {}
 
         # Unnorm the normalized numerical columns, and reverse the binary code to ordinal columns
         for i, col in enumerate(self.columns):
@@ -295,7 +524,8 @@ class DataWrapper:
                 col_data = col_data.astype(np.int32)
             else:
                 # Check if we have reference distribution for frequency-preserving sampling
-                if col in self.reference_distribution:
+                # (skip if skip_freq_preservation=True, used for chunk outputs before merge)
+                if col in self.reference_distribution and not skip_freq_preservation:
                     col_data = self._reverse_with_reference_distribution(col, col_data)
                 else:
                     col_data = self.num_normalizer[col].inverse_transform(
@@ -347,8 +577,15 @@ class DataWrapper:
         reverse_data = np.concatenate(reverse_data, axis=1)
         return reverse_data
 
-    def Reverse(self, data):
-        data = self.ReverseToOrdi(data)
+    def Reverse(self, data, skip_freq_preservation=False):
+        """Reverse normalized data back to original format.
+
+        Args:
+            data: Normalized data array
+            skip_freq_preservation: If True, skip frequency-preserving sampling for FK columns.
+                                   Used for chunk outputs that will be merged later.
+        """
+        data = self.ReverseToOrdi(data, skip_freq_preservation=skip_freq_preservation)
         data = self.ReverseToCat(data)
         data = pd.DataFrame(data, columns=self.columns)
         return self.ReOrderColumns(data)

@@ -60,6 +60,7 @@ def oversampling(
     device,
     drift=0.3,
     scale_factor=8.0,
+    sample_steps=None,
 ):
     diffuser.to(device)
     diffuser.variables_to_device(device)
@@ -77,6 +78,6 @@ def oversampling(
 
     # samples = diffuser.sample(n_samples, control_tools=[(cond_x, synthetic_x), cond_fn])
     # samples = diffuser.sample(n_samples, control_tools=[cond_x, cond_fn])
-    samples = diffuser.sample(n_samples, control_tools=[None, cond_fn])
+    samples = diffuser.sample(n_samples, control_tools=[None, cond_fn], sample_steps=sample_steps)
 
     return samples

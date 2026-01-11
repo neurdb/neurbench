@@ -31,12 +31,8 @@ pip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 torchaudio==0.13.1 --e
 ### Code Structure
 
 ```sh
-|-- datasets
-    |-- minority_class_oversampling # datasets used in minority class oversampling task
-    |-- missing_tuple_completion # datasets used in missing tuple completion task
 |-- ddpm # the denoise diffusion probabilistic model package
-|-- lib_completion # the library used in missing tuple completion task 
-|-- lib_oversampling # the library used in minority class oversampling task 
+|-- drift_ops # drift operations: training and sampling
 |-- data_utils.py # the class to preprocess the dataset
 |-- eval_utils.py # the class to evaluate
 |-- eval.py # code of the evaluation

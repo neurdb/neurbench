@@ -11,7 +11,7 @@ import os
 import warnings
 
 import data_utils as du
-import lib_oversampling as lo
+import drift_ops as lo
 import pandas as pd
 import torch
 
