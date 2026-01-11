@@ -95,7 +95,7 @@ benchmarks/lqos/bao/
 
 Edit `schedule_bao_simple.sh` to change:
 - `DATASET`: Database name (default: `imdb_ori`)
-- `QUERY_SET`: Query set directory name (default: `join-order-benchmark`)
+- `QUERY_SET`: Query set directory name (default: `job`)
 - PostgreSQL port is configured via CLI module (default: 5430)
 
 ### Output Files
@@ -120,7 +120,7 @@ bao_logs_all/
 ./schedule_bao_simple.sh
 
 # Use specific query set
-./schedule_bao_simple.sh join-order-benchmark
+./schedule_bao_simple.sh job
 
 # Use custom query set (ab_test is an example)
 ./schedule_bao_simple.sh ab_test

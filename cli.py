@@ -91,7 +91,7 @@ Core Commands:
   set [KEY] [VALUE]                  Set global configuration parameters
                                        - dataset: imdb, books, fb, osm, wiki
                                        - drift: 0.0-1.0
-                                       - query_set: query set name (e.g., join-order-benchmark)
+                                       - query_set: query set name (e.g., job)
   set                                Show current configuration
   gd DATASET [TABLE] DRIFT [--auto] [--quick] [--gpus=0,1,2] [--validate]
                                      Generate data that drifts DRIFT on DATASET
@@ -129,7 +129,7 @@ Core Commands:
 
 Configuration Tips:
   set dataset imdb_ori               # Set database to use
-  set query_set join-order-benchmark # Set query set (overrides dataset queries)
+  set query_set job # Set query set (overrides dataset queries)
   set query_set none                 # Use default queries/{dataset}/train|test
 
 """
@@ -1603,7 +1603,7 @@ def handle_set(tokens: List[str]):
         print("Examples:")
         print("  set dataset books")
         print("  set drift 0.5")
-        print("  set query_set join-order-benchmark")
+        print("  set query_set job")
         print("  set query_set none  # Use default queries/{dataset}/train|test")
         return
     

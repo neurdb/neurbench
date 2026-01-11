@@ -1,57 +1,105 @@
 import hashlib
 import json
 import os
-from time import time
+from time import time, sleep
 from config import *
 import fcntl
 import psycopg2
 
 NUM_EXECUTIONS = 3
+DB_RECOVERY_MAX_WAIT = 300  # Max wait time: 5 minutes
+DB_RECOVERY_CHECK_INTERVAL = 10  # Check every 10 seconds
 
 def time_sleep():
     import time
     time.sleep(1.5)
 
+def wait_for_db_recovery(max_wait=DB_RECOVERY_MAX_WAIT, check_interval=DB_RECOVERY_CHECK_INTERVAL):
+    """Wait for database to recover. Returns True if recovered, False if timeout."""
+    print(f"[DB Recovery] Waiting for database to recover (max {max_wait}s)...")
+    start_time = time()
+
+    while time() - start_time < max_wait:
+        try:
+            conn = psycopg2.connect(CONNECTION_STR)
+            conn.close()
+            print(f"[DB Recovery] Database recovered after {int(time() - start_time)}s")
+            sleep(5)  # Extra wait to ensure stability
+            return True
+        except Exception as e:
+            print(f"[DB Recovery] Still waiting... ({int(time() - start_time)}s) - {str(e)[:50]}")
+            sleep(check_interval)
+
+    print(f"[DB Recovery] Timeout after {max_wait}s")
+    return False
+
+def is_db_crash_error(e):
+    """Check if the exception is a database crash error."""
+    error_str = str(e).lower()
+    crash_indicators = [
+        "server closed the connection unexpectedly",
+        "connection reset",
+        "connection refused",
+        "recovery mode",
+        "the database system is starting up",
+        "connection terminated",
+        "ssl connection has been closed unexpectedly"
+    ]
+    return any(indicator in error_str for indicator in crash_indicators)
+
 def encode_str(s):
     md5 = hashlib.md5()
     md5.update(s.encode('utf-8'))
     return md5.hexdigest()
-        
-def run_query(q, run_args):
-    start = time()
-    print("connecting to db with ", CONNECTION_STR)
-    conn = psycopg2.connect(CONNECTION_STR)
-    conn.set_client_encoding('UTF8')
-    result = None
-    try:
-        cur = conn.cursor()
-        if run_args is not None and len(run_args) > 0:
-            for arg in run_args:
-                cur.execute(arg)
-        cur.execute("SET lero_server_host TO '172.17.0.1';")
-        cur.execute("SET statement_timeout TO " + str(TIMEOUT))
-        # print(run_args)
-        # print(q)
-        print(f"------------ Explaining the query {q} ------------")
-        cur.execute(q)
-        print(f"------------ Done Explaining the query {q} ------------")
-        result = cur.fetchall()
-        print(f"------------ Done fetchall the query {q} ------------")
-    finally:
-        
-        conn.close()
-    # except Exception as e:
-    #     conn.close()
-    #     raise e
-    
-    stop = time()
-    return stop - start, result
+
+def run_query(q, run_args, retry_on_crash=True):
+    """Execute query with automatic retry on database crash."""
+    max_retries = 3 if retry_on_crash else 1
+
+    for attempt in range(max_retries):
+        try:
+            start = time()
+            print("connecting to db with ", CONNECTION_STR)
+            conn = psycopg2.connect(CONNECTION_STR)
+            conn.set_client_encoding('UTF8')
+            result = None
+            try:
+                cur = conn.cursor()
+                if run_args is not None and len(run_args) > 0:
+                    for arg in run_args:
+                        cur.execute(arg)
+                cur.execute("SET lero_server_host TO '172.17.0.1';")
+                cur.execute("SET statement_timeout TO " + str(TIMEOUT))
+                print(f"------------ Explaining the query {q} ------------")
+                cur.execute(q)
+                print(f"------------ Done Explaining the query {q} ------------")
+                result = cur.fetchall()
+                print(f"------------ Done fetchall the query {q} ------------")
+            finally:
+                conn.close()
+
+            stop = time()
+            return stop - start, result
+
+        except Exception as e:
+            if retry_on_crash and is_db_crash_error(e) and attempt < max_retries - 1:
+                print(f"[DB Crash] Detected database crash (attempt {attempt + 1}/{max_retries}): {str(e)[:100]}")
+                if wait_for_db_recovery():
+                    print(f"[DB Crash] Retrying query...")
+                    continue
+                else:
+                    print(f"[DB Crash] Database did not recover, giving up")
+                    raise e
+            else:
+                raise e
+
+    raise Exception("Max retries exceeded")
 
 def get_history(encoded_q_str, plan_str, encoded_plan_str):
     history_path = os.path.join(LOG_PATH, encoded_q_str, encoded_plan_str)
     if not os.path.exists(history_path):
         return None
-    
+
     print("visit histroy path: ", history_path)
     with open(os.path.join(history_path, "check_plan"), "r") as f:
         history_plan_str = f.read().strip()
@@ -60,11 +108,11 @@ def get_history(encoded_q_str, plan_str, encoded_plan_str):
             print("given", plan_str)
             print("wanted", history_plan_str)
             return None
-    
+
     print("get the history file:", history_path)
     with open(os.path.join(history_path, "plan"), "r") as f:
         return f.read().strip()
-    
+
 def save_history(q, encoded_q_str, plan_str, encoded_plan_str, latency_str):
     history_q_path = os.path.join(LOG_PATH, encoded_q_str)
     if not os.path.exists(history_q_path):
@@ -79,14 +127,14 @@ def save_history(q, encoded_q_str, plan_str, encoded_plan_str, latency_str):
                 print("given", q)
                 print("wanted", history_q)
                 return
-    
+
     history_plan_path = os.path.join(history_q_path, encoded_plan_str)
     if os.path.exists(history_plan_path):
         print("the plan has been saved by other processes:", history_plan_path)
         return
     else:
         os.makedirs(history_plan_path)
-        
+
     with open(os.path.join(history_plan_path, "check_plan"), "w") as f:
         f.write(plan_str)
     with open(os.path.join(history_plan_path, "plan"), "w") as f:
@@ -136,7 +184,7 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
         # remove bao's prediction
         plan_json = [plan_json[1]]
     planning_time = plan_json[0]['Planning Time']
-    
+
     cur_plan_str = json.dumps(plan_json[0]['Plan'])
     try:
         # 2. get previous running result
@@ -157,7 +205,7 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
                     manager_dict[cur_plan_str] = 1
                     manager_lock.release()
 
-            # 3. run current query 
+            # 3. run current query
             run_start = time()
             try:
                 for i in range(NUM_EXECUTIONS):
@@ -197,3 +245,6 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
             f.write(query_name + "\n")
             f.write(str(e).strip() + "\n")
             fcntl.flock(f, fcntl.LOCK_UN)
+        # Re-raise if it's a crash error so caller can handle it
+        if is_db_crash_error(e):
+            raise e

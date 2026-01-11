@@ -1,4 +1,5 @@
 import argparse
+import traceback
 
 from utils import *
 import os
@@ -36,7 +37,7 @@ class PgHelper():
 
 
 class LeroHelper():
-    def __init__(self, queries, query_num_per_chunk, output_query_latency_file, 
+    def __init__(self, queries, query_num_per_chunk, output_query_latency_file,
                 test_queries, model_prefix, topK) -> None:
         self.queries = queries
         self.query_num_per_chunk = query_num_per_chunk
@@ -50,6 +51,7 @@ class LeroHelper():
             "enable_nestloop", "enable_hashjoin", "enable_mergejoin",
             "enable_seqscan", "enable_indexscan", "enable_indexonlyscan"
         ]
+        self.failed_queries = []  # Track failed queries
 
     def chunks(self, lst, n):
         """Yield successive n-sized chunks from lst."""
@@ -113,11 +115,21 @@ class LeroHelper():
         print("---------------- starts LeroHelper (SEQUENTIAL MODE) ----------------")
         for c_idx, chunk in enumerate(lero_chunks):
             for fp, q in chunk:
-                self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                  self.output_query_latency_file + "_exploratory", None) 
-
-                # self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                        #   self.output_query_latency_file + "_exploratory", None)
+                try:
+                    self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
+                                      self.output_query_latency_file + "_exploratory", None)
+                except Exception as e:
+                    print(f"[ERROR] Query {fp} failed: {str(e)[:200]}")
+                    self.failed_queries.append((fp, str(e)))
+                    # If database crashed, wait for recovery
+                    if is_db_crash_error(e):
+                        print(f"[DB Crash] Detected crash during query {fp}, waiting for recovery...")
+                        if wait_for_db_recovery():
+                            print(f"[DB Crash] Database recovered, continuing with next query...")
+                        else:
+                            print(f"[DB Crash] Database did not recover, stopping training")
+                            break
+                    # Continue with next query
 
             model_name = self.model_prefix + "_" + str(c_idx)
             self.retrain(model_name)
@@ -125,15 +137,23 @@ class LeroHelper():
             # todo: skip the teting for each train
             # self.test_benchmark(self.output_query_latency_file + "_" + model_name)
 
+        # print error query summary
+        if self.failed_queries:
+            print("\n" + "="*60)
+            print(f"Training completed with {len(self.failed_queries)} failed queries:")
+            for fp, err in self.failed_queries:
+                print(f"  - {fp}: {err[:100]}")
+            print("="*60 + "\n")
+
     def retrain(self, model_name):
         training_data_file = self.output_query_latency_file + ".training"
         create_training_file(training_data_file, self.output_query_latency_file, self.output_query_latency_file + "_exploratory")
         print("retrain Lero model:", model_name, "with file", training_data_file)
-        
+
         # Create directory for training history
         history_dir = os.path.join(os.path.dirname(self.output_query_latency_file), "training_history")
         os.makedirs(history_dir, exist_ok=True)
-        
+
         cmd_str = "cd " + self.lero_server_path + " && CUDA_VISIBLE_DEVICES=\"\" python3.8 train.py" \
                                                 + " --training_data " + os.path.abspath(training_data_file) \
                                                 + " --model_name " + model_name \
@@ -173,34 +193,46 @@ class LeroHelper():
         return run_args
 
     def run_pairwise(self, q, fp, run_args, output_query_latency_file, exploratory_query_latency_file, pool):
-        print("---------------- run_pairwise (SEQUENTIAL MODE) ----------------")
+        print(f"---------------- run_pairwise {fp} (SEQUENTIAL MODE) ----------------")
         try:
             explain_query(q, run_args)
         except Exception as e:
-            print("Running sql error", q, e)
-        policy_entities = []
-        with open(self.lero_card_file_path, 'r') as f:
-            lines = f.readlines()
-            lines = [line.strip().split(";") for line in lines]
-            for line in lines:
-                policy_entities.append(CardinalityGuidedEntity(float(line[1]), line[0]))
+            print(f"Running sql error (explain) {fp}: {e}")
+            # If database crashed, re-raise to let start() handle it
+            if is_db_crash_error(e):
+                raise e
+            return  # Skip this query for other errors
 
-        policy_entities = sorted(policy_entities, key=lambda x: x.get_score())
-        policy_entities = policy_entities[:self.topK]
+        try:
+            policy_entities = []
+            with open(self.lero_card_file_path, 'r') as f:
+                lines = f.readlines()
+                lines = [line.strip().split(";") for line in lines]
+                for line in lines:
+                    policy_entities.append(CardinalityGuidedEntity(float(line[1]), line[0]))
 
-        i = 0
-        for entity in policy_entities:
-            if isinstance(entity, CardinalityGuidedEntity):
-                card_str = "\n".join(entity.card_str.strip().split(" "))
-                # ensure that the cardinality file will not be changed during planning
-                card_file_name = "lero_" + fp + "_" + str(i) + ".txt"
-                card_file_path = os.path.join(PG_DB_PATH, card_file_name)
-                with open(card_file_path, "w") as card_file:
-                    card_file.write(card_str)
+            policy_entities = sorted(policy_entities, key=lambda x: x.get_score())
+            policy_entities = policy_entities[:self.topK]
 
-                output_file = output_query_latency_file if i == 0 else exploratory_query_latency_file
-                do_run_query(q, fp, self.get_card_test_args(card_file_name), output_file, True, None, None)
-                i += 1
+            i = 0
+            for entity in policy_entities:
+                if isinstance(entity, CardinalityGuidedEntity):
+                    card_str = "\n".join(entity.card_str.strip().split(" "))
+                    # ensure that the cardinality file will not be changed during planning
+                    card_file_name = "lero_" + fp + "_" + str(i) + ".txt"
+                    card_file_path = os.path.join(PG_DB_PATH, card_file_name)
+                    with open(card_file_path, "w") as card_file:
+                        card_file.write(card_str)
+
+                    output_file = output_query_latency_file if i == 0 else exploratory_query_latency_file
+                    do_run_query(q, fp, self.get_card_test_args(card_file_name), output_file, True, None, None)
+                    i += 1
+        except Exception as e:
+            print(f"Running sql error (run_pairwise) {fp}: {e}")
+            traceback.print_exc()
+            # If database crashed, re-raise to let start() handle it
+            if is_db_crash_error(e):
+                raise e
 
     def predict(self, plan):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -280,6 +312,6 @@ if __name__ == "__main__":
         if args.topK is not None:
             topK = args.topK
         print("topK", topK)
-        
+
         helper = LeroHelper(queries, query_num_per_chunk, output_query_latency_file, test_queries, model_prefix, topK)
         helper.start(pool_num)

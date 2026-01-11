@@ -5,6 +5,7 @@ This script manages the Bao server lifecycle and delegates query execution to ru
 """
 
 import os
+import sys
 import time
 import psutil
 from pathlib import Path
@@ -180,24 +181,19 @@ class BaoTester:
     def cleanup(self):
         """Clean up resources"""
         print("Stopping Bao server...")
-        pid_file = self.bao_server_dir / "server.pid"
 
+        # Kill all Bao server processes (handles parent and child processes)
+        os.system("pkill -f 'python3.*main.py' || true")
+        time.sleep(2)
+        # Try harder if still running
+        os.system("pkill -9 -f 'python3.*main.py' || true")
+
+        # Clean up PID file
+        pid_file = self.bao_server_dir / "server.pid"
         if pid_file.exists():
-            try:
-                with open(pid_file) as f:
-                    pid = f.read().strip()
-                print(f"Killing server with PID: {pid}")
-                os.system(f"kill {pid} 2>/dev/null || true")
-                time.sleep(2)
-                # Try harder if still running
-                os.system(f"kill -9 {pid} 2>/dev/null || true")
-                pid_file.unlink()
-                print("Bao server stopped")
-            except Exception as e:
-                print(f"Error stopping server: {e}")
-        else:
-            print("No server.pid file found, using pkill")
-            os.system("pkill -f 'bao_server.*main.py' || true")
+            pid_file.unlink()
+
+        print("Bao server stopped")
 
     def run_test_pipeline(self):
         """Run the complete testing pipeline"""
