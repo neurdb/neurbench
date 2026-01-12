@@ -3,8 +3,8 @@ from math import log
 
 
 class Config:
-    train_database = 'imdb_ori'
-    test_database = 'imdb_ori'
+    train_database = 'imdb'
+    test_database = 'imdb'
     def __init__(self, ):
         # self.datafile = 'JOBqueries.workload'
         self.schemaFile = "schema.sql"

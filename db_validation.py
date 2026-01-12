@@ -43,8 +43,8 @@ class DatabaseValidator:
 
     def __init__(
         self,
-        gen_db: str = "imdb_17v2_gen",
-        real_db: str = "imdb_17v2",
+        gen_db: str = "imdb_2017_gen",
+        real_db: str = "imdb_2017",
         host: str = "172.17.0.1",
         port: int = 5430,
         user: str = "postgres",
@@ -293,7 +293,7 @@ class DatabaseValidator:
                 f.write(content)
             csv_path = temp_path
 
-        df = pd.read_csv(csv_path, encoding='utf-8', on_bad_lines='warn')
+        df = pd.read_csv(csv_path, encoding='utf-8', on_bad_lines='warn', low_memory=False)
 
         # Clean up temp file if created
         if csv_path.endswith('.temp.csv') and os.path.exists(csv_path):
@@ -444,7 +444,7 @@ class DatabaseValidator:
 
     def analyze_database(self, dbname: str) -> bool:
         """Run ANALYZE on the database to update statistics for query planner."""
-        print(f"Running ANALYZE VERBOSE on {dbname}...")
+        print(f"Running ANALYZE VERBOSE on {dbname}...", flush=True)
         try:
             conn = self._get_connection(dbname)
             conn.autocommit = True
@@ -452,14 +452,14 @@ class DatabaseValidator:
             cur.execute("ANALYZE VERBOSE")
             cur.close()
             conn.close()
-            print("ANALYZE complete.")
+            print("ANALYZE complete.", flush=True)
             return True
         except Exception as e:
-            print(f"ANALYZE FAILED: {e}")
+            print(f"ANALYZE FAILED: {e}", flush=True)
             return False
 
     def run_job_queries(self, dbname: str, output_file: str) -> bool:
-        print(f"\nRunning JOB queries on {dbname}...")
+        print(f"\nRunning JOB queries on {dbname}...", flush=True)
         # Always ANALYZE before running queries to ensure accurate statistics
         self.analyze_database(dbname)
         if os.path.exists(output_file):
@@ -468,9 +468,16 @@ class DatabaseValidator:
               f"--use_postgres --database_name {dbname} " \
               f"--query_dir ../../../{self.JOB_QUERY_DIR} " \
               f"--output_file ../../../{output_file} --db-port {self.port}"
-        print(f"Command: {cmd}")
-        result = subprocess.run(cmd, shell=True, capture_output=False)
-        return result.returncode == 0
+        print(f"Command: {cmd}", flush=True)
+        # Use Popen for real-time output that works with TeeLogger
+        process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        process.wait()
+        return process.returncode == 0
 
     def parse_query_results(self, output_file: str) -> Dict[str, float]:
         """Parse query results, only use 3rd execution (i=2) for each query."""
@@ -537,10 +544,18 @@ class DatabaseValidator:
                     time_ratio=float('inf'), passed=False, threshold=threshold, import_failed=True
                 )
 
-        gen_output = f"validation_logs/{dataset_name}_{table_name}_gen.log"
-        os.makedirs("validation_logs", exist_ok=True)
+        # Build log directory path (same as gd_logs structure)
+        log_dir = dataset_name
+        if reference_dataset and reference_dataset != dataset_name:
+            log_dir = f"{dataset_name}_ref_{reference_dataset}"
+        if variant_id > 0:
+            log_dir = f"{log_dir}-{variant_id}"
+        log_path = f"validation_logs/{log_dir}"
+        os.makedirs(log_path, exist_ok=True)
+
+        gen_output = f"{log_path}/{table_name}_gen.log"
         self.run_job_queries(self.gen_db, gen_output)
-        real_output = f"validation_logs/{dataset_name}_real.log"
+        real_output = f"{log_path}/real.log"
         # Use cached real query results if available, unless explicitly told to re-run
         if not skip_real_queries:
             if os.path.exists(real_output):
@@ -629,8 +644,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate generated database tables")
     parser.add_argument("--dataset-name", type=str, required=True)
     parser.add_argument("--table-name", type=str, default=None)
-    parser.add_argument("--gen-db", type=str, default="imdb_17v2_gen")
-    parser.add_argument("--real-db", type=str, default="imdb_17v2")
+    parser.add_argument("--gen-db", type=str, default="imdb_2017_gen")
+    parser.add_argument("--real-db", type=str, default="imdb_2017")
     parser.add_argument("--host", type=str, default="172.17.0.1")
     parser.add_argument("--port", type=int, default=5430)
     parser.add_argument("--threshold", type=float, default=1.2)

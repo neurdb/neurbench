@@ -39,16 +39,16 @@ current_val_iters = 10
 
 
 @balsa.params_registry.Register
-class NB_Balsa_train_imdb_ori_job_datashift(Balsa_JOB_EvaluationBase):
+class NB_Balsa_train_imdb_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_train_job
         p.validate_every_n_epochs = 200
         p.val_iters = current_val_iters
         p.model_save_path = MODEL_SAVE_BASE
-        p.model_prefix = 'balsa_imdb_ori_job_full'
+        p.model_prefix = 'balsa_imdb_job_full'
         return p
 
 
@@ -93,30 +93,30 @@ class NB_Balsa_train_imdb_05v2_job_datashift(Balsa_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
-class NB_Balsa_train_imdb_17v2_job_datashift(Balsa_JOB_EvaluationBase):
+class NB_Balsa_train_imdb_2017_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_17v2'
+        p.db = 'imdb_2017'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_train_job
         p.validate_every_n_epochs = 200
         p.val_iters = current_val_iters
         p.model_save_path = MODEL_SAVE_BASE
-        p.model_prefix = 'balsa_imdb_17v2_job_full'
+        p.model_prefix = 'balsa_imdb_2017_job_full'
         return p
 
 
 @balsa.params_registry.Register
-class NB_Neo_train_imdb_ori_job_datashift(Neo_JOB_EvaluationBase):
+class NB_Neo_train_imdb_job_datashift(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_train_job
         p.validate_every_n_epochs = 200
         p.val_iters = current_val_iters
         p.model_save_path = MODEL_SAVE_BASE
-        p.model_prefix = 'neo_imdb_ori_job_full'
+        p.model_prefix = 'neo_imdb_job_full'
         return p
 
 
@@ -149,16 +149,16 @@ class NB_Neo_train_imdb_05v2_job_datashift(Neo_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
-class NB_Neo_train_imdb_17v2_job_datashift(Neo_JOB_EvaluationBase):
+class NB_Neo_train_imdb_2017_job_datashift(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_17v2'
+        p.db = 'imdb_2017'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_train_job
         p.validate_every_n_epochs = 200
         p.val_iters = current_val_iters
         p.model_save_path = MODEL_SAVE_BASE
-        p.model_prefix = 'neo_imdb_17v2_job_full'
+        p.model_prefix = 'neo_imdb_2017_job_full'
         return p
 
 
@@ -166,10 +166,10 @@ class NB_Neo_train_imdb_17v2_job_datashift(Neo_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
-class NB_Balsa_test_imdb_ori_job_datashift(Balsa_JOB_EvaluationBase):
+class NB_Balsa_test_imdb_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
         return p
@@ -196,20 +196,20 @@ class NB_Balsa_test_imdb_05v2_job_datashift(Balsa_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
-class NB_Balsa_test_imdb_17v2_job_datashift(Balsa_JOB_EvaluationBase):
+class NB_Balsa_test_imdb_2017_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_17v2'
+        p.db = 'imdb_2017'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
         return p
 
 
 @balsa.params_registry.Register
-class NB_Neo_test_imdb_ori_job_datashift(Neo_JOB_EvaluationBase):
+class NB_Neo_test_imdb_job_datashift(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
         return p
@@ -253,10 +253,10 @@ class NB_Neo_test_imdb_17_job_datashift(Neo_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
-class NB_Neo_test_imdb_17v2_job_datashift(Neo_JOB_EvaluationBase):
+class NB_Neo_test_imdb_2017_job_datashift(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_17v2'
+        p.db = 'imdb_2017'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
         return p

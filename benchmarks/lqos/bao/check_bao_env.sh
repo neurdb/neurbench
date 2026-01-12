@@ -13,7 +13,7 @@ ERRORS=0
 WARNINGS=0
 
 # Configuration
-DATASET="imdb_ori"
+DATASET="imdb"
 QUERY_SET="${1:-join-order-benchmark}"
 PROJECT_ROOT="../../.."  # Path to project root from benchmarks/lqos/bao
 

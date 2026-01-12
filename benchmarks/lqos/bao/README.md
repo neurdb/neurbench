@@ -94,7 +94,7 @@ benchmarks/lqos/bao/
 ### Configuration
 
 Edit `schedule_bao_simple.sh` to change:
-- `DATASET`: Database name (default: `imdb_ori`)
+- `DATASET`: Database name (default: `imdb`)
 - `QUERY_SET`: Query set directory name (default: `job`)
 - PostgreSQL port is configured via CLI module (default: 5430)
 
@@ -155,7 +155,7 @@ ps aux | grep bao_server
 
 **Check database connection:**
 ```bash
-psql -h 172.17.0.1 -p 5430 -U postgres -d imdb_ori -c "SELECT 1"
+psql -h 172.17.0.1 -p 5430 -U postgres -d imdb -c "SELECT 1"
 ```
 
 **Common Issues:**

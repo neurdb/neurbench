@@ -34,13 +34,13 @@ import ray
 
 # STACK
 # everytime we execute, we need to change this
-LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:54333/imdb_ori"
+LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:54333/imdb"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_01v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_05v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_07v2"
 
-# LOCAL_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
-REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb_ori"
+# LOCAL_DSN = "postgres://postgres:postgres@pg_balsa/imdb"
+REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb"
 
 QUERY_LOG_FILE = 'query_log_file.txt'
 NUM_EXECUTIONS = 3

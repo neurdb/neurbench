@@ -29,6 +29,14 @@ CACHE_KEY_TOLERANCE = 0.2       # Max |cache_key - user_drift| for cache key mat
 DRIFT_ERROR_TOLERANCE = 0.20    # Max drift_error (|actual - target| / target) for cache quality
 CORRELATION_TOLERANCE = 0.25    # Max correlation_loss for cache quality
 
+# Tables that need fillna (have NULL values that cause issues)
+FILLNA_TABLES = {"aka_title", "title"}
+
+
+def get_fillna_flag(table_name: str) -> str:
+    """Return --fillna flag if table needs it, empty string otherwise."""
+    return " --fillna" if table_name in FILLNA_TABLES else ""
+
 
 def get_dataset_dir(dataset_name: str, reference_dataset: str = None) -> str:
     """Get dataset directory name with reference_dataset suffix."""
@@ -187,11 +195,11 @@ Core Commands:
                                        - Imports generated tables into gen-db
                                        - Runs JOB queries on both databases
                                        - Compares execution times per table
-                                       --gen-db: Target database for generated data (default: imdb_17v2_gen)
-                                       --real-db: Reference real database (default: imdb_17v2)
+                                       --gen-db: Target database for generated data (default: imdb_2017_gen)
+                                       --real-db: Reference real database (default: imdb_2017)
 
 Configuration Tips:
-  set dataset imdb_ori               # Set database to use
+  set dataset imdb               # Set database to use
   set query_set job # Set query set (overrides dataset queries)
   set query_set none                 # Use default queries/{dataset}/train|test
 
@@ -249,12 +257,13 @@ def _run_table_generation(
         else:
             # Check for cached params first
             cached_params = get_cached_params_for_table(dataset_name, table_name, drift, reference_dataset)
+            fillna_flag = get_fillna_flag(table_name)
             if cached_params:
                 cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
-                cmd += f" --device={device} {cached_params.to_cmd_args()} --reuse{ref_arg}"
+                cmd += f" --device={device} {cached_params.to_cmd_args()} --reuse{ref_arg}{fillna_flag}"
             else:
                 cmd = f"python3 -u dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}"
-                cmd += f" --device={device} --scale-factor={scale}{ref_arg}"
+                cmd += f" --device={device} --scale-factor={scale}{ref_arg}{fillna_flag}"
 
             ret = os.system(cmd)
             result["success"] = (ret == 0)
@@ -809,7 +818,6 @@ def handle_generate_data(tokens: List[str]):
         if gpus and len(gpus) > 1:
             # Multi-GPU parallel execution with two-phase structure
             from concurrent.futures import ThreadPoolExecutor, as_completed
-            import subprocess
 
             log_subdir = get_dataset_dir(dataset_name, reference_dataset)
             if variant_id > 0:
@@ -1091,8 +1099,9 @@ def _generate_with_auto_tune(
         print(f"\nAuto-tuning failed. Using default parameters.")
         ref_arg = f" --reference-dataset={reference_dataset}" if reference_dataset else ""
         skip_freq_arg = " --skip-freq-preservation" if skip_freq_preservation else ""
+        fillna_flag = get_fillna_flag(table_name)
         os.system(
-            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}{ref_arg}{skip_freq_arg}"
+            f"python3 dbproc.py --dataset-name={dataset_name} --table-name={table_name} --drift={drift}{ref_arg}{skip_freq_arg}{fillna_flag}"
         )
 
     return used_validated_cache
@@ -1102,8 +1111,8 @@ def _validate_and_get_failed_tables(
     dataset_name: str,
     table_names: List[str],
     threshold: float = 1.2,
-    gen_db: str = "imdb_17v2_gen",
-    real_db: str = "imdb_17v2",
+    gen_db: str = "imdb_2017_gen",
+    real_db: str = "imdb_2017",
     drift_ref: dict = None,  # {table_name: (drift, corr_loss)} for saving validation status
     reference_dataset: str = None,
     variant_id: int = -1,
@@ -1434,7 +1443,6 @@ def _generate_with_drift_reference(
         if gpus and len(gpus) > 1:
             # Parallel retrain: one table per GPU
             from concurrent.futures import ThreadPoolExecutor, as_completed
-            import subprocess
 
             log_subdir = get_dataset_dir(dataset_name, reference_dataset)
             if variant_id > 0:
@@ -1521,7 +1529,6 @@ def _generate_with_drift_reference(
         if gpus and len(gpus) > 1:
             # Parallel training: one table per GPU
             from concurrent.futures import ThreadPoolExecutor, as_completed
-            import subprocess
 
             log_subdir = get_dataset_dir(dataset_name, reference_dataset)
             if variant_id > 0:
@@ -1537,6 +1544,7 @@ def _generate_with_drift_reference(
                     cmd += f" --reference-dataset={reference_dataset}"
                 if variant_id > 0:
                     cmd += f" --variant-id={variant_id}"
+                cmd += get_fillna_flag(table_name)
 
                 log_file = os.path.join(log_dir, f"{table_name}_train.log")
                 print(f"[GPU {gpu_id}] Train: {table_name} (log: {log_file})")
@@ -1600,10 +1608,15 @@ def _generate_with_drift_reference(
     while tables_to_generate:
         # Separate tables: those needing auto-tune vs those with cached params
         # force_retrain_tables: validation failed, need full retrain (go to auto-tune, not cached)
-        tables_need_autotune = {t: v for t, v in tables_to_generate.items()
-                                if t not in tables_generate_only or t in force_retrain_tables}
-        tables_cached = {t: v for t, v in tables_to_generate.items()
-                         if t in tables_generate_only and t not in force_retrain_tables}
+        # regene-only: skip auto-tune entirely, all tables go to chunked generation
+        if ops_mode == "regene-only":
+            tables_need_autotune = {}
+            tables_cached = dict(tables_to_generate)
+        else:
+            tables_need_autotune = {t: v for t, v in tables_to_generate.items()
+                                    if t not in tables_generate_only or t in force_retrain_tables}
+            tables_cached = {t: v for t, v in tables_to_generate.items()
+                             if t in tables_generate_only and t not in force_retrain_tables}
 
         # Phase 1: Run auto-tune for tables without cache (generates full table, no chunking)
         if tables_need_autotune:
@@ -1613,7 +1626,6 @@ def _generate_with_drift_reference(
             if gpus and len(gpus) > 1:
                 # Parallel auto-tune: one table per GPU
                 from concurrent.futures import ThreadPoolExecutor, as_completed
-                import subprocess
 
                 log_subdir = get_dataset_dir(dataset_name, reference_dataset)
                 if variant_id > 0:
@@ -1696,7 +1708,8 @@ def _generate_with_drift_reference(
 
         if gpus and len(gpus) > 1:
             # Multi-GPU parallel execution with smart allocation based on n_samples
-            print(f"=== Phase 2: Chunked generation ({len(tables_cached)} tables) ===")
+            phase_label = "Regenerate" if ops_mode == "regene-only" else "Phase 2: Chunked generation"
+            print(f"=== {phase_label} ({len(tables_cached)} tables) ===")
             print(f"Running parallel generation on GPUs: {gpus}")
             print()
 
@@ -1839,6 +1852,7 @@ def _generate_with_drift_reference(
                     cmd += f" --sample-steps={sample_steps}"
                 if variant_id > 0:
                     cmd += f" --variant-id={variant_id}"
+                cmd += get_fillna_flag(table_name)
 
                 batch_str = f"{table_name}[{batch_idx}]"
                 print(f"[GPU {gpu_id}] Start: {batch_str}")
@@ -1935,6 +1949,17 @@ def _generate_with_drift_reference(
             # Count final results
             failed_count = sum(1 for r in batch_results if not r[5])
             print(f"\n=== All batches completed: {len(batch_results) - failed_count} succeeded, {failed_count} failed ===")
+
+            # Record time before post-processing
+            pre_postprocess_time = time.time() - generation_start_time
+            pp_hours, pp_remainder = divmod(pre_postprocess_time, 3600)
+            pp_minutes, pp_seconds = divmod(pp_remainder, 60)
+            if pp_hours > 0:
+                print(f"Generation time (before post-processing): {int(pp_hours)}h {int(pp_minutes)}m {pp_seconds:.1f}s")
+            elif pp_minutes > 0:
+                print(f"Generation time (before post-processing): {int(pp_minutes)}m {pp_seconds:.1f}s")
+            else:
+                print(f"Generation time (before post-processing): {pp_seconds:.1f}s")
 
             # Post-process: merge if needed, then apply freq preservation if needed
             print("\n=== Post-processing ===")
@@ -2743,7 +2768,6 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force
     Returns True if regeneration was done, False otherwise.
     """
     import json
-    import subprocess
 
     metadata_path = os.path.join(get_expdir_path(dataset_name, table_name, reference_dataset, variant_id), "last_generation.json")
     if not os.path.exists(metadata_path):
@@ -2844,6 +2868,8 @@ def regenerate_with_best_cached_params(dataset_name: str, table_name: str, force
         if skip_freq_preservation:
             cmd += " --skip-freq-preservation"
 
+        cmd += get_fillna_flag(table_name)
+
         print(f"  Running: {cmd}")
 
         result = subprocess.run(cmd, shell=True, capture_output=False, text=True, timeout=3600)
@@ -2921,8 +2947,8 @@ def handle_validate_data(tokens: List[str]):
     if len(tokens) < 1:
         print("Error: Not enough arguments")
         print("Usage: vd DATASET [TABLE] [--gen-db=X] [--real-db=Y] [--threshold=N] [--force-reload] [--dry-run]")
-        print("  --gen-db=X: Target database for generated data (default: imdb_17v2_gen)")
-        print("  --real-db=Y: Reference real database (default: imdb_17v2)")
+        print("  --gen-db=X: Target database for generated data (default: imdb_2017_gen)")
+        print("  --real-db=Y: Reference real database (default: imdb_2017)")
         print("  --threshold=N: Max execution time ratio (default: 1.2 = 20%)")
         print("  --force-reload: Force reload database even if exists")
         print("  --dry-run: Test without replacing tables (compare current db state)")
@@ -2936,8 +2962,8 @@ def handle_validate_data(tokens: List[str]):
 
     dataset_name = tokens[0]
     table_name = None
-    gen_db = "imdb_17v2_gen"
-    real_db = "imdb_17v2"
+    gen_db = "imdb_2017_gen"
+    real_db = "imdb_2017"
     threshold = 1.2  # 20% performance threshold (same as gd --validate)
     force_reload = False
     dry_run = False

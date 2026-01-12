@@ -9,11 +9,11 @@
 #   ./schedule_hybridqo_simple.sh job_full__train           # Use specified query_set
 #
 # Advanced mode (separate train/test configuration):
-#   ./schedule_hybridqo_simple.sh --train-dataset imdb_ori --train-query-set job_full__train \
+#   ./schedule_hybridqo_simple.sh --train-dataset imdb --train-query-set job_full__train \
 #                                 --test-dataset imdb_drift --test-query-set job_full__train
 #
 # Options:
-#   --train-dataset DATASET      Dataset for training (default: imdb_ori)
+#   --train-dataset DATASET      Dataset for training (default: imdb)
 #   --train-query-set QUERY_SET  Query set for training (default: job_full__train)
 #   --test-dataset DATASET       Dataset for testing (default: same as train-dataset)
 #   --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)
@@ -43,7 +43,7 @@ show_help() {
     echo "  ./schedule_hybridqo_simple.sh job_full__train      # Use specified query_set"
     echo ""
     echo "Options:"
-    echo "  --train-dataset DATASET      Dataset for training (default: imdb_ori)"
+    echo "  --train-dataset DATASET      Dataset for training (default: imdb)"
     echo "  --train-query-set QUERY_SET  Query set for training (default: job_full__train)"
     echo "  --test-dataset DATASET       Dataset for testing (default: same as train-dataset)"
     echo "  --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)"
@@ -62,11 +62,11 @@ show_help() {
     echo "  ./schedule_hybridqo_simple.sh job_full__train"
     echo ""
     echo "  # Different datasets for train and test"
-    echo "  ./schedule_hybridqo_simple.sh --train-dataset imdb_ori --test-dataset imdb_17v2"
+    echo "  ./schedule_hybridqo_simple.sh --train-dataset imdb --test-dataset imdb_2017"
     echo ""
     echo "  # Fully customized"
-    echo "  ./schedule_hybridqo_simple.sh --train-dataset imdb_ori --train-query-set job_full__train \\"
-    echo "                                --test-dataset imdb_17v2 --test-query-set job_full__train"
+    echo "  ./schedule_hybridqo_simple.sh --train-dataset imdb --train-query-set job_full__train \\"
+    echo "                                --test-dataset imdb_2017 --test-query-set job_full__train"
     exit 0
 }
 
@@ -94,7 +94,7 @@ if [ ! -d "$HYBRIDQO_DIR" ]; then
 fi
 
 # Default configuration
-TRAIN_DATASET="imdb_ori"
+TRAIN_DATASET="imdb"
 TRAIN_QUERY_SET="job_full__train"
 TEST_DATASET=""
 TEST_QUERY_SET=""

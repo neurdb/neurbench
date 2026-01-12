@@ -1365,7 +1365,7 @@ JOB_SMALLSET_TEST = [
 class Neurbench_Neo_DB2_SMALL_SET_JOIN_SHIFT_Train03(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = 'queries/q_train_imdb_join_03'
         p.test_query_glob = JOB_SMALLSET_TEST
         return p
@@ -1375,7 +1375,7 @@ class Neurbench_Neo_DB2_SMALL_SET_JOIN_SHIFT_Train03(Neo_JOB_EvaluationBase):
 class Neurbench_Neo_DB2_SMALL_SET_JOIN_SHIFT_Train05(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = 'queries/q_train_imdb_join_05'
         p.test_query_glob = JOB_SMALLSET_TEST
         return p
@@ -1385,7 +1385,7 @@ class Neurbench_Neo_DB2_SMALL_SET_JOIN_SHIFT_Train05(Neo_JOB_EvaluationBase):
 class Neurbench_Neo_DB2_SMALL_SET_Train(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
-        p.db = 'imdb_ori'
+        p.db = 'imdb'
         p.query_dir = 'queries/job_data_v2_small_set_query'
         p.test_query_glob = JOB_SMALLSET_TEST
         return p

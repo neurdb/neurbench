@@ -18,30 +18,59 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 import threading
 
+
+class TeeLogger:
+    """Write output to both console and log file."""
+    def __init__(self, log_file: str):
+        self.terminal = sys.stdout
+        self.log = open(log_file, 'w', encoding='utf-8', buffering=1)  # Line buffered
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.terminal.flush()
+        self.log.write(message)
+        self.log.flush()
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+    def close(self):
+        self.log.close()
+
 # ============================================================================
 # GLOBAL CONFIGURATION
 # ============================================================================
 
 # Which tasks to run
-RUN_TASK_1 = True
-RUN_TASK_2 = True
-RUN_TASK_3 = True
+RUN_TASK_1 = False
+RUN_TASK_2 = False
+RUN_TASK_3 = False
 RUN_TASK_4 = True
 
 # GPU allocation (all tasks use 2 GPUs per job)
 GPUS_PER_JOB = 2
 
 # All available GPUs (adjust based on your system)
-ALL_GPUS = [2, 3, 4, 5, 6, 7]
-# ALL_GPUS = [0, 1, 2, 3, 4, 5, 6, 7]
+# ALL_GPUS = [2, 3, 4, 5, 6, 7]
+ALL_GPUS = [0, 1, 2, 3, 4, 5, 6, 7]
 
 # Task 3: Generate 2015 using historical data
 TASK_3_BASES = ["imdb", "imdb_2013", "imdb_2014"]  # Training data
 TASK_3_TARGET = "imdb_2015"  # Target to generate
 
-# Task 4 GPU configurations to test
-TASK_4_GPU_CONFIGS = [2, 4, 6]
-# TASK_4_GPU_CONFIGS = [2, 4, 6, 8]
+# Task 4 configurations:
+# Part 1: By dataset size (fixed GPU count)
+TASK_4_PART1_GPU = 4  # Use 4 GPUs
+TASK_4_PART1_REFS = ["imdb_2013", "imdb_2015", "imdb_2017"]  # Datasets to compare
+
+# Part 2: By GPU count (fixed dataset)
+TASK_4_PART2_GPUS = [8]  # GPU counts to compare (only 8 for now)
+TASK_4_PART2_REF = "imdb_2013"  # Fixed dataset
+
+# Which parts to run
+RUN_TASK_4_PART1 = False  # By dataset size
+RUN_TASK_4_PART2 = True  # By GPU count
 
 # Sleep time after each job completes (seconds)
 JOB_COMPLETE_SLEEP = 10
@@ -58,9 +87,8 @@ DRIFT_REF_FILE = "drift_ref.csv"
 # Task 2: Drift values to test
 TASK_2_DRIFT_VALUES = [0.1, 0.3, 0.5]
 
-# Task 4: Base and ref datasets for timing
+# Task 4: Base dataset
 TASK_4_BASE = "imdb"
-TASK_4_REFS = ["imdb_2013", "imdb_2014", "imdb_2015", "imdb_2016", "imdb_2017"]
 
 # ============================================================================
 # GPU ALLOCATION MANAGER
@@ -449,25 +477,25 @@ def exp_4_job(base: str, ref: str, gpus: List[int], log_dir: str) -> Dict:
 
 
 def exp_4(log_dir: str) -> List[Dict]:
-    """Run all Task 4 jobs (parallel within each GPU config)."""
+    """Run all Task 4 jobs in two parts."""
     print("\n" + "="*80, flush=True)
     print("TASK 4: TRAIN TIME + GEN TIME", flush=True)
     print("="*80, flush=True)
 
     results = []
 
-    for num_gpus in TASK_4_GPU_CONFIGS:
-        print(f"\n--- Testing with {num_gpus} GPUs per job ---", flush=True)
+    # Part 1: By dataset size (fixed GPU count)
+    if RUN_TASK_4_PART1:
+        print(f"\n--- Part 1: By Dataset Size ({TASK_4_PART1_GPU} GPUs) ---", flush=True)
+        print(f"    Datasets: {TASK_4_PART1_REFS}", flush=True)
 
-        # Calculate max concurrent jobs for this GPU config
+        num_gpus = TASK_4_PART1_GPU
         max_concurrent = len(ALL_GPUS) // num_gpus
         print(f"    Max concurrent jobs: {max_concurrent}", flush=True)
 
-        # Create GPU allocator for this config
         gpu_allocator = GPUAllocator(ALL_GPUS)
-        config_results = []
 
-        def run_job(ref):
+        def run_job_part1(ref):
             gpus = gpu_allocator.wait_and_allocate(num_gpus)
             try:
                 result = exp_4_job(TASK_4_BASE, ref, gpus, log_dir)
@@ -476,21 +504,42 @@ def exp_4(log_dir: str) -> List[Dict]:
                 gpu_allocator.release(gpus)
 
         with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
-            futures = {executor.submit(run_job, ref): ref for ref in TASK_4_REFS}
+            futures = {executor.submit(run_job_part1, ref): ref for ref in TASK_4_PART1_REFS}
 
             for future in as_completed(futures):
                 ref = futures[future]
                 try:
                     result = future.result()
-                    config_results.append(result)
+                    results.append(result)
                     status = "SUCCESS" if result["success"] else "FAILED"
-                    print(f"[Task 4] {TASK_4_BASE} -> {ref} ({num_gpus} GPUs): {status}", flush=True)
-                    print(f"         Train: {result['train_time']:.1f}s, Gen: {result['gen_time']:.1f}s, Total: {result['total_time']:.1f}s", flush=True)
+                    print(f"[Task 4 Part1] {TASK_4_BASE} -> {ref} ({num_gpus} GPUs): {status}", flush=True)
+                    print(f"              Train: {result['train_time']:.1f}s, Gen: {result['gen_time']:.1f}s, Total: {result['total_time']:.1f}s", flush=True)
                 except Exception as e:
-                    print(f"[Task 4] Error for {ref}: {e}", flush=True)
-                    config_results.append({"task": "task_4", "ref": ref, "num_gpus": num_gpus, "success": False, "error": str(e)})
+                    print(f"[Task 4 Part1] Error for {ref}: {e}", flush=True)
+                    results.append({"task": "task_4", "ref": ref, "num_gpus": num_gpus, "success": False, "error": str(e)})
 
-        results.extend(config_results)
+    # Part 2: By GPU count (fixed dataset)
+    if RUN_TASK_4_PART2:
+        print(f"\n--- Part 2: By GPU Count (Dataset: {TASK_4_PART2_REF}) ---", flush=True)
+        print(f"    GPU configs: {TASK_4_PART2_GPUS}", flush=True)
+
+        for num_gpus in TASK_4_PART2_GPUS:
+            print(f"\n    Testing with {num_gpus} GPUs...", flush=True)
+
+            gpu_allocator = GPUAllocator(ALL_GPUS)
+            gpus = gpu_allocator.wait_and_allocate(num_gpus)
+
+            try:
+                result = exp_4_job(TASK_4_BASE, TASK_4_PART2_REF, gpus, log_dir)
+                results.append(result)
+                status = "SUCCESS" if result["success"] else "FAILED"
+                print(f"[Task 4 Part2] {TASK_4_BASE} -> {TASK_4_PART2_REF} ({num_gpus} GPUs): {status}", flush=True)
+                print(f"              Train: {result['train_time']:.1f}s, Gen: {result['gen_time']:.1f}s, Total: {result['total_time']:.1f}s", flush=True)
+            except Exception as e:
+                print(f"[Task 4 Part2] Error for {num_gpus} GPUs: {e}", flush=True)
+                results.append({"task": "task_4", "ref": TASK_4_PART2_REF, "num_gpus": num_gpus, "success": False, "error": str(e)})
+            finally:
+                gpu_allocator.release(gpus)
 
     return results
 
@@ -505,6 +554,13 @@ def main():
     log_dir = f"experiment_logs/{timestamp}"
     os.makedirs(log_dir, exist_ok=True)
 
+    # Setup TeeLogger to capture all console output
+    master_log = f"{log_dir}/master.log"
+    logger = TeeLogger(master_log)
+    sys.stdout = logger
+
+    print(f"Experiment started at {time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    print(f"Master log: {master_log}", flush=True)
     print(f"Experiment logs will be saved to: {log_dir}", flush=True)
     print(f"\nConfiguration:", flush=True)
     print(f"  RUN_TASK_1: {RUN_TASK_1}", flush=True)
@@ -625,6 +681,11 @@ def main():
     minutes, seconds = divmod(remainder, 60)
     print(f"\nTotal experiment time: {int(hours)}h {int(minutes)}m {seconds:.1f}s", flush=True)
     print(f"Results saved to: {results_file}", flush=True)
+
+    # Close logger
+    sys.stdout = logger.terminal
+    logger.close()
+    print(f"Master log saved to: {master_log}")
 
 
 if __name__ == "__main__":
