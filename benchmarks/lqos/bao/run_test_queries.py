@@ -95,8 +95,8 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
                 'q_errors': q_errors
             })
 
-            print(
-                f"\t{i}: Execution Time: {measurements[-1]['execution_time']:.4f}\tPlanning Time: {measurements[-1]['planning_time']:.4f}\tPredicted Time: {measurements[-1]['predicted_time'] if measurements[-1]['predicted_time'] is not None else 'N/A'}", flush=True)
+            # print(
+            #     f"\t{i}: Execution Time: {measurements[-1]['execution_time']:.4f}\tPlanning Time: {measurements[-1]['planning_time']:.4f}\tPredicted Time: {measurements[-1]['predicted_time'] if measurements[-1]['predicted_time'] is not None else 'N/A'}", flush=True)
 
         conn.close()
     except Exception as e:
@@ -153,7 +153,7 @@ def main(args):
         for i, measurement in enumerate(measurements):
             avg_q_error = sum(measurement['q_errors']) / len(measurement['q_errors']) if measurement['q_errors'] else 'N/A'
             output_string = f"{'x' if measurement['hint'] is None else measurement['hint']}, {i}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, {measurement['predicted_time'] if measurement['predicted_time'] is not None else 'N/A'}, {'Bao' if use_bao else 'PG'}, {avg_q_error}"
-            print(output_string, flush=True)
+            # print(output_string, flush=True)
             with open(args.output_file, 'a') as f:
                 f.write(output_string)
                 f.write(os.linesep)

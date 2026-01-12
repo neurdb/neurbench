@@ -76,7 +76,7 @@ def current_timestamp_str():
 
 
 def write_to_file(file_path, output_string):
-    print(output_string, flush=True)
+    # print(output_string, flush=True)
     with open(file_path, 'a') as f:
         f.write(output_string)
         f.write(os.linesep)

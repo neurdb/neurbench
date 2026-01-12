@@ -3,7 +3,7 @@ PORT = 5434
 HOST = "172.17.0.1"
 USER = "postgres"
 PASSWORD = "postgres"
-DB = "imdb_ori"
+DB = "imdb"
 
 
 CONNECTION_STR = "dbname=" + DB + " user=" + USER + " password=" + PASSWORD + " host=172.17.0.1 port=" + str(PORT)

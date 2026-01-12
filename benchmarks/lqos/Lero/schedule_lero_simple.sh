@@ -9,11 +9,11 @@
 #   ./schedule_lero_simple.sh job      # Use specified query_set
 #
 # Advanced mode (separate train/test configuration):
-#   ./schedule_lero_simple.sh --train-dataset imdb_ori --train-query-set job-train \
+#   ./schedule_lero_simple.sh --train-dataset imdb --train-query-set job-train \
 #                             --test-dataset imdb_drift --test-query-set job-test
 #
 # Options:
-#   --train-dataset DATASET      Dataset for training (default: imdb_ori)
+#   --train-dataset DATASET      Dataset for training (default: imdb)
 #   --train-query-set QUERY_SET  Query set for training (default: job)
 #   --test-dataset DATASET       Dataset for testing (default: same as train-dataset)
 #   --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)
@@ -42,7 +42,7 @@ show_help() {
     echo "  ./schedule_lero_simple.sh job # Use specified query_set"
     echo ""
     echo "Options:"
-    echo "  --train-dataset DATASET      Dataset for training (default: imdb_ori)"
+    echo "  --train-dataset DATASET      Dataset for training (default: imdb)"
     echo "  --train-query-set QUERY_SET  Query set for training (default: job)"
     echo "  --test-dataset DATASET       Dataset for testing (default: same as train-dataset)"
     echo "  --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)"
@@ -60,10 +60,10 @@ show_help() {
     echo "  ./schedule_lero_simple.sh job"
     echo ""
     echo "  # Different datasets for train and test"
-    echo "  ./schedule_lero_simple.sh --train-dataset imdb_ori --test-dataset imdb_drift"
+    echo "  ./schedule_lero_simple.sh --train-dataset imdb --test-dataset imdb_drift"
     echo ""
     echo "  # Fully customized"
-    echo "  ./schedule_lero_simple.sh --train-dataset imdb_ori --train-query-set job-train \\"
+    echo "  ./schedule_lero_simple.sh --train-dataset imdb --train-query-set job-train \\"
     echo "                            --test-dataset imdb_drift --test-query-set job-test"
     exit 0
 }
@@ -94,7 +94,7 @@ if [ ! -d "$LERO_DIR" ]; then
 fi
 
 # Default configuration
-TRAIN_DATASET="imdb_ori"
+TRAIN_DATASET="imdb"
 TRAIN_QUERY_SET="job"
 TEST_DATASET=""
 TEST_QUERY_SET=""

@@ -43,8 +43,8 @@ class TeeLogger:
 # ============================================================================
 
 # Baseline databases
-IMDB_ORI = "imdb"  # Original IMDB database (for drift comparison)
-IMDB_17 = "imdb_2017"  # IMDB 2017 database (for ref comparison)
+IMDB = "imdb"  # Original IMDB database (for drift comparison)
+IMDB_2017 = "imdb_2017"  # IMDB 2017 database (for ref comparison)
 
 # PostgreSQL config
 PG_HOST = "172.28.176.110"
@@ -260,7 +260,7 @@ def get_all_experiments() -> List[ExperimentConfig]:
             variant_id=-1,
             expdir_path=get_expdir_path(base, TASK_1_REF),
             gen_db_name=f"{base}_ref_{TASK_1_REF}_gen",
-            compare_db=IMDB_17,
+            compare_db=IMDB_2017,
             threshold=DEFAULT_THRESHOLD,
         )
         experiments.append(exp)
@@ -286,7 +286,7 @@ def get_all_experiments() -> List[ExperimentConfig]:
             variant_id=variant_id,
             expdir_path=get_expdir_path(TASK_2_BASE, None, variant_id),
             gen_db_name=f"imdb_drift_{variant_id}_gen",
-            compare_db=IMDB_ORI,  # Compare against original
+            compare_db=IMDB,  # Compare against original
             threshold=min_ratio,  # 这里 threshold 作为下界使用
             drift_value=drift_val,
         )
@@ -362,6 +362,18 @@ def validate_table(
 
     success, output = run_command(cmd, f"Validate {table_name}", capture=True)
     print(output)
+
+    # Save output to per-task log file (append mode)
+    log_dir = f"validation_logs/{exp.expdir_path.replace('expdir/', '')}"
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "validation.log")
+    with open(log_file, 'a') as f:
+        f.write(f"\n{'='*60}\n")
+        f.write(f"Table: {table_name}\n")
+        f.write(f"Command: {cmd}\n")
+        f.write(f"{'='*60}\n")
+        f.write(output)
+        f.write("\n")
 
     # Parse ratio from final table result line: "Table xxx result: ... ratio=X.XXx"
     # Use findall to get all matches, then take the last one (final result)
@@ -483,8 +495,8 @@ def task1_validate_all():
     os.makedirs("validation_logs", exist_ok=True)
 
     print("\n--- Getting baseline performance ---")
-    imdb_ori_perf = get_baseline_performance(IMDB_ORI, "validation_logs/imdb_ori_baseline.json")
-    imdb_17_perf = get_baseline_performance(IMDB_17, "validation_logs/imdb_17_baseline.json")
+    imdb_ori_perf = get_baseline_performance(IMDB, "validation_logs/imdb_baseline.json")
+    imdb_17_perf = get_baseline_performance(IMDB_2017, "validation_logs/imdb_2017_baseline.json")
 
     print(f"\nIMDB ORI total time: {sum(imdb_ori_perf.values()):.1f}ms ({len(imdb_ori_perf)} queries)")
     print(f"IMDB 17 total time: {sum(imdb_17_perf.values()):.1f}ms ({len(imdb_17_perf)} queries)")
