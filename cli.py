@@ -21,7 +21,8 @@ GLOBAL_CONFIG = {
     "drift": 0.0,
     "query_set": None,  # Optional: if None, uses queries/{dataset}/train|test
                         # if set, uses queries/{query_set}/train|test
-    "pg_port": 5430     # PostgreSQL port (default: 5430)
+    "pg_port": 5430,    # PostgreSQL port (default: 5430)
+    "execution_mode": "single",  # Query execution mode: "single" (prewarm + 1 run) or "triple" (3 runs, use 3rd)
 }
 
 # Tolerance settings for cache matching and validation
@@ -1160,6 +1161,7 @@ def _validate_and_get_failed_tables(
         gen_db=gen_db,
         real_db=real_db,
         port=GLOBAL_CONFIG["pg_port"],
+        execution_mode=GLOBAL_CONFIG["execution_mode"],
     )
 
     # Ensure gen_db exists
@@ -1203,8 +1205,11 @@ def _validate_and_get_failed_tables(
             if not dry_run:
                 regenerate_with_best_cached_params(dataset_name, table_name, skip_freq_preservation=skip_freq_preservation, reference_dataset=reference_dataset, variant_id=variant_id)
 
+            # Drift mode: variant_id > 0 without reference_dataset
+            is_drift_mode = (reference_dataset is None and variant_id > 0)
             result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run,
-                                                     reference_dataset=reference_dataset, variant_id=variant_id)
+                                                     reference_dataset=reference_dataset, variant_id=variant_id,
+                                                     is_drift_mode=is_drift_mode)
 
             passed = result.passed
             ratio = result.time_ratio
@@ -2252,12 +2257,16 @@ def handle_tqo(tokens: List[str]):
 
         # Determine query directory based on query_set or dataset
         if query_set:
-            # Use specified query set
+            # Use specified query set - try with /train subdirectory first, then without
             query_dir = os.path.join("queries", query_set, "train")
+            if not os.path.exists(query_dir):
+                query_dir = os.path.join("queries", query_set)
             db_name = dataset if dataset else "imdb"
         elif dataset:
             # Use default dataset queries
             query_dir = os.path.join("queries", dataset, "train")
+            if not os.path.exists(query_dir):
+                query_dir = os.path.join("queries", dataset)
             db_name = dataset
         else:
             print("Error: Please set dataset first using 'set dataset [DATASET_NAME]'")
@@ -2442,12 +2451,16 @@ def handle_iqo(tokens: List[str]):
 
         # Determine query directory based on query_set or dataset
         if query_set:
-            # Use specified query set
+            # Use specified query set - try with /test subdirectory first, then without
             query_dir = os.path.join("queries", query_set, "test")
+            if not os.path.exists(query_dir):
+                query_dir = os.path.join("queries", query_set)
             db_name = dataset if dataset else "imdb"
         elif dataset:
             # Use default dataset queries
             query_dir = os.path.join("queries", dataset, "test")
+            if not os.path.exists(query_dir):
+                query_dir = os.path.join("queries", dataset)
             db_name = dataset
         else:
             print("Error: Please set dataset first using 'set dataset [DATASET_NAME]'")
@@ -3011,6 +3024,7 @@ def handle_validate_data(tokens: List[str]):
         gen_db=gen_db,
         real_db=real_db,
         port=GLOBAL_CONFIG["pg_port"],
+        execution_mode=GLOBAL_CONFIG["execution_mode"],
     )
 
     if table_name:
@@ -3032,8 +3046,11 @@ def handle_validate_data(tokens: List[str]):
             validator.create_database(gen_db)
             validator.copy_all_tables(real_db, gen_db)
 
+        # Drift mode: variant_id > 0 without reference_dataset
+        is_drift_mode = (reference_dataset is None and variant_id > 0)
         result = validator.validate_single_table(dataset_name, table_name, threshold, dry_run=dry_run,
-                                                  reference_dataset=reference_dataset, variant_id=variant_id)
+                                                  reference_dataset=reference_dataset, variant_id=variant_id,
+                                                  is_drift_mode=is_drift_mode)
 
         if result.passed:
             print(f"\n[SUCCESS] Table {table_name} passed validation!")

@@ -49,6 +49,7 @@ class DatabaseValidator:
         port: int = 5430,
         user: str = "postgres",
         password: str = "postgres",
+        execution_mode: str = "single",  # "single" (prewarm + 1 run) or "triple" (3 runs, use 3rd)
     ):
         self.gen_db = gen_db
         self.real_db = real_db
@@ -56,6 +57,7 @@ class DatabaseValidator:
         self.port = port
         self.user = user
         self.password = password
+        self.execution_mode = execution_mode
 
     def _connection_string(self, dbname: str) -> str:
         return f"dbname={dbname} user={self.user} password={self.password} host={self.host} port={self.port}"
@@ -458,8 +460,8 @@ class DatabaseValidator:
             print(f"ANALYZE FAILED: {e}", flush=True)
             return False
 
-    def run_job_queries(self, dbname: str, output_file: str) -> bool:
-        print(f"\nRunning JOB queries on {dbname}...", flush=True)
+    def run_job_queries(self, dbname: str, output_file: str, early_stop_time: float = None) -> bool:
+        print(f"\nRunning JOB queries on {dbname} (mode: {self.execution_mode})...", flush=True)
         # Always ANALYZE before running queries to ensure accurate statistics
         self.analyze_database(dbname)
         if os.path.exists(output_file):
@@ -467,7 +469,10 @@ class DatabaseValidator:
         cmd = f"cd {self.BAO_DIR} && python3 run_test_queries.py " \
               f"--use_postgres --database_name {dbname} " \
               f"--query_dir ../../../{self.JOB_QUERY_DIR} " \
-              f"--output_file ../../../{output_file} --db-port {self.port}"
+              f"--output_file ../../../{output_file} --db-port {self.port} " \
+              f"--execution-mode {self.execution_mode}"
+        if early_stop_time is not None:
+            cmd += f" --early-stop-time {early_stop_time}"
         print(f"Command: {cmd}", flush=True)
         # Use Popen for real-time output that works with TeeLogger
         process = subprocess.Popen(
@@ -480,17 +485,24 @@ class DatabaseValidator:
         return process.returncode == 0
 
     def parse_query_results(self, output_file: str) -> Dict[str, float]:
-        """Parse query results, only use 3rd execution (i=2) for each query."""
+        """Parse query results based on execution mode.
+
+        For single mode: use index 0 (only execution)
+        For triple mode: use index 2 (3rd execution, after warmup)
+        """
         results = {}
         if not os.path.exists(output_file):
             return results
+
+        # Determine which execution index to use based on mode
+        result_index = 0 if self.execution_mode == 'single' else 2
+
         with open(output_file, 'r') as f:
             for line in f:
                 parts = line.strip().split(', ')
                 if len(parts) >= 6:
-                    exec_idx = int(parts[1])  # 0, 1, 2
-                    # Only use 3rd execution (index 2) - after warmup
-                    if exec_idx != 2:
+                    exec_idx = int(parts[1])
+                    if exec_idx != result_index:
                         continue
                     query_path = parts[3]
                     exec_time = float(parts[5])
@@ -498,21 +510,33 @@ class DatabaseValidator:
                     results[query_name] = exec_time
         return results
 
-    def compare_results(self, gen_results: Dict[str, float], real_results: Dict[str, float], threshold: float = 1.2) -> Tuple[int, int, float]:
+    def compare_results(self, gen_results: Dict[str, float], real_results: Dict[str, float], threshold: float = 1.2, early_stop_ratio: float = 1.5, enable_early_stop: bool = True) -> Tuple[int, int, float, float, float, bool]:
         """Compare query results with bidirectional threshold check.
 
         For threshold=1.2 (20%), accepts ratio in range [1/1.2, 1.2] = [0.833, 1.2]
+        Early stops if cumulative gen time exceeds early_stop_ratio * total real time (only when enable_early_stop=True).
+
+        Returns: (total, passed, avg_ratio, gen_cumulative, real_cumulative, early_stopped)
         """
         total = passed = 0
         ratios = []
         lower_bound = 1.0 / threshold  # e.g., 0.833 for threshold=1.2
         upper_bound = threshold         # e.g., 1.2
 
+        # Calculate total real time for early stopping
+        real_total_all = sum(real_results.values())
+        early_stop_threshold = real_total_all * early_stop_ratio
+        gen_cumulative = 0.0
+        real_cumulative = 0.0
+        early_stopped = False
+
         for query_name in gen_results:
             if query_name not in real_results:
                 continue
             gen_time = gen_results[query_name]
             real_time = real_results[query_name]
+            gen_cumulative += gen_time
+            real_cumulative += real_time
             ratio = gen_time / real_time if real_time > 0 else (1.0 if gen_time == 0 else float('inf'))
             total += 1
             # Bidirectional check: pass if within [lower_bound, upper_bound]
@@ -522,12 +546,20 @@ class DatabaseValidator:
             ratios.append(ratio)
             status = "PASS" if is_passed else "FAIL"
             print(f"  {query_name}: {status} (gen={gen_time:.1f}ms, real={real_time:.1f}ms, ratio={ratio:.2f}x)")
+
+            # Early stop check (only for ref experiments)
+            if enable_early_stop and gen_cumulative > early_stop_threshold:
+                print(f"\n  [EARLY STOP] Cumulative gen time ({gen_cumulative:.1f}ms) > {early_stop_ratio}x real total ({real_total_all:.1f}ms)")
+                early_stopped = True
+                break
+
         avg_ratio = sum(ratios) / len(ratios) if ratios else 1.0
-        return total, passed, avg_ratio
+        return total, passed, avg_ratio, gen_cumulative, real_cumulative, early_stopped
 
     def validate_single_table(self, dataset_name: str, table_name: str, threshold: float = 1.2,
                               skip_real_queries: bool = False, dry_run: bool = False,
-                              reference_dataset: str = None, variant_id: int = -1) -> TableValidationResult:
+                              reference_dataset: str = None, variant_id: int = -1,
+                              is_drift_mode: bool = False) -> TableValidationResult:
         print(f"\n{'='*60}")
         print(f"Validating table: {table_name}" + (" [DRY RUN - no table replacement]" if dry_run else ""))
         print(f"{'='*60}")
@@ -553,22 +585,30 @@ class DatabaseValidator:
         log_path = f"validation_logs/{log_dir}"
         os.makedirs(log_path, exist_ok=True)
 
-        gen_output = f"{log_path}/{table_name}_gen.log"
-        self.run_job_queries(self.gen_db, gen_output)
         real_output = f"{log_path}/real.log"
-        # Use cached real query results if available, unless explicitly told to re-run
+        # Run real queries first (or use cached) to get baseline for early stopping
         if not skip_real_queries:
             if os.path.exists(real_output):
                 print(f"\nUsing cached real database results: {real_output}")
             else:
                 print(f"\nRunning queries on real database {self.real_db}...")
                 self.run_job_queries(self.real_db, real_output)
-        gen_results = self.parse_query_results(gen_output)
         real_results = self.parse_query_results(real_output)
+        real_total_all = sum(real_results.values())
+
+        # Calculate early stop threshold for gen queries (only for ref experiments)
+        early_stop_time = None
+        if reference_dataset is not None:
+            early_stop_time = real_total_all * 1.5  # Stop if gen > 1.5x real
+            print(f"Early stop threshold: {early_stop_time:.1f}ms (1.5x of real total {real_total_all:.1f}ms)")
+
+        gen_output = f"{log_path}/{table_name}_gen.log"
+        self.run_job_queries(self.gen_db, gen_output, early_stop_time=early_stop_time)
+        gen_results = self.parse_query_results(gen_output)
         print(f"\nComparing results for {table_name}:")
-        total, passed_count, _ = self.compare_results(gen_results, real_results, threshold)
-        gen_total = sum(gen_results.values())
-        real_total = sum(real_results.values())
+        # Enable early stop only for ref experiments (not for drift experiments)
+        enable_early_stop = reference_dataset is not None
+        total, passed_count, _, gen_total, real_total, early_stopped = self.compare_results(gen_results, real_results, threshold, enable_early_stop=enable_early_stop)
         # Use total time ratio (sum of all query times) for final judgment
         total_ratio = gen_total / real_total if real_total > 0 else float('inf')
         # Bidirectional check: pass if total_ratio within [1/threshold, threshold]
@@ -581,12 +621,20 @@ class DatabaseValidator:
 
         # In dry_run mode, no table changes were made, so no restore needed
         if not dry_run:
-            # Restore table only if validation failed (keep generated data if passed)
-            if not is_passed:
-                print(f"Validation failed, restoring {table_name} from real database...")
-                self.restore_table(table_name)
+            if is_drift_mode:
+                # Drift mode: keep table if gen is slower (ratio > 1), restore if faster
+                if total_ratio > 1.0:
+                    print(f"Drift mode: keeping {table_name} (gen is slower, ratio={total_ratio:.2f}x)")
+                else:
+                    print(f"Drift mode: restoring {table_name} (gen is not slower, ratio={total_ratio:.2f}x)")
+                    self.restore_table(table_name)
             else:
-                print(f"Validation passed, keeping generated data for {table_name}")
+                # Ref mode: restore if validation failed
+                if not is_passed:
+                    print(f"Validation failed, restoring {table_name} from real database...")
+                    self.restore_table(table_name)
+                else:
+                    print(f"Validation passed, keeping generated data for {table_name}")
         return result
 
     def validate_all_tables(self, dataset_name: str, threshold: float = 1.2,
