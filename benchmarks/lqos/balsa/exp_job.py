@@ -35,7 +35,7 @@ MODEL_SAVE_BASE = '/app/AI4QueryOptimizer/neurbench/balsa_logs_all'
 current_used_test_query_glob_in_train_job = empty_test_query_glob_job
 current_used_test_query_glob_in_test_job = full_query_test_query_glob_job
 # originally, it is 100 for job, 50 for stack datasets
-current_val_iters = 10
+current_val_iters = 100
 
 
 @balsa.params_registry.Register

@@ -63,13 +63,14 @@ TASK_3_TARGET = "imdb_2015"  # Target to generate
 # Part 1: By dataset size (fixed GPU count)
 TASK_4_PART1_GPU = 4  # Use 4 GPUs
 TASK_4_PART1_REFS = ["imdb_2013", "imdb_2015", "imdb_2017"]  # Datasets to compare
+# TASK_4_PART1_REFS = ["imdb_2015"]  # Datasets to compare
 
 # Part 2: By GPU count (fixed dataset)
-TASK_4_PART2_GPUS = [8]  # GPU counts to compare (only 8 for now)
+TASK_4_PART2_GPUS = [2, 8]  # GPU counts to compare (4 already covered in Part 1)
 TASK_4_PART2_REF = "imdb_2013"  # Fixed dataset
 
 # Which parts to run
-RUN_TASK_4_PART1 = False  # By dataset size
+RUN_TASK_4_PART1 = True  # By dataset size
 RUN_TASK_4_PART2 = True  # By GPU count
 
 # Sleep time after each job completes (seconds)

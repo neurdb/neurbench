@@ -29,6 +29,13 @@
 
 set -e  # Exit on error
 
+# Activate conda environment (for docker exec -c mode)
+if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate ai4db_new
+    export PATH="/root/miniconda3/envs/ai4db_new/bin:$PATH"
+fi
+
 # Parse command line arguments - show_help function
 show_help() {
     echo "Balsa Training and Testing Pipeline"
@@ -253,8 +260,9 @@ else
     # Change to Balsa directory
     cd "$BALSA_DIR"
 
-    # Clean up old logs
-    rm -rf logs
+    # Clean up old/failed training artifacts
+    echo "Cleaning up old training artifacts..."
+    rm -rf logs tensorboard_logs data runs
     mkdir -p logs
 
     # Install packages

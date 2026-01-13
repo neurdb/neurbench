@@ -30,6 +30,13 @@
 
 set -e  # Exit on error
 
+# Activate conda environment if available (for docker exec compatibility)
+if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate ai4db_new
+    export PATH="/root/miniconda3/envs/ai4db_new/bin:$PATH"
+fi
+
 # Parse command line arguments - show_help function
 show_help() {
     echo "HybridQO Training and Testing Pipeline"

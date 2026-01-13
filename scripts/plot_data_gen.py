@@ -850,21 +850,9 @@ def plot_task4_by_gpu(output_dir: str, dataset: str = 'imdb_2013'):
     ax.tick_params(axis='y', labelsize=60)
     ax.legend(fontsize=60, loc='upper right')
 
-    # Add value labels
-    for bar in bars1:
-        height = bar.get_height()
-        if height > 0:
-            ax.text(bar.get_x() + bar.get_width()/2, height + 0.3, f'{height:.1f}',
-                    ha='center', va='bottom', fontsize=60)
-    for bar in bars2:
-        height = bar.get_height()
-        if height > 0:
-            ax.text(bar.get_x() + bar.get_width()/2, height + 0.3, f'{height:.1f}',
-                    ha='center', va='bottom', fontsize=60)
-
-    # Add margin at top to prevent value labels from overlapping with border
+    # Add margin at top
     max_height = max(max(train_times), max(gen_times))
-    ax.set_ylim(0, max_height * 1.15)
+    ax.set_ylim(0, max_height * 1.1)
 
     plt.tight_layout()
     output_file = os.path.join(output_dir, f'bar_task4_by_gpu_{dataset}.pdf')

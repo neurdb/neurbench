@@ -20,7 +20,7 @@ class Config:
         self.hidden_size = 64
         self.batch_size = 256
         self.ip = "172.17.0.1"
-        self.port = 5432
+        self.port = 5430
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.cpudevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.var_weight = 0.00  # for au, 0:disable,0.01:enable

@@ -34,7 +34,7 @@ import ray
 
 # STACK
 # everytime we execute, we need to change this
-LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:54333/imdb"
+LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:5433/imdb"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_01v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_05v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_07v2"
@@ -44,6 +44,77 @@ REMOTE_DSN = "postgres://postgres:postgres@pg_balsa/imdb"
 
 QUERY_LOG_FILE = 'query_log_file.txt'
 NUM_EXECUTIONS = 3
+
+# Execution mode: "single" (prewarm + 1 run) or "triple" (3 runs, use last)
+EXECUTION_MODE = "single"
+_PREWARM_DONE = False
+
+def prewarm_database(dsn=None):
+    """Prewarm all tables and indexes using pg_prewarm."""
+    global _PREWARM_DONE
+    if _PREWARM_DONE:
+        return True
+
+    if dsn is None:
+        dsn = LOCAL_DSN
+
+    print(f"Prewarming database...", flush=True)
+    try:
+        conn = psycopg2.connect(dsn)
+        conn.set_session(autocommit=True)
+        cursor = conn.cursor()
+
+        # Ensure pg_prewarm extension exists
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_prewarm;")
+
+        # Get all tables in public schema
+        cursor.execute("""
+            SELECT schemaname, tablename
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename
+        """)
+        tables = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Get all indexes in public schema
+        cursor.execute("""
+            SELECT schemaname, indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY indexname
+        """)
+        indexes = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Prewarm tables
+        table_count = 0
+        for schemaname, tablename in tables:
+            try:
+                rel = f"{schemaname}.{tablename}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                table_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm table {tablename}: {e}", flush=True)
+
+        # Prewarm indexes
+        index_count = 0
+        for schemaname, indexname in indexes:
+            try:
+                rel = f"{schemaname}.{indexname}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                index_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm index {indexname}: {e}", flush=True)
+
+        cursor.close()
+        conn.close()
+        print(f"Prewarmed {table_count} tables and {index_count} indexes", flush=True)
+        _PREWARM_DONE = True
+        return True
+    except Exception as e:
+        print(f"Error prewarming database: {e}", flush=True)
+        return False
 
 # TPC-H.
 # LOCAL_DSN = "postgres://psycopg:psycopg@localhost/tpch-sf10"
@@ -104,7 +175,7 @@ def Cursor(dsn=LOCAL_DSN):
         except psycopg2.OperationalError:
             time.sleep(10)
             return get_connection(dsn)
-    print(f"--------------- Debug: Connect via {dsn} ---------------")
+    # print(f"--------------- Debug: Connect via {dsn} ---------------")
     conn = get_connection(dsn)
     conn.set_session(autocommit=True)
     try:
@@ -145,6 +216,10 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
     Returns:
       A pg_executor.Result.
     """
+    # Prewarm database if in single execution mode
+    if EXECUTION_MODE == "single":
+        prewarm_database()
+
     if verbose:
         print(sql)
     timeout_ms= None
@@ -152,12 +227,12 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
     cursor.execute('SET statement_timeout to {}'.format(180000))
 
     cursor.execute('SET enable_bitmapscan TO off')
-    cursor.execute('SHOW enable_bitmapscan')
-    print('enable_bitmapscan:', cursor.fetchone()[0])
+    # cursor.execute('SHOW enable_bitmapscan')
+    # print('enable_bitmapscan:', cursor.fetchone()[0])
 
     cursor.execute('SET enable_tidscan TO off')
-    cursor.execute('SHOW enable_tidscan')
-    print('enable_tidscan:', cursor.fetchone()[0])
+    # cursor.execute('SHOW enable_tidscan')
+    # print('enable_tidscan:', cursor.fetchone()[0])
 
     # if timeout_ms is not None:
     #     cursor.execute('SET statement_timeout to {}'.format(int(timeout_ms)))
@@ -171,8 +246,11 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
     #         # Passing None / setting to 0 means disabling timeout.
     #         cursor.execute('SET statement_timeout to 0')
 
+    # Determine number of executions based on mode
+    num_exec = 1 if EXECUTION_MODE == "single" else NUM_EXECUTIONS
+
     try:
-        for iteration in range(NUM_EXECUTIONS):
+        for iteration in range(num_exec):
             cursor.execute(sql)
             result = cursor.fetchall()
         has_timeout = False

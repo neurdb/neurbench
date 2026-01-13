@@ -419,7 +419,93 @@ HOURS=$((TOTAL_TIME / 3600))
 MINUTES=$(((TOTAL_TIME % 3600) / 60))
 SECONDS=$((TOTAL_TIME % 60))
 
+# ============================================================
+# Parse test results and compute performance comparison
+# ============================================================
 echo ""
+echo "================================================================"
+echo "Performance Comparison (Query Execution Latency)"
+echo "================================================================"
+
+# Determine which log files to use
+if [ "$SKIP_BAO_TEST" = true ]; then
+    BAO_LOG="$EXISTING_BAO_TEST"
+else
+    BAO_LOG="$LOG_DIR/${TODAY}_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+fi
+
+if [ "$SKIP_PG_TEST" = true ]; then
+    PG_LOG="$EXISTING_PG_TEST"
+else
+    PG_LOG="$LOG_DIR/${TODAY}_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+fi
+
+# Parse results using Python
+python3 << EOF
+import os
+
+def parse_test_log(log_file):
+    """Parse test log file and return total execution time."""
+    if not os.path.exists(log_file):
+        return None, 0
+
+    total_time = 0.0
+    query_count = 0
+
+    with open(log_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            # Skip non-result lines (debug output, etc.)
+            parts = line.split(', ')
+            if len(parts) < 8:
+                continue
+            try:
+                # Format: hint, iteration, timestamp, query_file, planning_time, execution_time, predicted_time, optimizer, q_error
+                iteration = int(parts[1])
+                execution_time = float(parts[5])
+                # Only count iteration 0 (the actual result in single mode)
+                if iteration == 0:
+                    total_time += execution_time
+                    query_count += 1
+            except (ValueError, IndexError):
+                continue
+
+    return total_time, query_count
+
+bao_log = "$BAO_LOG"
+pg_log = "$PG_LOG"
+
+bao_time, bao_count = parse_test_log(bao_log)
+pg_time, pg_count = parse_test_log(pg_log)
+
+print(f"")
+if bao_time is not None and bao_count > 0:
+    print(f"  Bao Total Latency:    {bao_time:,.1f} ms  ({bao_count} queries)")
+else:
+    print(f"  Bao Total Latency:    N/A (no results found)")
+
+if pg_time is not None and pg_count > 0:
+    print(f"  PG Total Latency:     {pg_time:,.1f} ms  ({pg_count} queries)")
+else:
+    print(f"  PG Total Latency:     N/A (no results found)")
+
+if bao_time and pg_time and bao_time > 0 and pg_time > 0:
+    speedup = pg_time / bao_time
+    improvement = (pg_time - bao_time) / pg_time * 100
+    print(f"")
+    if speedup >= 1:
+        print(f"  Speedup (PG/Bao):     {speedup:.2f}x")
+        print(f"  Improvement:          {improvement:.1f}% faster than PG")
+    else:
+        slowdown = bao_time / pg_time
+        regression = (bao_time - pg_time) / pg_time * 100
+        print(f"  Slowdown (Bao/PG):    {slowdown:.2f}x")
+        print(f"  Regression:           {regression:.1f}% slower than PG")
+print(f"")
+EOF
+
 echo "================================================================"
 echo "Pipeline Completed Successfully!"
 echo "================================================================"

@@ -6,6 +6,73 @@ from ImportantConfig import Config
 TIMEOUT_MS = 3 * 60 * 1000
 NUM_EXECUTIONS = 3
 
+# Execution mode: "single" (prewarm + 1 run) or "triple" (3 runs, use last)
+EXECUTION_MODE = "single"
+_PREWARM_DONE = {}  # Track prewarm status per database
+
+
+def prewarm_database(conn, dbname):
+    """Prewarm all tables and indexes using pg_prewarm."""
+    global _PREWARM_DONE
+    if dbname in _PREWARM_DONE and _PREWARM_DONE[dbname]:
+        return True
+
+    print(f"Prewarming database {dbname}...", flush=True)
+    try:
+        cursor = conn.cursor()
+
+        # Ensure pg_prewarm extension exists
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_prewarm;")
+        conn.commit()
+
+        # Get all tables in public schema
+        cursor.execute("""
+            SELECT schemaname, tablename
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename
+        """)
+        tables = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Get all indexes in public schema
+        cursor.execute("""
+            SELECT schemaname, indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY indexname
+        """)
+        indexes = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Prewarm tables
+        table_count = 0
+        for schemaname, tablename in tables:
+            try:
+                rel = f"{schemaname}.{tablename}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                table_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm table {tablename}: {e}", flush=True)
+
+        # Prewarm indexes
+        index_count = 0
+        for schemaname, indexname in indexes:
+            try:
+                rel = f"{schemaname}.{indexname}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                index_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm index {indexname}: {e}", flush=True)
+
+        print(f"Prewarmed {table_count} tables and {index_count} indexes", flush=True)
+        _PREWARM_DONE[dbname] = True
+        return True
+    except Exception as e:
+        print(f"Error prewarming database: {e}", flush=True)
+        return False
+
+
 latency_record_dict = {}
 # selectivity_dict = {}
 latency_record_file = None
@@ -47,6 +114,10 @@ class PGGRunner:
         print(f"connecting to the database {dbname}")
         if need_latency_record:
             latency_record_file = self.generateLatencyPool(latency_file)
+
+        # Prewarm database if in single execution mode
+        if EXECUTION_MODE == "single":
+            prewarm_database(self.con, dbname)
 
     def generateLatencyPool(self, fileName):
         """
@@ -94,7 +165,9 @@ class PGGRunner:
                 self.cur.execute("SET geqo_threshold = 12;")
             self.cur.execute("SET statement_timeout = " + str(timeout) + ";")
 
-            for _ in range(NUM_EXECUTIONS):
+            # Determine number of executions based on mode
+            num_exec = 1 if EXECUTION_MODE == "single" else NUM_EXECUTIONS
+            for _ in range(num_exec):
                 self.cur.execute("explain (COSTS, FORMAT JSON, ANALYSE) " + sql)
                 rows = self.cur.fetchall()
 
@@ -140,7 +213,9 @@ class PGGRunner:
                 self.cur.execute("SET geqo_threshold = 12;")
             self.cur.execute("SET statement_timeout = " + str(timeout) + ";")
 
-            for _ in range(NUM_EXECUTIONS):
+            # Determine number of executions based on mode
+            num_exec = 1 if EXECUTION_MODE == "single" else NUM_EXECUTIONS
+            for _ in range(num_exec):
                 self.cur.execute("explain (COSTS, FORMAT JSON, ANALYSE) " + sql)
                 rows = self.cur.fetchall()
 

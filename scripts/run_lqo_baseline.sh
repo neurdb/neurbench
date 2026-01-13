@@ -17,6 +17,9 @@
 
 set -e
 
+# Disable Python output buffering for real-time logs
+export PYTHONUNBUFFERED=1
+
 # Activate conda environment (for docker exec -c mode)
 if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
     source /root/miniconda3/etc/profile.d/conda.sh

@@ -11,6 +11,9 @@ USE_BAO = True
 TIMEOUT_LIMIT = 6 * 60 * 1000
 NUM_EXECUTIONS = 3
 
+# Execution mode: "single" (prewarm + 1 run) or "triple" (3 runs)
+EXECUTION_MODE = "single"
+
 # PostgreSQL connection defaults
 PG_HOST = "172.17.0.1"
 PG_USER = "postgres"
@@ -177,15 +180,18 @@ def main(args):
     if os.path.exists(args.output_file):
         raise FileExistsError(f"The file {args.output_file} already exists, stopping.")
 
+    # Determine number of warmup iterations based on execution mode
+    warmup_iterations = 0 if EXECUTION_MODE == "single" else NUM_EXECUTIONS - 1
+
     for q_idx, (fp, q) in enumerate(pg_chunks):
-        # Warm up the cache
-        for iteration in range(NUM_EXECUTIONS - 1):
+        # Warm up the cache (skipped in single mode since we prewarm the database)
+        for iteration in range(warmup_iterations):
             measurement = run_query(q, db_name=db_name, port=args.db_port)
             output_string = f"x, {q_idx}, {iteration}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
             write_to_file(args.output_file, output_string)
 
         measurement = run_query(q, bao_reward=True, db_name=db_name, port=args.db_port)
-        output_string = f"x, {q_idx}, {NUM_EXECUTIONS - 1}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
+        output_string = f"x, {q_idx}, {warmup_iterations}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, PG"
         write_to_file(args.output_file, output_string)
 
     for c_idx, chunk in enumerate(bao_chunks):
@@ -199,14 +205,14 @@ def main(args):
             print(f"[{current_timestamp_str()}]\t[{c_idx + 1}/{len(bao_chunks)}]\tRetraining done.", flush=True)
 
         for q_idx, (fp, q) in enumerate(chunk):
-            # Warm up the cache
-            for iteration in range(NUM_EXECUTIONS - 1):
+            # Warm up the cache (skipped in single mode since we prewarm the database)
+            for iteration in range(warmup_iterations):
                 measurement = run_query(q, bao_reward=False, bao_select=USE_BAO, db_name=db_name, port=args.db_port)
                 output_string = f"{c_idx}, {q_idx}, {iteration}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
                 write_to_file(args.output_file, output_string)
 
             measurement = run_query(q, bao_reward=USE_BAO, bao_select=USE_BAO, db_name=db_name, port=args.db_port)
-            output_string = f"{c_idx}, {q_idx}, {NUM_EXECUTIONS - 1}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
+            output_string = f"{c_idx}, {q_idx}, {warmup_iterations}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, Bao"
             write_to_file(args.output_file, output_string)
 
 
