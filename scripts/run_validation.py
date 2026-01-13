@@ -56,8 +56,9 @@ PG_PASSWORD = "postgres"
 DEFAULT_THRESHOLD = 1.2  # 20%
 
 # Experiment configurations
-# Task 1: base datasets → imdb_2017
-TASK_1_BASES = ["imdb", "imdb_2013", "imdb_2014", "imdb_2015", "imdb_2016"]
+# Task 1: base datasets → imdb_2017 (disabled)
+# TASK_1_BASES = ["imdb", "imdb_2013", "imdb_2014", "imdb_2015", "imdb_2016"]
+TASK_1_BASES = []
 TASK_1_REF = "imdb_2017"
 
 # Task 2: different drift values (no ref, use variant_id)
@@ -65,7 +66,8 @@ TASK_2_DRIFT_VALUES = [0.1, 0.3, 0.5]
 TASK_2_BASE = "imdb"
 
 # Task 3: base datasets → imdb_2015
-TASK_3_BASES = ["imdb", "imdb_2013", "imdb_2014"]
+# TASK_3_BASES = ["imdb", "imdb_2013", "imdb_2014"]
+TASK_3_BASES = ["imdb_2013", "imdb_2014"]
 TASK_3_REF = "imdb_2015"
 
 # Tables to validate (exclude title for now)
@@ -74,6 +76,9 @@ DRIFTABLE_TABLES = ["aka_name", "aka_title", "movie_companies", "movie_keyword",
 # BAO config
 BAO_DIR = "benchmarks/lqos/bao"
 JOB_QUERY_DIR = "datasets/workloads/bao/join-order-benchmark"
+
+# Execution mode: "single" (prewarm + 1 run) or "triple" (3 runs, use 3rd)
+EXECUTION_MODE = "single"
 
 # ============================================================================
 # DATA CLASSES
@@ -194,7 +199,7 @@ def get_baseline_performance(db_name: str, cache_file: str = None) -> Dict[str, 
         with open(cache_file) as f:
             return json.load(f)
 
-    print(f"\nRunning JOB queries on {db_name}...")
+    print(f"\nRunning JOB queries on {db_name} (mode: {EXECUTION_MODE})...")
     output_file = f"validation_logs/{db_name}_baseline.log"
     os.makedirs("validation_logs", exist_ok=True)
 
@@ -209,25 +214,28 @@ def get_baseline_performance(db_name: str, cache_file: str = None) -> Dict[str, 
     except Exception as e:
         print(f"Warning: ANALYZE failed: {e}")
 
-    # Run queries
+    # Run queries with execution mode
     cmd = f"cd {BAO_DIR} && python3 run_test_queries.py " \
           f"--use_postgres --database_name {db_name} " \
           f"--query_dir ../../../{JOB_QUERY_DIR} " \
-          f"--output_file ../../../{output_file} --db-port {PG_PORT}"
+          f"--output_file ../../../{output_file} --db-port {PG_PORT} " \
+          f"--execution-mode {EXECUTION_MODE}"
     success, _ = run_command(cmd, f"Run JOB queries on {db_name}")
 
     if not success:
         print(f"Failed to run queries on {db_name}")
         return {}
 
-    # Parse results (use 3rd execution only)
+    # Parse results based on execution mode
+    # single mode: use index 0, triple mode: use index 2
+    result_index = 0 if EXECUTION_MODE == 'single' else 2
     results = {}
     with open(output_file) as f:
         for line in f:
             parts = line.strip().split(', ')
             if len(parts) >= 6:
                 exec_idx = int(parts[1])
-                if exec_idx != 2:  # Only 3rd execution
+                if exec_idx != result_index:
                     continue
                 query_path = parts[3]
                 exec_time = float(parts[5])
@@ -267,17 +275,17 @@ def get_all_experiments() -> List[ExperimentConfig]:
 
     # Task 2: different drift values
     # threshold 是最低要求 (下界): gen_time / ori_time >= threshold
-    # drift=0.1: ratio > 1.0 (只要高就行)
-    # drift=0.3: ratio > 1.1 (至少高10%)
-    # drift=0.5: ratio > 1.3 (至少高30%)
+    # drift=0.1: ratio >= 1.5 (至少高50%)
+    # drift=0.3: ratio >= 2.0 (至少高1倍)
+    # drift=0.5: ratio >= 2.5 (至少高1.5倍)
     for drift_val in TASK_2_DRIFT_VALUES:
         variant_id = int(drift_val * 10)
         if drift_val <= 0.1:
-            min_ratio = 1.0   # 只要高就行
+            min_ratio = 1.5   # 至少高50%
         elif drift_val <= 0.3:
-            min_ratio = 1.1   # 至少高10%
+            min_ratio = 2.0   # 至少高1倍
         else:
-            min_ratio = 1.3   # 至少高30%
+            min_ratio = 2.5   # 至少高1.5倍
 
         exp = ExperimentConfig(
             name=f"task2_drift_{drift_val}",
@@ -467,6 +475,8 @@ def validate_experiment(
             return results
 
     # Validate each table
+    is_drift_exp = exp.drift_value is not None
+
     for table in tables_to_validate:
         result = validate_table(exp, table, baseline_perf)
         results[table] = result
@@ -474,6 +484,11 @@ def validate_experiment(
         if result.passed:
             print(f"  ✓ {table}: PASSED (ratio={result.ratio:.2f}x)")
             validated_tables.add(table)
+
+            # Early stop for drift experiments: one table passed is enough
+            if is_drift_exp:
+                print(f"  [EARLY STOP] Drift experiment passed with {table}, skipping remaining tables")
+                break
         else:
             print(f"  ✗ {table}: FAILED - {result.error}")
             # Continue to next table

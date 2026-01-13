@@ -651,13 +651,14 @@ def load_task4_results(log_dirs: list = None):
     import re
 
     if log_dirs is None:
-        # Scan all log directories
+        # Scan all log directories, sorted by name (timestamp) so latest comes last
+        # Later results will overwrite earlier ones, ensuring we use the latest
         log_dirs = sorted(glob.glob(os.path.join(EXPERIMENT_LOGS_DIR, "*")))
         if not log_dirs:
             print(f"No log directories found in {EXPERIMENT_LOGS_DIR}")
             return {}
 
-    print(f"Loading Task 4 results from {len(log_dirs)} directories")
+    print(f"Loading Task 4 results from {len(log_dirs)} directories (using latest results)")
 
     results = {}
     pattern = re.compile(r'task4_imdb_to_(imdb_\d+)_(\d+)gpu_(train|gen)\.log')
@@ -689,15 +690,21 @@ def load_task4_results(log_dirs: list = None):
                 if time_match:
                     results[key]['train_time'] = parse_time_str(time_match.group(1))
             else:  # gen
-                # Look for "Total generation time: 22m 58.1s" or "Total time: 24m 13.3s"
-                gen_match = re.search(r'Total generation time:\s*([\dh\sm\s.s]+)', content)
+                # Look for "Generation time (before post-processing): 22m 58.1s"
+                # This is the pure generation time without post-processing
+                gen_match = re.search(r'Generation time \(before post-processing\):\s*([\dh\sm\s.s]+)', content)
                 if gen_match:
                     results[key]['gen_time'] = parse_time_str(gen_match.group(1))
                 else:
-                    # Fallback to Total time
-                    time_match = re.search(r'Total time:\s*([\dh\sm\s.s]+)', content)
-                    if time_match:
-                        results[key]['gen_time'] = parse_time_str(time_match.group(1))
+                    # Fallback to "Total generation time" (includes post-processing)
+                    gen_match = re.search(r'Total generation time:\s*([\dh\sm\s.s]+)', content)
+                    if gen_match:
+                        results[key]['gen_time'] = parse_time_str(gen_match.group(1))
+                    else:
+                        # Fallback to Total time
+                        time_match = re.search(r'Total time:\s*([\dh\sm\s.s]+)', content)
+                        if time_match:
+                            results[key]['gen_time'] = parse_time_str(time_match.group(1))
 
     return results
 

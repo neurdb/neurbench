@@ -11,6 +11,11 @@ USE_BAO = True
 TIMEOUT_LIMIT = 6 * 60 * 1000
 NUM_EXECUTIONS = 3
 
+# PostgreSQL connection defaults
+PG_HOST = "172.17.0.1"
+PG_USER = "postgres"
+PG_PASSWORD = "postgres"
+
 
 # https://stackoverflow.com/questions/312443/
 def chunks(lst, n):
@@ -20,7 +25,67 @@ def chunks(lst, n):
 
 
 def pg_connection_string(db_name, port=5430):
-    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1 port={port}"
+    return f"dbname={db_name} user={PG_USER} password={PG_PASSWORD} host={PG_HOST} port={port}"
+
+
+def prewarm_database(db_name, port=5430):
+    """Prewarm all tables and indexes using pg_prewarm."""
+    print(f"Prewarming database {db_name}...", flush=True)
+    try:
+        conn = psycopg2.connect(pg_connection_string(db_name=db_name, port=port))
+        conn.autocommit = True
+        cursor = conn.cursor()
+
+        # Ensure pg_prewarm extension exists
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_prewarm;")
+
+        # Get all tables in public schema
+        cursor.execute("""
+            SELECT schemaname, tablename
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename
+        """)
+        tables = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Get all indexes in public schema
+        cursor.execute("""
+            SELECT schemaname, indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY indexname
+        """)
+        indexes = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Prewarm tables
+        table_count = 0
+        for schemaname, tablename in tables:
+            try:
+                rel = f"{schemaname}.{tablename}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                table_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm table {tablename}: {e}", flush=True)
+
+        # Prewarm indexes
+        index_count = 0
+        for schemaname, indexname in indexes:
+            try:
+                rel = f"{schemaname}.{indexname}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                index_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm index {indexname}: {e}", flush=True)
+
+        cursor.close()
+        conn.close()
+        print(f"Prewarmed {table_count} tables and {index_count} indexes", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error prewarming database: {e}", flush=True)
+        return False
 
 
 def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', port=5430):
@@ -97,6 +162,9 @@ def main(args):
 
     db_name = args.database_name
     print("Running against DB:", db_name, flush=True)
+
+    # Prewarm database before training
+    prewarm_database(db_name, args.db_port)
 
     random.seed(42)
 

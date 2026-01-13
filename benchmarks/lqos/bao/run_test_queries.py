@@ -8,7 +8,11 @@ import argparse
 import glob
 
 TIMEOUT_LIMIT = 6 * 60 * 1000
-NUM_EXECUTIONS = 3
+
+# PostgreSQL connection defaults
+PG_HOST = "172.17.0.1"
+PG_USER = "postgres"
+PG_PASSWORD = "postgres"
 
 
 def current_timestamp_str():
@@ -16,7 +20,67 @@ def current_timestamp_str():
 
 
 def pg_connection_string(db_name, port=5430):
-    return f"dbname={db_name} user=postgres password=postgres host=172.17.0.1 port={port}"
+    return f"dbname={db_name} user={PG_USER} password={PG_PASSWORD} host={PG_HOST} port={port}"
+
+
+def prewarm_database(db_name, port=5430):
+    """Prewarm all tables and indexes using pg_prewarm."""
+    print(f"Prewarming database {db_name}...", flush=True)
+    try:
+        conn = psycopg2.connect(pg_connection_string(db_name=db_name, port=port))
+        conn.autocommit = True
+        cursor = conn.cursor()
+
+        # Ensure pg_prewarm extension exists
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_prewarm;")
+
+        # Get all tables in public schema
+        cursor.execute("""
+            SELECT schemaname, tablename
+            FROM pg_tables
+            WHERE schemaname = 'public'
+            ORDER BY tablename
+        """)
+        tables = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Get all indexes in public schema
+        cursor.execute("""
+            SELECT schemaname, indexname
+            FROM pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY indexname
+        """)
+        indexes = [(r[0], r[1]) for r in cursor.fetchall()]
+
+        # Prewarm tables
+        table_count = 0
+        for schemaname, tablename in tables:
+            try:
+                rel = f"{schemaname}.{tablename}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                table_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm table {tablename}: {e}", flush=True)
+
+        # Prewarm indexes
+        index_count = 0
+        for schemaname, indexname in indexes:
+            try:
+                rel = f"{schemaname}.{indexname}"
+                cursor.execute("SELECT pg_prewarm(%s::regclass);", (rel,))
+                cursor.fetchone()
+                index_count += 1
+            except Exception as e:
+                print(f"Warning: Could not prewarm index {indexname}: {e}", flush=True)
+
+        cursor.close()
+        conn.close()
+        print(f"Prewarmed {table_count} tables and {index_count} indexes", flush=True)
+        return True
+    except Exception as e:
+        print(f"Error prewarming database: {e}", flush=True)
+        return False
 
 
 def extract_q_errors(plan):
@@ -40,7 +104,13 @@ def extract_q_errors(plan):
     # traverse(plan)
     # return q_errors
 
-def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_geqo=True, use_bao=True, port=5430):
+def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_geqo=True, use_bao=True, port=5430, num_executions=1):
+    """
+    Execute a query with EXPLAIN ANALYZE.
+
+    Args:
+        num_executions: Number of times to execute the query (default: 1)
+    """
     measurements = []
     try:
         conn = psycopg2.connect(pg_connection_string(db_name=db_name, port=port))
@@ -54,9 +124,9 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
         cur.execute("SET bao_num_arms TO 25")
         cur.execute(f"SET statement_timeout TO {TIMEOUT_LIMIT}")
 
-        cur.execute("SET enable_mergejoin TO off")
-        cur.execute("SET enable_seqscan TO off")
-        cur.execute("SET enable_indexonlyscan TO off")
+        # cur.execute("SET enable_mergejoin TO off")
+        # cur.execute("SET enable_seqscan TO off")
+        # cur.execute("SET enable_indexonlyscan TO off")
         # SET enable_nestloop TO off
 
 
@@ -64,8 +134,8 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
             print("disable geqo", flush=True)
             cur.execute(f"SET geqo TO off")
 
-        for i in range(NUM_EXECUTIONS):
-            cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}") 
+        for i in range(num_executions):
+            cur.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) {sql}")
             result = cur.fetchall()[0][0]
 
             q_errors = []
@@ -102,9 +172,9 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
     except Exception as e:
         print("An unexpected exception OR timeout occurred:", e, flush=True)
         conn.close()
-        
+
         tmp = []
-        for _ in range(NUM_EXECUTIONS):
+        for _ in range(num_executions):
             tmp.append({
                 'execution_time': 2 * TIMEOUT_LIMIT,
                 'planning_time': 2 * TIMEOUT_LIMIT,
@@ -122,14 +192,12 @@ def main(args):
     pattern = os.path.join(args.query_dir, '**/*.sql')
     query_paths = sorted(glob.glob(pattern, recursive=True))
     print(f"Found {len(query_paths)} queries in {args.query_dir} and its subdirectories.", flush=True)
-    print("queries:", query_paths, flush=True)
 
     queries = []
     for fp in query_paths:
         with open(fp) as f:
             query = f.read()
         queries.append((fp, query))
-    print(queries, flush=True)
 
     use_bao = args.use_bao and (not args.use_postgres)
     print("Using Bao:", use_bao, flush=True)
@@ -140,6 +208,19 @@ def main(args):
     db_name = args.database_name
     print("Running against DB:", db_name, flush=True)
 
+    # Execution mode: single (prewarm + 1 run) or triple (3 runs, use 3rd)
+    execution_mode = getattr(args, 'execution_mode', 'single')
+    print(f"Execution mode: {execution_mode}", flush=True)
+
+    if execution_mode == 'single':
+        num_executions = 1
+        result_index = 0  # Use the only execution
+        # Prewarm before running queries
+        prewarm_database(db_name, args.db_port)
+    else:  # triple
+        num_executions = 3
+        result_index = 2  # Use 3rd execution (index 2)
+
     random.seed(42)
 
     print(f"Start running {len(queries)} queries for evaluation...", flush=True)
@@ -147,8 +228,13 @@ def main(args):
     if os.path.exists(args.output_file):
         raise FileExistsError(f"The file {args.output_file} already exists, stopping.")
 
+    # Early stop tracking
+    early_stop_time = getattr(args, 'early_stop_time', None)
+    cumulative_time = 0.0
+    early_stopped = False
+
     for fp, q in queries:
-        measurements = run_query(q, bao_select=use_bao, bao_reward=False, db_name=db_name, use_geqo=use_geqo, use_bao=use_bao, port=args.db_port)
+        measurements = run_query(q, bao_select=use_bao, bao_reward=False, db_name=db_name, use_geqo=use_geqo, use_bao=use_bao, port=args.db_port, num_executions=num_executions)
 
         for i, measurement in enumerate(measurements):
             avg_q_error = sum(measurement['q_errors']) / len(measurement['q_errors']) if measurement['q_errors'] else 'N/A'
@@ -157,6 +243,21 @@ def main(args):
             with open(args.output_file, 'a') as f:
                 f.write(output_string)
                 f.write(os.linesep)
+
+            # Track cumulative time (only the result_index execution)
+            if i == result_index:
+                cumulative_time += measurement['execution_time']
+
+        # Check early stop after each query
+        if early_stop_time and cumulative_time > early_stop_time:
+            print(f"[EARLY STOP] Cumulative time ({cumulative_time:.1f}ms) > threshold ({early_stop_time:.1f}ms)", flush=True)
+            early_stopped = True
+            break
+
+    if early_stopped:
+        print(f"Early stopped after {cumulative_time:.1f}ms", flush=True)
+    else:
+        print(f"Completed all queries, total time: {cumulative_time:.1f}ms", flush=True)
 
 
 # Example Call:
@@ -173,6 +274,9 @@ if __name__ == '__main__':
     parser.add_argument('--use_geqo', action='store_true', default=True, help='Should GEQO be used? (default=True)')
     parser.add_argument('--disable_geqo', action='store_false', dest='use_geqo', help='Should GEQO be disabled?')
     parser.add_argument('--db-port', type=int, default=5430, help='PostgreSQL port (default: 5430)')
+    parser.add_argument('--early-stop-time', type=float, default=None, help='Stop when cumulative execution time (ms) exceeds this threshold')
+    parser.add_argument('--execution-mode', type=str, default='single', choices=['single', 'triple'],
+                        help='Execution mode: single (prewarm + 1 run, default) or triple (3 runs, use 3rd)')
 
     args = parser.parse_args()
 
