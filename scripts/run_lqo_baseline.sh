@@ -17,6 +17,13 @@
 
 set -e
 
+# Activate conda environment (for docker exec -c mode)
+if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate ai4db_new
+    export PATH="/root/miniconda3/envs/ai4db_new/bin:$PATH"
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
