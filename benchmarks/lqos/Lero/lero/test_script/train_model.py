@@ -38,13 +38,14 @@ class PgHelper():
 
 class LeroHelper():
     def __init__(self, queries, query_num_per_chunk, output_query_latency_file,
-                test_queries, model_prefix, topK) -> None:
+                test_queries, model_prefix, topK, training_style="lero") -> None:
         self.queries = queries
         self.query_num_per_chunk = query_num_per_chunk
         self.output_query_latency_file = output_query_latency_file
         self.test_queries = test_queries
         self.model_prefix = model_prefix
         self.topK = topK
+        self.training_style = training_style  # "lero" (cardinality-guided) or "bao" (hint-based)
         self.lero_server_path = LERO_SERVER_PATH
         self.lero_card_file_path = os.path.join(LERO_SERVER_PATH, LERO_DUMP_CARD_FILE)
         self._ALL_OPTIONS = [
@@ -52,6 +53,7 @@ class LeroHelper():
             "enable_seqscan", "enable_indexscan", "enable_indexonlyscan"
         ]
         self.failed_queries = []  # Track failed queries
+        print(f"Training style: {self.training_style}")
 
     def chunks(self, lst, n):
         """Yield successive n-sized chunks from lst."""
@@ -112,12 +114,18 @@ class LeroHelper():
         lero_chunks = list(self.chunks(self.queries, self.query_num_per_chunk))
 
         run_args = self.get_run_args()
-        print("---------------- starts LeroHelper (SEQUENTIAL MODE) ----------------")
+        print(f"---------------- starts LeroHelper (SEQUENTIAL MODE, style={self.training_style}) ----------------")
         for c_idx, chunk in enumerate(lero_chunks):
             for fp, q in chunk:
                 try:
-                    self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
-                                      self.output_query_latency_file + "_exploratory", None)
+                    if self.training_style == "bao":
+                        # Bao-style: explore plans by disabling different operators
+                        self.run_pairwise_with_hints(q, fp, run_args, self.output_query_latency_file,
+                                                     self.output_query_latency_file + "_exploratory", None)
+                    else:
+                        # Original Lero: explore plans by modifying cardinality estimates
+                        self.run_pairwise(q, fp, run_args, self.output_query_latency_file,
+                                          self.output_query_latency_file + "_exploratory", None)
                 except Exception as e:
                     print(f"[ERROR] Query {fp} failed: {str(e)[:200]}")
                     self.failed_queries.append((fp, str(e)))
@@ -259,6 +267,9 @@ if __name__ == "__main__":
     parser.add_argument("--model_prefix", type=str)
     parser.add_argument("--pool_num", type=int)
     parser.add_argument("--topK", type=int)
+    parser.add_argument("--training_style", type=str, default="lero",
+                        choices=["lero", "bao"],
+                        help="Training style: 'lero' (cardinality-guided) or 'bao' (hint-based)")
     args = parser.parse_args()
 
     query_path = args.query_path
@@ -313,5 +324,8 @@ if __name__ == "__main__":
             topK = args.topK
         print("topK", topK)
 
-        helper = LeroHelper(queries, query_num_per_chunk, output_query_latency_file, test_queries, model_prefix, topK)
+        training_style = args.training_style
+        print("training_style:", training_style)
+
+        helper = LeroHelper(queries, query_num_per_chunk, output_query_latency_file, test_queries, model_prefix, topK, training_style)
         helper.start(pool_num)

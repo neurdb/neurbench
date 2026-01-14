@@ -290,14 +290,20 @@ def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = T
                         # remove bao's prediction
                         latency_json = [latency_json[1]]
             except Exception as e:
-                if  time() - run_start > (TIMEOUT / 1000 * 0.9):
-                    # Execution timeout
-                    _, latency_json = run_query("EXPLAIN (VERBOSE, COSTS, FORMAT JSON, SUMMARY) " + sql, run_args)
-                    latency_json = latency_json[0][0]
-                    if len(latency_json) == 2:
-                        # remove bao's prediction
-                        latency_json = [latency_json[1]]
-                    latency_json[0]["Execution Time"] = TIMEOUT
+                if time() - run_start > (TIMEOUT / 1000 * 0.9):
+                    # Execution timeout - try to get plan structure without execution
+                    print(f"[TIMEOUT] Query {query_name} timed out, trying EXPLAIN without ANALYZE...")
+                    try:
+                        _, latency_json = run_query("EXPLAIN (VERBOSE, COSTS, FORMAT JSON, SUMMARY) " + sql, run_args)
+                        latency_json = latency_json[0][0]
+                        if len(latency_json) == 2:
+                            # remove bao's prediction
+                            latency_json = [latency_json[1]]
+                        latency_json[0]["Execution Time"] = TIMEOUT
+                    except Exception as explain_err:
+                        # Even EXPLAIN failed, create a minimal fallback structure
+                        print(f"[TIMEOUT] EXPLAIN also failed for {query_name}: {str(explain_err)[:100]}")
+                        latency_json = [{"Execution Time": TIMEOUT, "Planning Time": 0, "Plan": {"Node Type": "Unknown", "Total Cost": 0}}]
                 else:
                     raise e
 

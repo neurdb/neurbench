@@ -19,6 +19,7 @@
 #   --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)
 #   --force-retrain              Force retraining even if model exists
 #   --force-retest               Force retesting even if test results exist
+#   --training-style STYLE       Training style: 'lero' (cardinality-guided, default) or 'bao' (hint-based)
 #   -h, --help                   Show this help message
 #
 # Note: The script automatically detects existing models and test results.
@@ -55,6 +56,7 @@ show_help() {
     echo "  --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)"
     echo "  --force-retrain              Force retraining even if model exists"
     echo "  --force-retest               Force retesting even if test results exist"
+    echo "  --training-style STYLE       Training style: 'lero' (default) or 'bao'"
     echo "  -h, --help                   Show this help message"
     echo ""
     echo "Note: The script auto-detects existing models and test results."
@@ -107,6 +109,7 @@ TEST_DATASET=""
 TEST_QUERY_SET=""
 FORCE_RETRAIN=false
 FORCE_RETEST=false
+TRAINING_STYLE="lero"  # "lero" (cardinality-guided) or "bao" (hint-based)
 
 # Check if using advanced mode (any argument starts with --)
 if [[ "$1" == -* ]]; then
@@ -136,6 +139,10 @@ if [[ "$1" == -* ]]; then
             --force-retest)
                 FORCE_RETEST=true
                 shift
+                ;;
+            --training-style)
+                TRAINING_STYLE="$2"
+                shift 2
                 ;;
             *)
                 echo "Unknown option: $1"
@@ -170,6 +177,7 @@ echo "Lero Training and Testing Pipeline"
 echo "Training:"
 echo "  Dataset:   $TRAIN_DATASET"
 echo "  Query Set: $TRAIN_QUERY_SET"
+echo "  Style:     $TRAINING_STYLE"
 if [ "$FORCE_RETRAIN" = true ]; then
 echo "  Mode:      Force retrain (--force-retrain)"
 else
@@ -295,6 +303,7 @@ else
         --output_query_latency_file "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" \
         --model_prefix "${MODEL_PREFIX}" \
         --topK 3 \
+        --training_style "${TRAINING_STYLE}" \
         2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_output_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
 
     TRAIN_RESULT=$?
@@ -438,7 +447,7 @@ echo "================================================================"
 echo "Pipeline Completed Successfully!"
 echo "================================================================"
 echo "Configuration:"
-echo "  Training:   Dataset=$TRAIN_DATASET, QuerySet=$TRAIN_QUERY_SET"
+echo "  Training:   Dataset=$TRAIN_DATASET, QuerySet=$TRAIN_QUERY_SET, Style=$TRAINING_STYLE"
 echo "  Testing:    Dataset=$TEST_DATASET, QuerySet=$TEST_QUERY_SET"
 if [ "$SKIP_TRAINING" = true ]; then
 echo "  Model:      Loaded from cache"
