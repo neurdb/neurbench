@@ -83,6 +83,12 @@ flags.DEFINE_boolean('local', False,
                      'Whether to use local engine for query execution.')
 flags.DEFINE_boolean('test_all', False,
                      'Whether to only run the current model on all queries of the workload measuring query performance.')
+flags.DEFINE_string('agent_checkpoint', None,
+                    'Path to a pretrained agent checkpoint for continue training.')
+flags.DEFINE_string('prev_replay_buffers', None,
+                    'Glob pattern for previous replay buffers (e.g., "data/replay-*.pkl").')
+flags.DEFINE_integer('start_iter', 0,
+                     'Starting iteration for resume (0 = start from beginning).')
 
 
 def GetDevice():
@@ -691,6 +697,7 @@ class BalsaAgent(object):
         self.params = params.Copy()
         p = self.params
         self.initialization_time = postgres.pg_executor_timestamp()
+        self.start_iter = 0  # Default starting iteration, can be overridden for resume
         print('BalsaAgent params:\n{}'.format(p))
 
         self.sim = None
@@ -1135,6 +1142,7 @@ class BalsaAgent(object):
             logger=self.loggers,
             gradient_clip_val=p.gradient_clip_val,
             num_sanity_val_steps=2 if p.validate_fraction > 0 else 0,
+            progress_bar_refresh_rate=1000,  # Update ~once per epoch
         )
 
     def _LoadBestCheckpointForEval(self, model, trainer):
@@ -1842,19 +1850,47 @@ class BalsaAgent(object):
 
         return iter_total_latency, has_timeouts
 
-    def _SaveReplayBuffer(self, iter_total_latency):
+    def _SaveReplayBuffer(self, iter_total_latency, save_dir=None):
         p = self.params
         # "<class 'experiments.ConfigName'>" -> "ConfigName".
         experiment = str(p.cls).split('.')[-1][:-2]
-        path = 'data/replay-{}-{}execs-{}nodes-{}s-{}iters-{}.pkl'.format(
+
+        # Determine save directory: use save_dir if provided, else local data/
+        if save_dir is not None:
+            data_dir = os.path.join(save_dir, 'data')
+            os.makedirs(data_dir, exist_ok=True)
+        else:
+            data_dir = 'data'
+
+        filename = 'replay-{}-{}execs-{}nodes-{}s-{}iters-{}.pkl'.format(
             experiment, self.num_query_execs, len(self.exp.nodes),
             int(iter_total_latency / 1e3), self.curr_value_iter,
             self.wandb_logger.experiment.id)
+        path = os.path.join(data_dir, filename)
+
+        # Also save to local data/ for training use
+        local_path = os.path.join('data', filename)
+        os.makedirs('data', exist_ok=True)
+
         self.exp.Save(path)
-        # Remove previous.
+        # Also save locally if saving to different directory
+        if save_dir is not None and path != local_path:
+            self.exp.Save(local_path)
+
+        # Remove previous replay buffers (both locations)
         if self._latest_replay_buffer_path is not None:
-            os.remove(self._latest_replay_buffer_path)
+            try:
+                os.remove(self._latest_replay_buffer_path)
+            except OSError:
+                pass
+        if hasattr(self, '_latest_replay_buffer_local_path') and self._latest_replay_buffer_local_path is not None:
+            try:
+                os.remove(self._latest_replay_buffer_local_path)
+            except OSError:
+                pass
+
         self._latest_replay_buffer_path = path
+        self._latest_replay_buffer_local_path = local_path if save_dir is not None else None
 
     def LogTestExperience(self,
                           to_execute_test,
@@ -1912,9 +1948,17 @@ class BalsaAgent(object):
             ('curr_value_iter', self.curr_value_iter, self.curr_value_iter),
         ])
         if tag == 'latency_test':
-            self.overall_best_test_latency = min(self.overall_best_test_latency,
-                                                 iter_total_latency / 1e3)
+            curr_latency = iter_total_latency / 1e3
+            self.overall_best_test_latency = min(self.overall_best_test_latency, curr_latency)
             val_to_log = self.overall_best_test_latency
+            # Check for test-based early stopping
+            if curr_latency < self.prev_test_latency:
+                self.test_no_improvement_count = 0
+                print(f"[Test Early Stop] Latency improved: {self.prev_test_latency:.1f}s -> {curr_latency:.1f}s")
+            else:
+                self.test_no_improvement_count += 1
+                print(f"[Test Early Stop] No improvement: {curr_latency:.1f}s >= {self.prev_test_latency:.1f}s (count={self.test_no_improvement_count})")
+            self.prev_test_latency = curr_latency
         elif tag == 'latency_test_swa':
             self.overall_best_test_swa_latency = min(
                 self.overall_best_test_swa_latency, iter_total_latency / 1e3)
@@ -2168,8 +2212,8 @@ class BalsaAgent(object):
             os.path.join(base_save_dir, f'{parameter.model_prefix}_checkpoint-metadata.txt'))
         print('Saved iter={} checkpoint to: {}'.format(self.curr_value_iter, ckpt_path))
 
-        # Replay buffer. Saved under data/.
-        self._SaveReplayBuffer(iter_total_latency)
+        # Replay buffer. Saved to both logs dir and local data/ for training use.
+        self._SaveReplayBuffer(iter_total_latency, save_dir=base_save_dir)
 
     def UpdateMovingAverage(self, model, moving_average, ema_decay=None):
         """Updates the current EMA/SWA using 'model'."""
@@ -2276,13 +2320,17 @@ class BalsaAgent(object):
             print("---------------------- [debug]. start to run baseline ----------------------")
             return self.RunBaseline()
         else:
-            self.curr_value_iter = 0
+            self.curr_value_iter = self.start_iter  # Support resume from specific iteration
             self.num_query_execs = 0
             self.num_total_timeouts = 0
             self.overall_best_train_latency = np.inf
             self.overall_best_test_latency = np.inf
             self.overall_best_test_swa_latency = np.inf
             self.overall_best_test_ema_latency = np.inf
+            self.test_no_improvement_count = 0  # For test-based early stopping
+            self.prev_test_latency = np.inf
+            if self.start_iter > 0:
+                print(f"Resuming from iteration {self.start_iter}")
             # For reporting cleaner hint strings for expert plans, remove their
             # unary ops (e.g., Aggregates).  These calls return copies, so
             # self.{all,train,test}_nodes no longer share any references.
@@ -2302,6 +2350,12 @@ class BalsaAgent(object):
             if (p.early_stop_on_skip_fraction is not None and
                     self.curr_iter_skipped_queries >=
                     p.early_stop_on_skip_fraction * len(self.train_nodes)):
+                break
+
+            # Test-based early stopping
+            if (p.test_early_stop_patience is not None and
+                    self.test_no_improvement_count >= p.test_early_stop_patience):
+                print(f"[Test Early Stop] Stopping training: no improvement for {p.test_early_stop_patience} consecutive tests")
                 break
 
             if p.drop_cache and p.use_local_execution:
@@ -2342,6 +2396,14 @@ def Main(argv):
 
     p.use_local_execution = FLAGS.local
 
+    # Override params for continue training
+    if FLAGS.agent_checkpoint is not None:
+        p.agent_checkpoint = FLAGS.agent_checkpoint
+        print('Continue training from checkpoint:', FLAGS.agent_checkpoint)
+    if FLAGS.prev_replay_buffers is not None:
+        p.prev_replay_buffers_glob = FLAGS.prev_replay_buffers
+        print('Loading previous replay buffers:', FLAGS.prev_replay_buffers)
+
     # Override params here for quick debugging.
     # p.sim_checkpoint = None
     # p.epochs = 1
@@ -2355,6 +2417,11 @@ def Main(argv):
 
     # import code; code.interact(local=dict(globals(), **locals()))
     agent = BalsaAgent(p)
+
+    # Set starting iteration for resume
+    agent.start_iter = FLAGS.start_iter
+    if FLAGS.start_iter > 0:
+        print(f'Will resume from iteration {FLAGS.start_iter}')
 
     agent.Run()
 

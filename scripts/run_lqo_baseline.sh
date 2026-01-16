@@ -6,13 +6,15 @@
 # Usage: ./scripts/run_lqo_baseline.sh [OPTIONS]
 #
 # Options:
-#   --dataset DATASET      Dataset to use (default: imdb)
-#   --query-set QUERY_SET  Query set to use (default: job)
-#   --systems SYSTEMS      Comma-separated systems to run (default: bao,balsa,lero)
-#   --force-retrain        Force retraining even if model exists
-#   --force-retest         Force retesting even if results exist
-#   --parallel             Run systems in parallel (experimental)
-#   -h, --help             Show this help message
+#   --dataset DATASET           Dataset to use (default: imdb)
+#   --query-set QUERY_SET       Query set to use (default: job)
+#   --systems SYSTEMS           Comma-separated systems to run (default: bao,balsa,lero)
+#   --force-retrain             Force retraining even if model exists
+#   --force-retest              Force retesting even if results exist
+#   --batch-test-datasets LIST  Comma-separated datasets for batch testing
+#   --train-dataset DATASET     Dataset used for training (for batch test mode, model lookup)
+#   --parallel                  Run systems in parallel (experimental)
+#   -h, --help                  Show this help message
 #
 
 set -e
@@ -47,6 +49,10 @@ SYSTEMS="bao,balsa,lero"
 FORCE_RETRAIN=""
 FORCE_RETEST=""
 PARALLEL=false
+BATCH_TEST_DATASETS=""
+TRAIN_DATASET=""
+MIN_QUERIES=""
+CONTINUE_TRAINING=""
 
 # Parse arguments
 show_help() {
@@ -62,6 +68,8 @@ show_help() {
     echo "  --systems SYSTEMS      Comma-separated systems: bao,balsa,lero (default: all)"
     echo "  --force-retrain        Force retraining even if model exists"
     echo "  --force-retest         Force retesting even if results exist"
+    echo "  --min-queries N        Minimum training queries (sample with replacement)"
+    echo "  --continue-training    Continue from existing model and data (Lero, Balsa)"
     echo "  --parallel             Run systems in parallel (experimental)"
     echo "  -h, --help             Show this help message"
     echo ""
@@ -103,6 +111,22 @@ while [[ $# -gt 0 ]]; do
             PARALLEL=true
             shift
             ;;
+        --batch-test-datasets)
+            BATCH_TEST_DATASETS="$2"
+            shift 2
+            ;;
+        --train-dataset)
+            TRAIN_DATASET="$2"
+            shift 2
+            ;;
+        --min-queries)
+            MIN_QUERIES="$2"
+            shift 2
+            ;;
+        --continue-training)
+            CONTINUE_TRAINING="--continue-training"
+            shift
+            ;;
         -h|--help)
             show_help
             ;;
@@ -112,6 +136,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# If batch test mode, set train dataset default
+if [ -n "$BATCH_TEST_DATASETS" ] && [ -z "$TRAIN_DATASET" ]; then
+    TRAIN_DATASET="$DATASET"
+fi
 
 # Configuration
 LOG_DIR="./lqo_baseline_logs"
@@ -173,7 +202,23 @@ run_system() {
     echo -e "${BLUE}Running $system...${NC}"
     echo "Log: $log_file"
 
-    local cmd="./$script --train-dataset $DATASET --train-query-set $QUERY_SET --test-dataset $DATASET --test-query-set $QUERY_SET $FORCE_RETRAIN $FORCE_RETEST"
+    local train_ds="${TRAIN_DATASET:-$DATASET}"
+    local test_ds="$DATASET"
+
+    # Build min-queries argument if specified
+    local min_queries_arg=""
+    if [ -n "$MIN_QUERIES" ]; then
+        min_queries_arg="--min-queries $MIN_QUERIES"
+    fi
+
+    # Build continue-training argument if specified (Lero and Balsa)
+    local continue_training_arg=""
+    if [ -n "$CONTINUE_TRAINING" ] && [[ "$system" == "lero" || "$system" == "balsa" ]]; then
+        continue_training_arg="$CONTINUE_TRAINING"
+    fi
+
+    # Note: BAO/Balsa/Lero scripts auto-skip training if model exists
+    local cmd="./$script --train-dataset $train_ds --train-query-set $QUERY_SET --test-dataset $test_ds --test-query-set $QUERY_SET $FORCE_RETRAIN $FORCE_RETEST $min_queries_arg $continue_training_arg"
 
     echo "Command: $cmd"
     echo ""
@@ -194,6 +239,79 @@ run_system() {
         return 1
     fi
 }
+
+# ============================================================
+# Batch Test Mode: Test on multiple datasets
+# ============================================================
+if [ -n "$BATCH_TEST_DATASETS" ]; then
+    echo -e "${YELLOW}Batch Test Mode${NC}"
+    echo "Train Dataset: $TRAIN_DATASET"
+    echo "Test Datasets: $BATCH_TEST_DATASETS"
+    echo ""
+
+    IFS=',' read -ra TEST_DATASETS <<< "$BATCH_TEST_DATASETS"
+    BATCH_RESULTS=()
+
+    for test_ds in "${TEST_DATASETS[@]}"; do
+        test_ds=$(echo "$test_ds" | tr -d ' ')  # trim whitespace
+        echo ""
+        echo "================================================================"
+        echo -e "${YELLOW}Testing on dataset: $test_ds${NC}"
+        echo "================================================================"
+
+        # Run each system on this test dataset
+        IFS=',' read -ra SYSTEM_ARRAY <<< "$SYSTEMS"
+        for system in "${SYSTEM_ARRAY[@]}"; do
+            system=$(echo "$system" | tr -d ' ')
+            echo -e "${BLUE}[$system] Testing on $test_ds...${NC}"
+
+            case $system in
+                bao)
+                    script="benchmarks/lqos/bao/schedule_bao_simple.sh"
+                    ;;
+                balsa)
+                    script="benchmarks/lqos/balsa/schedule_balsa_simple.sh"
+                    ;;
+                lero)
+                    script="benchmarks/lqos/Lero/schedule_lero_simple.sh"
+                    ;;
+                *)
+                    echo -e "${RED}Unknown system: $system${NC}"
+                    continue
+                    ;;
+            esac
+
+            log_file="${LOG_DIR}/${TIMESTAMP}_${system}_${test_ds}.log"
+            cmd="./$script --train-dataset $TRAIN_DATASET --train-query-set $QUERY_SET --test-dataset $test_ds --test-query-set $QUERY_SET --force-retest"
+
+            echo "Command: $cmd"
+            if $cmd 2>&1 | tee "$log_file"; then
+                echo -e "${GREEN}✓ $system on $test_ds completed${NC}"
+                BATCH_RESULTS+=("$system:$test_ds:SUCCESS")
+            else
+                echo -e "${RED}✗ $system on $test_ds failed${NC}"
+                BATCH_RESULTS+=("$system:$test_ds:FAILED")
+            fi
+        done
+    done
+
+    # Print batch results summary
+    echo ""
+    echo "================================================================"
+    echo -e "${GREEN}Batch Test Complete!${NC}"
+    echo "================================================================"
+    echo "Results:"
+    for result in "${BATCH_RESULTS[@]}"; do
+        echo "  $result"
+    done
+    echo ""
+    echo "Logs: $LOG_DIR/"
+    exit 0
+fi
+
+# ============================================================
+# Normal Mode: Train and test on single dataset
+# ============================================================
 
 # Run each system
 IFS=',' read -ra SYSTEM_ARRAY <<< "$SYSTEMS"
@@ -247,47 +365,109 @@ query_set = "$QUERY_SET"
 
 results = {}
 
-# BAO results
-bao_logs = glob.glob(f"bao_logs_all/*_test_bao_{dataset}_{query_set}.log") + \
-           glob.glob(f"bao_logs_all/*_test_pg_{dataset}_{query_set}.log")
-
-for log_file in bao_logs:
+def extract_total_time_from_log(log_file):
+    """Extract total time from log file with pattern 'total time: XXXms'"""
     if not os.path.exists(log_file):
-        continue
+        return None
     with open(log_file) as f:
         content = f.read()
+    # Match: "total time: 164439.0ms" or "total time: 164439ms"
+    match = re.search(r'total time:\s*(\d+\.?\d*)\s*ms', content, re.IGNORECASE)
+    if match:
+        return float(match.group(1))
+    return None
 
-    # Extract total latency
-    # Look for patterns like "Total latency: XXX ms" or sum up individual query times
-    latencies = re.findall(r'latency[:\s]+(\d+\.?\d*)\s*ms', content, re.IGNORECASE)
-    if latencies:
-        total = sum(float(l) for l in latencies)
-        if 'test_bao' in log_file:
-            results['BAO'] = total
-        elif 'test_pg' in log_file:
-            results['PostgreSQL'] = total
+def extract_total_from_txt(txt_file):
+    """Extract total execution time from CSV-like txt file (6th column is execution time)"""
+    if not os.path.exists(txt_file):
+        return None
+    total = 0.0
+    with open(txt_file) as f:
+        for line in f:
+            parts = line.strip().split(', ')
+            if len(parts) >= 6:
+                try:
+                    exec_time = float(parts[5])  # 6th column (0-indexed: 5)
+                    total += exec_time
+                except (ValueError, IndexError):
+                    continue
+    return total if total > 0 else None
 
-# Balsa results
-balsa_logs = glob.glob(f"balsa_logs_all/*_test_balsa_{dataset}_{query_set}.log")
-for log_file in balsa_logs:
+# BAO results - try .log first, then .txt
+bao_log = sorted(glob.glob(f"bao_logs_all/*_test_bao_{dataset}_{query_set}.log"))
+pg_log = sorted(glob.glob(f"bao_logs_all/*_test_pg_{dataset}_{query_set}.log"))
+bao_txt = sorted(glob.glob(f"bao_logs_all/test_bao_{query_set}_*.txt"))
+pg_txt = sorted(glob.glob(f"bao_logs_all/test_pg_{query_set}_*.txt"))
+
+# Get most recent files
+if bao_log:
+    total = extract_total_time_from_log(bao_log[-1])
+    if total:
+        results['BAO'] = total
+if not results.get('BAO') and bao_txt:
+    total = extract_total_from_txt(bao_txt[-1])
+    if total:
+        results['BAO'] = total
+
+if pg_log:
+    total = extract_total_time_from_log(pg_log[-1])
+    if total:
+        results['PostgreSQL'] = total
+if not results.get('PostgreSQL') and pg_txt:
+    total = extract_total_from_txt(pg_txt[-1])
+    if total:
+        results['PostgreSQL'] = total
+
+# Balsa results - parse "Execution time: XXXX.X" format
+balsa_log = sorted(glob.glob(f"balsa_logs_all/*_test_balsa_{dataset}_{query_set}.log"))
+if balsa_log:
+    log_file = balsa_log[-1]
+    if os.path.exists(log_file):
+        with open(log_file) as f:
+            content = f.read()
+        # Match: "Execution time: 5743.6 (predicted"
+        exec_times = re.findall(r'Execution time:\s*(\d+\.?\d*)', content)
+        if exec_times:
+            results['Balsa'] = sum(float(t) for t in exec_times)
+
+# Lero results - parse "after writting write_latency_file <timestamp> <query_id> <latency_ms>" format
+def extract_lero_latency(log_file):
+    """Extract total latency from Lero log file by summing all query latencies"""
     if not os.path.exists(log_file):
-        continue
+        return None
+    total = 0.0
+    count = 0
     with open(log_file) as f:
-        content = f.read()
-    latencies = re.findall(r'latency[:\s]+(\d+\.?\d*)\s*ms', content, re.IGNORECASE)
-    if latencies:
-        results['Balsa'] = sum(float(l) for l in latencies)
+        for line in f:
+            # Match: "after writting write_latency_file 1768472431.3157835 10a 369.305"
+            match = re.search(r'after writting write_latency_file\s+[\d.]+\s+\S+\s+([\d.]+)', line)
+            if match:
+                total += float(match.group(1))
+                count += 1
+    return total if count > 0 else None
 
-# Lero results
-lero_logs = glob.glob(f"lero_logs_all/*_test_lero_{dataset}_{query_set}.log")
-for log_file in lero_logs:
-    if not os.path.exists(log_file):
-        continue
-    with open(log_file) as f:
-        content = f.read()
-    latencies = re.findall(r'latency[:\s]+(\d+\.?\d*)\s*ms', content, re.IGNORECASE)
-    if latencies:
-        results['Lero'] = sum(float(l) for l in latencies)
+# Try lero_logs_all first (test output logs)
+lero_output_log = sorted(glob.glob(f"lero_logs_all/*_test_lero_output_{dataset}_{query_set}.log"))
+if lero_output_log:
+    total = extract_lero_latency(lero_output_log[-1])
+    if total:
+        results['Lero'] = total
+
+# If not found, try lqo_baseline_logs (run_lqo_baseline logs)
+if not results.get('Lero'):
+    lero_baseline_log = sorted(glob.glob(f"{log_dir}/*_lero.log"))
+    if lero_baseline_log:
+        total = extract_lero_latency(lero_baseline_log[-1])
+        if total:
+            results['Lero'] = total
+
+# Fallback: try the standard log format
+if not results.get('Lero'):
+    lero_log = sorted(glob.glob(f"lero_logs_all/*_test_lero_{dataset}_{query_set}.log"))
+    if lero_log:
+        total = extract_total_time_from_log(lero_log[-1])
+        if total:
+            results['Lero'] = total
 
 # Print results
 if results:

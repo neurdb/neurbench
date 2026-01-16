@@ -11,7 +11,7 @@ UNKNOWN_OP_TYPE = "Unknown"
 SCAN_TYPES = ["Seq Scan", "Index Scan", "Index Only Scan", 'Bitmap Heap Scan']
 JOIN_TYPES = ["Nested Loop", "Hash Join", "Merge Join"]
 OTHER_TYPES = ['Bitmap Index Scan']
-OP_TYPES = [UNKNOWN_OP_TYPE, "Hash", "Materialize", "Sort", "Aggregate", "Incremental Sort", "Gather", "GatherMerge", "Limit"] \
+OP_TYPES = [UNKNOWN_OP_TYPE, "Hash", "Materialize", "Sort", "Aggregate", "Incremental Sort", "Gather", "GatherMerge", "Limit", "Unique"] \
     + SCAN_TYPES + JOIN_TYPES + OTHER_TYPES
 
 

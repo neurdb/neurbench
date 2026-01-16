@@ -11,7 +11,7 @@ import psutil
 from pathlib import Path
 
 class BaoTrainer:
-    def __init__(self, bao_dir=".", query_dir=None, database_name='imdbload', output_file="bao_training_results.log", db_port=5432):
+    def __init__(self, bao_dir=".", query_dir=None, database_name='imdbload', output_file="bao_training_results.log", db_port=5432, min_queries=None):
         self.bao_dir = Path(bao_dir).resolve()
         self.bao_server_dir = self.bao_dir / "bao_server"
         self.server_process = None
@@ -25,6 +25,7 @@ class BaoTrainer:
         self.database_name = database_name
         self.db_port = db_port
         self.output_file = output_file
+        self.min_queries = min_queries
 
         # Configurable parameters
         self.training_timeout = 300
@@ -146,6 +147,8 @@ class BaoTrainer:
 
         # Run the training script
         cmd = f"cd {self.bao_dir} && python3 run_queries.py --query_dir {self.query_dir} --database_name {self.database_name} --output_file {output_path} --db-port {self.db_port}"
+        if self.min_queries is not None:
+            cmd += f" --min-queries {self.min_queries}"
         result = os.system(cmd)
 
         if result == 0:
@@ -291,6 +294,13 @@ How it works:
         help="Enable verbose output"
     )
 
+    parser.add_argument(
+        "--min-queries",
+        type=int,
+        default=None,
+        help="Minimum number of training queries (sample with replacement if needed)"
+    )
+
     args = parser.parse_args()
 
     # Create trainer with custom settings
@@ -299,7 +309,8 @@ How it works:
         query_dir=args.query_dir,
         database_name=args.database_name,
         output_file=args.output_file,
-        db_port=args.db_port
+        db_port=args.db_port,
+        min_queries=args.min_queries
     )
 
     # Update trainer settings

@@ -29,6 +29,7 @@
 #
 
 set -e  # Exit on error
+set -o pipefail  # Catch errors in pipelines (e.g., cmd | tee)
 
 # Activate conda environment if available (for docker exec compatibility)
 if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
@@ -233,27 +234,29 @@ echo "----------------------------------------------------------------"
 TRAIN_TIME_START=$(date +%s)
 SKIP_TRAINING=false
 
-# Model directory pattern for HybridQO
-MODEL_PREFIX="model_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}"
+# Model directory pattern for HybridQO (with timestamp to avoid overwriting)
+MODEL_PATTERN="model_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}"
+MODEL_PREFIX="${TIMESTAMP}_${MODEL_PATTERN}"
 MODEL_SAVE_DIR="${LOG_DIR}/${MODEL_PREFIX}"
+
+# Search for any existing model matching dataset/query_set pattern
+EXISTING_MODEL=$(ls -dt ${LOG_DIR}/*_${MODEL_PATTERN} 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETRAIN" = true ]; then
     echo "--force-retrain specified, will retrain model"
     EXISTING_MODEL=""
-elif [ -d "$MODEL_SAVE_DIR" ] && [ "$(ls -A $MODEL_SAVE_DIR 2>/dev/null)" ]; then
-    EXISTING_MODEL="$MODEL_SAVE_DIR"
-else
-    EXISTING_MODEL=""
 fi
 
-if [ -n "$EXISTING_MODEL" ]; then
+if [ -n "$EXISTING_MODEL" ] && [ -d "$EXISTING_MODEL" ] && [ "$(ls -A $EXISTING_MODEL 2>/dev/null)" ]; then
     echo "Found existing model: $EXISTING_MODEL"
     echo "  Skipping training (use --force-retrain to override)"
     SKIP_TRAINING=true
     TRAIN_TIME=0
+    # Use existing model for testing
+    MODEL_SAVE_DIR="$EXISTING_MODEL"
 else
-    echo "No existing model found for ${MODEL_PREFIX}"
-    echo "Starting training..."
+    echo "No existing model found for pattern *_${MODEL_PATTERN}"
+    echo "Starting training with new model: ${MODEL_PREFIX}"
 
     # Change to HybridQO directory
     cd "$HYBRIDQO_DIR"
@@ -284,18 +287,20 @@ else
         --test_database "$TRAIN_DATASET" \
         --train_test train \
         --epoch $EPOCH \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
 
     TRAIN_RESULT=$?
 
-    # Save training artifacts
+    # Save training artifacts (with timestamp to avoid overwriting)
     sleep 10
     mkdir -p "${PROJECT_ROOT}/${MODEL_SAVE_DIR}"
-    LOGS_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/logs_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}"
+    LOGS_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_logs_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}"
+    # Remove target if exists (shouldn't happen with timestamp, but be safe)
+    rm -rf "$LOGS_SAVE_DIR" 2>/dev/null || true
     mkdir -p "$LOGS_SAVE_DIR"
 
-    [ -d model ] && mv model/* "${PROJECT_ROOT}/${MODEL_SAVE_DIR}/" 2>/dev/null && echo "Saved model"
-    [ -d logs ] && mv logs/* "$LOGS_SAVE_DIR/" 2>/dev/null && echo "Saved logs"
+    [ -d model ] && mv model/* "${PROJECT_ROOT}/${MODEL_SAVE_DIR}/" && echo "Saved model to ${MODEL_SAVE_DIR}"
+    [ -d logs ] && mv logs/* "$LOGS_SAVE_DIR/" && echo "Saved logs to $LOGS_SAVE_DIR"
 
     cd "$PROJECT_ROOT"
 
@@ -319,17 +324,17 @@ echo "----------------------------------------------------------------"
 TEST_HYBRIDQO_START=$(date +%s)
 SKIP_HYBRIDQO_TEST=false
 
-# Check if HybridQO test results already exist
-TEST_RESULT_DIR="${LOG_DIR}/logs_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}_test_w_${TEST_DATASET}_query_${TEST_QUERY_SET}"
-EXISTING_HYBRIDQO_TEST=""
+# Check if HybridQO test results already exist (search with pattern)
+TEST_RESULT_PATTERN="logs_train_w_${TRAIN_DATASET}_query_${TRAIN_QUERY_SET}_test_w_${TEST_DATASET}_query_${TEST_QUERY_SET}"
+TEST_RESULT_DIR="${LOG_DIR}/${TIMESTAMP}_${TEST_RESULT_PATTERN}"
+EXISTING_HYBRIDQO_TEST=$(ls -dt ${LOG_DIR}/*_${TEST_RESULT_PATTERN} 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETEST" = true ]; then
     echo "--force-retest specified, will run HybridQO test"
-elif [ -d "$TEST_RESULT_DIR" ] && [ "$(ls -A $TEST_RESULT_DIR 2>/dev/null)" ]; then
-    EXISTING_HYBRIDQO_TEST="$TEST_RESULT_DIR"
+    EXISTING_HYBRIDQO_TEST=""
 fi
 
-if [ -n "$EXISTING_HYBRIDQO_TEST" ]; then
+if [ -n "$EXISTING_HYBRIDQO_TEST" ] && [ -d "$EXISTING_HYBRIDQO_TEST" ] && [ "$(ls -A $EXISTING_HYBRIDQO_TEST 2>/dev/null)" ]; then
     echo "Found existing HybridQO test results: $EXISTING_HYBRIDQO_TEST"
     echo "  Skipping HybridQO test (use --force-retest to override)"
     SKIP_HYBRIDQO_TEST=true
@@ -372,15 +377,17 @@ else
         --train_database "$TRAIN_DATASET" \
         --test_database "$TEST_DATASET" \
         --train_test test \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_test_hybridqo_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_test_hybridqo_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 
     TEST_RESULT=$?
 
-    # Save test artifacts
+    # Save test artifacts (with timestamp to avoid overwriting)
     sleep 10
+    # Remove target if exists (shouldn't happen with timestamp, but be safe)
+    rm -rf "${PROJECT_ROOT}/${TEST_RESULT_DIR}" 2>/dev/null || true
     mkdir -p "${PROJECT_ROOT}/${TEST_RESULT_DIR}"
 
-    [ -d logs ] && mv logs/* "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" 2>/dev/null && echo "Saved test logs"
+    [ -d logs ] && mv logs/* "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved test logs to ${TEST_RESULT_DIR}"
 
     cd "$PROJECT_ROOT"
 
@@ -399,7 +406,7 @@ END_TIME=$(date +%s)
 TOTAL_TIME=$((END_TIME - START_TIME))
 HOURS=$((TOTAL_TIME / 3600))
 MINUTES=$(((TOTAL_TIME % 3600) / 60))
-SECONDS=$((TOTAL_TIME % 60))
+SECS=$((TOTAL_TIME % 60))
 
 echo ""
 echo "================================================================"
@@ -426,14 +433,14 @@ echo "  HybridQO Testing:   (cached)"
 else
 echo "  HybridQO Testing:   ${TEST_HYBRIDQO_TIME}s ($(($TEST_HYBRIDQO_TIME / 60))m)"
 fi
-echo "  Total:              ${HOURS}h ${MINUTES}m ${SECONDS}s"
+echo "  Total:              ${HOURS}h ${MINUTES}m ${SECS}s"
 echo ""
 echo "Files in: $LOG_DIR/"
 echo "  Model:        ${MODEL_SAVE_DIR}"
 if [ "$SKIP_HYBRIDQO_TEST" = true ]; then
 echo "  HybridQO Test: $EXISTING_HYBRIDQO_TEST (cached)"
 else
-echo "  HybridQO Test: ${TODAY}_test_hybridqo_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+echo "  HybridQO Test: ${TIMESTAMP}_test_hybridqo_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 fi
 echo ""
 echo "End Time: $(date)"

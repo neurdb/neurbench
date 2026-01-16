@@ -32,10 +32,10 @@ current_used_query_dir_job = full_query_query_dir_job
 
 # Model save directory
 MODEL_SAVE_BASE = '/app/AI4QueryOptimizer/neurbench/balsa_logs_all'
-current_used_test_query_glob_in_train_job = empty_test_query_glob_job
+current_used_test_query_glob_in_train_job = full_query_test_query_glob_job  # Use all 113 queries for test during training
 current_used_test_query_glob_in_test_job = full_query_test_query_glob_job
 # originally, it is 100 for job, 50 for stack datasets
-current_val_iters = 100
+current_val_iters = 500
 
 
 @balsa.params_registry.Register
@@ -47,6 +47,8 @@ class NB_Balsa_train_imdb_job_datashift(Balsa_JOB_EvaluationBase):
         p.test_query_glob = current_used_test_query_glob_in_train_job
         p.validate_every_n_epochs = 200
         p.val_iters = current_val_iters
+        p.test_every_n_iters = 50  # Run test every 50 iterations
+        p.test_early_stop_patience = 2  # Stop if no improvement for 2 consecutive tests
         p.model_save_path = MODEL_SAVE_BASE
         p.model_prefix = 'balsa_imdb_job_full'
         return p

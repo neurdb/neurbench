@@ -19,6 +19,7 @@
 #   --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)
 #   --force-retrain              Force retraining even if model exists
 #   --force-retest               Force retesting even if test results exist
+#   --min-queries N              Minimum training queries (sample with replacement)
 #   -h, --help                   Show this help message
 #
 # Note: The script automatically detects existing models and test results.
@@ -55,6 +56,7 @@ show_help() {
     echo "  --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)"
     echo "  --force-retrain              Force retraining even if model exists"
     echo "  --force-retest               Force retesting even if test results exist"
+    echo "  --min-queries N              Minimum training queries (sample with replacement)"
     echo "  -h, --help                   Show this help message"
     echo ""
     echo "Note: The script auto-detects existing models and test results."
@@ -101,6 +103,7 @@ TEST_DATASET=""
 TEST_QUERY_SET=""
 FORCE_RETRAIN=false
 FORCE_RETEST=false
+MIN_QUERIES=""
 
 # Check if using advanced mode (any argument starts with --)
 if [[ "$1" == -* ]]; then
@@ -130,6 +133,10 @@ if [[ "$1" == -* ]]; then
             --force-retest)
                 FORCE_RETEST=true
                 shift
+                ;;
+            --min-queries)
+                MIN_QUERIES="$2"
+                shift 2
                 ;;
             *)
                 echo "Unknown option: $1"
@@ -191,7 +198,7 @@ SKIP_TRAINING=false
 
 # Check if a trained model already exists for this dataset and query_set
 MODEL_PATTERN="${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
-EXISTING_MODEL_DIR=$(ls -dt ${LOG_DIR}/*_${MODEL_PATTERN} 2>/dev/null | head -1)
+EXISTING_MODEL_DIR=$(ls -dt ${LOG_DIR}/*_${MODEL_PATTERN} 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETRAIN" = true ]; then
     echo "--force-retrain specified, will retrain model"
@@ -219,30 +226,32 @@ if [ -n "$EXISTING_MODEL_DIR" ] && [ -d "$EXISTING_MODEL_DIR/bao_default_model" 
 else
     echo "No existing model found for ${MODEL_PATTERN}"
     echo "Starting training..."
-    echo "[DEBUG] Query directory: queries/$TRAIN_QUERY_SET/train"
+
+    # Determine query directory
+    QUERY_DIR="queries/$TRAIN_QUERY_SET/train"
+    if [ ! -d "$QUERY_DIR" ]; then
+        QUERY_DIR="queries/$TRAIN_QUERY_SET"
+    fi
+
+    echo "[DEBUG] Query directory: $QUERY_DIR"
     echo "[DEBUG] Database: $TRAIN_DATASET"
     echo "[DEBUG] Port: 5430"
+    if [ -n "$MIN_QUERIES" ]; then
+        echo "[DEBUG] Min queries: $MIN_QUERIES"
+    fi
 
-python3 -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log
-import sys
-import os
-print("[DEBUG] Python script started")
-sys.path.insert(0, '.')
-print("[DEBUG] Importing cli module...")
-from cli import GLOBAL_CONFIG, handle_tqo
-print("[DEBUG] cli module imported")
+    # Build train command
+    TRAIN_CMD="python3 -u ${BAO_SERVER_DIR}/../train_bao.py"
+    TRAIN_CMD="$TRAIN_CMD --query-dir $QUERY_DIR"
+    TRAIN_CMD="$TRAIN_CMD --database-name $TRAIN_DATASET"
+    TRAIN_CMD="$TRAIN_CMD --output-file $LOG_DIR/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.txt"
+    TRAIN_CMD="$TRAIN_CMD --db-port 5430"
+    if [ -n "$MIN_QUERIES" ]; then
+        TRAIN_CMD="$TRAIN_CMD --min-queries $MIN_QUERIES"
+    fi
 
-GLOBAL_CONFIG['dataset'] = '$TRAIN_DATASET'
-GLOBAL_CONFIG['query_set'] = '$TRAIN_QUERY_SET'
-GLOBAL_CONFIG['pg_port'] = 5430
-print(f"[DEBUG] Dataset: {GLOBAL_CONFIG['dataset']}")
-print(f"[DEBUG] Query Set: {GLOBAL_CONFIG['query_set']}")
-print(f"[DEBUG] PostgreSQL Port: {GLOBAL_CONFIG['pg_port']}")
-print("[DEBUG] Executing: tqo bao")
-sys.stdout.flush()
-handle_tqo(['tqo', 'bao'])
-print("[DEBUG] handle_tqo completed")
-EOF
+    echo "[DEBUG] Train command: $TRAIN_CMD"
+    $TRAIN_CMD 2>&1 | tee $LOG_DIR/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log
 
     if [ $? -ne 0 ]; then
         echo "✗ ERROR: Training failed!"
@@ -268,7 +277,7 @@ TEST_BAO_START=$(date +%s)
 SKIP_BAO_TEST=false
 
 # Check if Bao test results already exist
-EXISTING_BAO_TEST=$(ls -t ${LOG_DIR}/*_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1)
+EXISTING_BAO_TEST=$(ls -t ${LOG_DIR}/*_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETEST" = true ]; then
     echo "--force-retest specified, will run Bao test"
@@ -284,7 +293,7 @@ else
     echo "[DEBUG] Query directory: queries/$TEST_QUERY_SET/test"
     echo "[DEBUG] Database: $TEST_DATASET"
 
-python3 -u  -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log
+python3 -u  -u  << EOF 2>&1 | tee $LOG_DIR/${TIMESTAMP}_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log
 import sys
 import os
 sys.path.insert(0, '.')
@@ -324,7 +333,7 @@ TEST_PG_START=$(date +%s)
 SKIP_PG_TEST=false
 
 # Check if PostgreSQL test results already exist
-EXISTING_PG_TEST=$(ls -t ${LOG_DIR}/*_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1)
+EXISTING_PG_TEST=$(ls -t ${LOG_DIR}/*_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETEST" = true ]; then
     echo "--force-retest specified, will run PostgreSQL test"
@@ -340,7 +349,7 @@ else
     echo "[DEBUG] Query directory: queries/$TEST_QUERY_SET/test"
     echo "[DEBUG] Database: $TEST_DATASET"
 
-python3 -u  << EOF 2>&1 | tee $LOG_DIR/${TODAY}_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log
+python3 -u  << EOF 2>&1 | tee $LOG_DIR/${TIMESTAMP}_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log
 import sys
 sys.path.insert(0, '.')
 from cli import GLOBAL_CONFIG, handle_iqo
@@ -427,17 +436,16 @@ echo "================================================================"
 echo "Performance Comparison (Query Execution Latency)"
 echo "================================================================"
 
-# Determine which log files to use
-if [ "$SKIP_BAO_TEST" = true ]; then
-    BAO_LOG="$EXISTING_BAO_TEST"
-else
-    BAO_LOG="$LOG_DIR/${TODAY}_test_bao_${TEST_DATASET}_${TEST_QUERY_SET}.log"
-fi
+# Find the actual result files (CSV format) from bao_logs_all/
+# These are the actual test results, not the console logs
+BAO_RESULT_FILE=$(ls -t bao_logs_all/test_bao_${TEST_QUERY_SET}_*.txt 2>/dev/null | head -1 || true)
+PG_RESULT_FILE=$(ls -t bao_logs_all/test_pg_${TEST_QUERY_SET}_*.txt 2>/dev/null | head -1 || true)
 
-if [ "$SKIP_PG_TEST" = true ]; then
-    PG_LOG="$EXISTING_PG_TEST"
-else
-    PG_LOG="$LOG_DIR/${TODAY}_test_pg_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+if [ -z "$BAO_RESULT_FILE" ]; then
+    echo "Warning: No BAO result file found in bao_logs_all/"
+fi
+if [ -z "$PG_RESULT_FILE" ]; then
+    echo "Warning: No PG result file found in bao_logs_all/"
 fi
 
 # Parse results using Python
@@ -474,8 +482,8 @@ def parse_test_log(log_file):
 
     return total_time, query_count
 
-bao_log = "$BAO_LOG"
-pg_log = "$PG_LOG"
+bao_log = "$BAO_RESULT_FILE"
+pg_log = "$PG_RESULT_FILE"
 
 bao_time, bao_count = parse_test_log(bao_log)
 pg_time, pg_count = parse_test_log(pg_log)

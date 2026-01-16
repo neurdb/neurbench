@@ -14,10 +14,10 @@ from TreeConvolution.tcnn import (BinaryTreeConv, DynamicPooling,
 from TreeConvolution.util import prepare_trees
 
 CUDA = torch.cuda.is_available()
-GPU_LIST = [0, 1, 2, 3, 4, 5, 6, 7]
+GPU_LIST = [4, 5]
 
 torch.set_default_tensor_type(torch.DoubleTensor)
-device = torch.device("cuda:0" if CUDA else "cpu")
+device = torch.device("cuda:4" if CUDA else "cpu")
 
 
 def _nn_path(base):
@@ -160,6 +160,14 @@ class LeroModel():
                 self._net = torch.nn.DataParallel(
                     self._net, device_ids=GPU_LIST)
                 self._net.cuda(device)
+        else:
+            # Move pretrained model to GPU if needed
+            if CUDA:
+                print("Moving pretrained model to GPU...")
+                self._net = self._net.cuda(device)
+                self._net = torch.nn.DataParallel(
+                    self._net, device_ids=GPU_LIST)
+                self._net.cuda(device)
 
         optimizer = None
         if CUDA:
@@ -240,6 +248,14 @@ class LeroModelPairWise(LeroModel):
             self._net = LeroNet(input_feature_dim)
             self._input_feature_dim = input_feature_dim
             if CUDA:
+                self._net = self._net.cuda(device)
+                self._net = torch.nn.DataParallel(
+                    self._net, device_ids=GPU_LIST)
+                self._net.cuda(device)
+        else:
+            # Move pretrained model to GPU if needed
+            if CUDA:
+                print("Moving pretrained model to GPU...")
                 self._net = self._net.cuda(device)
                 self._net = torch.nn.DataParallel(
                     self._net, device_ids=GPU_LIST)

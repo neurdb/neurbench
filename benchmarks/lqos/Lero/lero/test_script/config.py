@@ -19,7 +19,7 @@ PG_DB_PATH = "/pgdata"
 
 # Rap conf (No modification is required by default)
 LERO_SERVER_PORT = 14567
-LERO_SERVER_HOST = "localhost"
+LERO_SERVER_HOST = "172.17.0.1"
 LERO_SERVER_PATH = "../"
 LERO_DUMP_CARD_FILE = "dump_card_with_score.txt"
 

@@ -171,7 +171,25 @@ def main(args):
 
     random.seed(42)
 
-    queries_to_run = 500 if len(queries) < 500 else len(queries)
+    # Determine number of queries to run
+    min_queries = getattr(args, 'min_queries', None)
+    if min_queries is not None:
+        # Use min-queries as minimum (sample up if needed, use all if more available)
+        # This matches Lero's behavior
+        if len(queries) < min_queries:
+            queries_to_run = min_queries
+            print(f"Using --min-queries={min_queries} (sampling up from {len(queries)})", flush=True)
+        else:
+            queries_to_run = len(queries)
+            print(f"Using all {len(queries)} queries (>= min-queries={min_queries})", flush=True)
+    elif EXECUTION_MODE == "single":
+        # single mode default: 1500 queries
+        queries_to_run = 1500 if len(queries) < 1500 else len(queries)
+    else:
+        # triple mode default: 500 queries
+        queries_to_run = 500 if len(queries) < 500 else len(queries)
+
+    print(f"Will run {queries_to_run} queries (from {len(queries)} unique queries)", flush=True)
     query_sequence = random.choices(queries, k=queries_to_run)
     pg_chunks, *bao_chunks = list(chunks(query_sequence, 25))
 
@@ -227,6 +245,8 @@ if __name__ == '__main__':
                         help='Directory which contains all the *training* queries')
     parser.add_argument('--output_file', type=str, required=True, help='File in which to store the results')
     parser.add_argument('--db-port', type=int, default=5430, help='PostgreSQL port (default: 5430)')
+    parser.add_argument('--min-queries', type=int, default=None,
+                        help='Minimum number of training queries (sample with replacement if needed)')
 
     args = parser.parse_args()
     main(args)

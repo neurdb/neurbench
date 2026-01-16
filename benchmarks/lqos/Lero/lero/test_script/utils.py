@@ -244,8 +244,8 @@ def create_training_file(training_data_file, *latency_files):
         f2.write(str)
 
 def do_run_query(sql, query_name, run_args, latency_file, write_latency_file = True, manager_dict = None, manager_lock = None):
-    # Prewarm database if in single execution mode
-    if EXECUTION_MODE == "single":
+    # Prewarm database if in single execution mode (unless externally prewarmed)
+    if EXECUTION_MODE == "single" and not os.environ.get("LERO_SKIP_PREWARM"):
         prewarm_database()
 
     sql = sql.strip().replace("\n", " ").replace("\t", " ")

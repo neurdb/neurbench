@@ -46,7 +46,8 @@ QUERY_LOG_FILE = 'query_log_file.txt'
 NUM_EXECUTIONS = 3
 
 # Execution mode: "single" (prewarm + 1 run) or "triple" (3 runs, use last)
-EXECUTION_MODE = "single"
+# Can be set via environment variable BALSA_EXECUTION_MODE
+EXECUTION_MODE = os.environ.get("BALSA_EXECUTION_MODE", "single")
 _PREWARM_DONE = False
 
 def prewarm_database(dsn=None):
@@ -216,8 +217,8 @@ def Execute(sql, verbose=False, geqo_off=False, timeout_ms=None, cursor=None, fi
     Returns:
       A pg_executor.Result.
     """
-    # Prewarm database if in single execution mode
-    if EXECUTION_MODE == "single":
+    # Prewarm database if in single execution mode (unless externally prewarmed)
+    if EXECUTION_MODE == "single" and not os.environ.get("BALSA_SKIP_PREWARM"):
         prewarm_database()
 
     if verbose:

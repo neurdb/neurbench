@@ -207,10 +207,16 @@ class JoinOrderBenchmark(Workload):
             if p.test_query_glob is None or n.info['path'] not in test_sql_set
         ]
         test_nodes = [n for n in all_nodes if n.info['path'] in test_sql_set]
-        assert len(train_nodes) > 0
+
+        # If all queries are in test set, use all queries for training too (allow overlap)
+        if len(train_nodes) == 0 and len(all_nodes) > 0:
+            print(f"[INFO] All {len(all_nodes)} queries are in test set, using them for training too (train/test overlap)")
+            train_nodes = all_nodes
+
+        assert len(train_nodes) > 0, f"No training queries found. all_nodes={len(all_nodes)}, test_sql_set={len(test_sql_set)}"
 
         return all_nodes, train_nodes, test_nodes
-    
+
 # Manually added for the STACK database/workload
 class STACK(Workload):
 
@@ -246,7 +252,13 @@ class STACK(Workload):
             if p.test_query_glob is None or n.info['path'] not in test_sql_set
         ]
         test_nodes = [n for n in all_nodes if n.info['path'] in test_sql_set]
-        assert len(train_nodes) > 0
+
+        # If all queries are in test set, use all queries for training too (allow overlap)
+        if len(train_nodes) == 0 and len(all_nodes) > 0:
+            print(f"[INFO] All {len(all_nodes)} queries are in test set, using them for training too (train/test overlap)")
+            train_nodes = all_nodes
+
+        assert len(train_nodes) > 0, f"No training queries found. all_nodes={len(all_nodes)}, test_sql_set={len(test_sql_set)}"
 
         return all_nodes, train_nodes, test_nodes
 

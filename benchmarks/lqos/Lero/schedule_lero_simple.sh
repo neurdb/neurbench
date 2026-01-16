@@ -29,6 +29,7 @@
 #
 
 set -e  # Exit on error
+set -o pipefail  # Catch errors in pipelines (e.g., cmd | tee)
 
 # Activate conda environment if available (for docker exec compatibility)
 if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
@@ -110,6 +111,8 @@ TEST_QUERY_SET=""
 FORCE_RETRAIN=false
 FORCE_RETEST=false
 TRAINING_STYLE="lero"  # "lero" (cardinality-guided) or "bao" (hint-based)
+MIN_QUERIES=""  # Minimum training queries (will sample with replacement if needed)
+CONTINUE_TRAINING=false  # Continue training from existing model and data
 
 # Check if using advanced mode (any argument starts with --)
 if [[ "$1" == -* ]]; then
@@ -143,6 +146,14 @@ if [[ "$1" == -* ]]; then
             --training-style)
                 TRAINING_STYLE="$2"
                 shift 2
+                ;;
+            --min-queries)
+                MIN_QUERIES="$2"
+                shift 2
+                ;;
+            --continue-training)
+                CONTINUE_TRAINING=true
+                shift
                 ;;
             *)
                 echo "Unknown option: $1"
@@ -197,6 +208,13 @@ prepare_query_file() {
     local sql_dir="$1"
     local output_file="$2"
 
+    # Skip if output file already exists
+    if [ -f "$output_file" ]; then
+        local count=$(wc -l < "$output_file")
+        echo "Query file already exists: $output_file ($count queries), skipping generation"
+        return 0
+    fi
+
     echo "Preparing query file from $sql_dir..."
 
     if [ ! -d "$sql_dir" ]; then
@@ -250,23 +268,48 @@ echo "----------------------------------------------------------------"
 TRAIN_TIME_START=$(date +%s)
 SKIP_TRAINING=false
 
-# Model pattern for Lero
-MODEL_PREFIX="train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model"
-EXISTING_MODEL=$(ls -dt ${LERO_CORE_DIR}/${MODEL_PREFIX}_* 2>/dev/null | head -1)
+# Model pattern for Lero (with timestamp to avoid overwriting previous models)
+MODEL_PREFIX="${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model"
+# Search for any model matching dataset/query_set pattern (both old and new naming formats)
+# Old format: train_{dataset}_{queryset}_model_*
+# New format: {timestamp}_train_{dataset}_{queryset}_model_*
+EXISTING_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_* 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETRAIN" = true ]; then
     echo "--force-retrain specified, will retrain model"
     EXISTING_MODEL=""
 fi
 
-if [ -n "$EXISTING_MODEL" ]; then
+if [ -n "$EXISTING_MODEL" ] && [ "$CONTINUE_TRAINING" = false ]; then
     echo "Found existing model: $EXISTING_MODEL"
-    echo "  Skipping training (use --force-retrain to override)"
+    echo "  Skipping training (use --force-retrain to override or --continue-training to continue)"
     SKIP_TRAINING=true
     TRAIN_TIME=0
 else
-    echo "No existing model found for ${MODEL_PREFIX}"
-    echo "Starting training..."
+    # Continue training mode: find existing data and model
+    CONTINUE_DATA_FILE=""
+    CONTINUE_MODEL=""
+    if [ "$CONTINUE_TRAINING" = true ]; then
+        echo "Continue training mode enabled"
+        # Find existing training data file (without timestamp prefix, or most recent with timestamp)
+        EXISTING_DATA=$(ls -t ${LOG_DIR}/*_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log 2>/dev/null | head -1 || true)
+        if [ -n "$EXISTING_DATA" ]; then
+            CONTINUE_DATA_FILE="$EXISTING_DATA"
+            echo "Found existing training data: $CONTINUE_DATA_FILE"
+        fi
+        # Find existing model to continue from
+        if [ -n "$EXISTING_MODEL" ]; then
+            CONTINUE_MODEL="$EXISTING_MODEL"
+            echo "Will continue training from model: $CONTINUE_MODEL"
+        fi
+    fi
+
+    if [ -n "$EXISTING_MODEL" ] && [ "$CONTINUE_TRAINING" = true ]; then
+        echo "Continuing training from existing model: $EXISTING_MODEL"
+    else
+        echo "No existing model found for pattern *train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_*"
+    fi
+    echo "Starting training with model prefix: ${MODEL_PREFIX}"
 
     # Prepare training query file
     TRAIN_SQL_DIR="queries/${TRAIN_QUERY_SET}"
@@ -283,35 +326,84 @@ else
     # Kill any existing Lero server
     kill_lero_server
 
-    # Start Lero server
+    # Start Lero server (load existing model if continuing)
     echo "Starting Lero server..."
     cd "$LERO_CORE_DIR"
-    nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py >> "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
+    if [ -n "$CONTINUE_MODEL" ]; then
+        # Create a temporary config with model path for continue training
+        CONTINUE_SERVER_CONF="${LERO_CORE_DIR}/server_continue.conf"
+        CONTINUE_MODEL_BASENAME=$(basename "$CONTINUE_MODEL")
+        cat > "$CONTINUE_SERVER_CONF" << EOF
+[lero]
+Port = 14567
+ListenOn = 0.0.0.0
+ModelPath = ${CONTINUE_MODEL_BASENAME}
+EOF
+        nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py --config_name server_continue.conf >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
+    else
+        nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
+    fi
     LERO_SERVER_PID=$!
     echo "Lero server started with PID: $LERO_SERVER_PID"
     sleep 15
 
+    # Prewarm database once before training
+    echo "Prewarming database before training..."
+    cd "$LERO_CORE_DIR/test_script"
+    python3 -c "from utils import prewarm_database; prewarm_database()"
+
     # Run training
     echo "Running Lero training..."
-    cd "$LERO_CORE_DIR/test_script"
+    export LERO_SKIP_PREWARM=1  # Skip per-query prewarm since we did it once above
+
+    # Build min_queries argument if specified
+    MIN_QUERIES_ARG=""
+    if [ -n "$MIN_QUERIES" ]; then
+        MIN_QUERIES_ARG="--min_queries $MIN_QUERIES"
+        echo "Using min_queries: $MIN_QUERIES"
+    fi
+
+    # Build continue training arguments
+    CONTINUE_ARGS=""
+    if [ "$CONTINUE_TRAINING" = true ]; then
+        CONTINUE_ARGS="$CONTINUE_ARGS --resume"  # Resume from last completed chunk
+        if [ -n "$CONTINUE_DATA_FILE" ]; then
+            CONTINUE_ARGS="$CONTINUE_ARGS --continue_data_file ${PROJECT_ROOT}/${CONTINUE_DATA_FILE}"
+        fi
+        if [ -n "$CONTINUE_MODEL" ]; then
+            CONTINUE_ARGS="$CONTINUE_ARGS --continue_model ${CONTINUE_MODEL}"
+        fi
+    fi
+
+    # Determine output file: reuse existing if continuing, otherwise new timestamp
+    if [ "$CONTINUE_TRAINING" = true ] && [ -n "$CONTINUE_DATA_FILE" ]; then
+        OUTPUT_LATENCY_FILE="${PROJECT_ROOT}/${CONTINUE_DATA_FILE}"
+        echo "Appending to existing data file: $OUTPUT_LATENCY_FILE"
+    else
+        OUTPUT_LATENCY_FILE="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+    fi
 
     CUDA_VISIBLE_DEVICES="" python3 train_model.py \
         --query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --test_query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --algo lero \
         --query_num_per_chunk 20 \
-        --output_query_latency_file "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" \
+        --output_query_latency_file "$OUTPUT_LATENCY_FILE" \
         --model_prefix "${MODEL_PREFIX}" \
         --topK 3 \
         --training_style "${TRAINING_STYLE}" \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_output_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+        $MIN_QUERIES_ARG \
+        $CONTINUE_ARGS \
+        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_output_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
 
     TRAIN_RESULT=$?
 
-    # Save training log directory
+    # Save training log directory (with timestamp to avoid overwriting)
     if [ -d "${LERO_CORE_DIR}/test_script/log" ]; then
-        TRAIN_LOG_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/log_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
-        mv "${LERO_CORE_DIR}/test_script/log" "$TRAIN_LOG_SAVE_DIR" 2>/dev/null || true
+        TRAIN_LOG_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_log_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
+        # Remove target if exists (shouldn't happen with timestamp, but be safe)
+        rm -rf "$TRAIN_LOG_SAVE_DIR" 2>/dev/null || true
+        mv "${LERO_CORE_DIR}/test_script/log" "$TRAIN_LOG_SAVE_DIR"
         echo "Saved training logs to: $TRAIN_LOG_SAVE_DIR"
     fi
 
@@ -329,8 +421,8 @@ else
     TRAIN_TIME=$((TRAIN_TIME_END - TRAIN_TIME_START))
     echo "Training completed in ${TRAIN_TIME}s"
 
-    # Find the latest model
-    EXISTING_MODEL=$(ls -dt ${LERO_CORE_DIR}/${MODEL_PREFIX}_* 2>/dev/null | head -1)
+    # Find the latest model (may be from this run or previous runs)
+    EXISTING_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_* 2>/dev/null | head -1 || true)
 fi
 
 # Ensure Lero server is stopped after training
@@ -347,7 +439,7 @@ TEST_LERO_START=$(date +%s)
 SKIP_LERO_TEST=false
 
 # Check if Lero test results already exist
-EXISTING_LERO_TEST=$(ls -t ${LOG_DIR}/*_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1)
+EXISTING_LERO_TEST=$(ls -t ${LOG_DIR}/*_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log 2>/dev/null | head -1 || true)
 
 if [ "$FORCE_RETEST" = true ]; then
     echo "--force-retest specified, will run Lero test"
@@ -375,45 +467,52 @@ else
     # Kill any existing Lero server
     kill_lero_server
 
-    # Get model number (find the highest numbered model)
-    MODEL_NUM=$(ls -d ${LERO_CORE_DIR}/${MODEL_PREFIX}_* 2>/dev/null | sed 's/.*_//' | sort -n | tail -1)
-    if [ -z "$MODEL_NUM" ]; then
-        echo "ERROR: No trained model found for ${MODEL_PREFIX}"
+    # Get the latest model directory (supports both old and new naming formats)
+    LATEST_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_* 2>/dev/null | head -1 || true)
+    if [ -z "$LATEST_MODEL" ]; then
+        echo "ERROR: No trained model found for pattern *train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_*"
         exit 1
     fi
-    FULL_MODEL_PATH="${MODEL_PREFIX}_${MODEL_NUM}"
+    FULL_MODEL_PATH=$(basename "$LATEST_MODEL")
     echo "Using model: $FULL_MODEL_PATH"
 
     # Update server_test.conf with model path (needs [lero] section header)
     echo "[lero]" > "${LERO_CORE_DIR}/server_test.conf"
     echo "Port = 14567" >> "${LERO_CORE_DIR}/server_test.conf"
-    echo "ListenOn = localhost" >> "${LERO_CORE_DIR}/server_test.conf"
+    echo "ListenOn = 0.0.0.0" >> "${LERO_CORE_DIR}/server_test.conf"
     echo "ModelPath = ${FULL_MODEL_PATH}" >> "${LERO_CORE_DIR}/server_test.conf"
 
     # Start Lero server with model
     echo "Starting Lero server with model..."
     cd "$LERO_CORE_DIR"
-    nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py --config_name server_test.conf >> "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_server_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log" 2>&1 &
+    nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py --config_name server_test.conf >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log" 2>&1 &
     sleep 15
+
+    # Prewarm database once before testing
+    echo "Prewarming database before testing..."
+    cd "$LERO_CORE_DIR/test_script"
+    python3 -c "from utils import prewarm_database; prewarm_database()"
 
     # Run test
     echo "Running Lero test..."
-    cd "$LERO_CORE_DIR/test_script"
+    export LERO_SKIP_PREWARM=1  # Skip per-query prewarm since we did it once above
 
     # Clean up previous log directory before test
     rm -rf log 2>/dev/null || true
 
     python3 test.py \
         --query_path "${PROJECT_ROOT}/${TEST_QUERY_FILE}" \
-        --output_query_latency_file "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log" \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_test_lero_output_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+        --output_query_latency_file "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log" \
+        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_test_lero_output_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 
     TEST_RESULT=$?
 
-    # Save test log directory
+    # Save test log directory (with timestamp to avoid overwriting)
     if [ -d "log" ]; then
-        TEST_LOG_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/log_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_test_${TEST_DATASET}_${TEST_QUERY_SET}"
-        mv log "$TEST_LOG_SAVE_DIR" 2>/dev/null || true
+        TEST_LOG_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_log_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_test_${TEST_DATASET}_${TEST_QUERY_SET}"
+        # Remove target if exists (shouldn't happen with timestamp, but be safe)
+        rm -rf "$TEST_LOG_SAVE_DIR" 2>/dev/null || true
+        mv log "$TEST_LOG_SAVE_DIR"
         echo "Saved test logs to: $TEST_LOG_SAVE_DIR"
     fi
 
@@ -440,7 +539,7 @@ END_TIME=$(date +%s)
 TOTAL_TIME=$((END_TIME - START_TIME))
 HOURS=$((TOTAL_TIME / 3600))
 MINUTES=$(((TOTAL_TIME % 3600) / 60))
-SECONDS=$((TOTAL_TIME % 60))
+SECS=$((TOTAL_TIME % 60))
 
 echo ""
 echo "================================================================"
@@ -467,14 +566,18 @@ echo "  Lero Testing:       (cached)"
 else
 echo "  Lero Testing:       ${TEST_LERO_TIME}s ($(($TEST_LERO_TIME / 60))m)"
 fi
-echo "  Total:              ${HOURS}h ${MINUTES}m ${SECONDS}s"
+echo "  Total:              ${HOURS}h ${MINUTES}m ${SECS}s"
 echo ""
 echo "Files in: $LOG_DIR/"
+if [ "$SKIP_TRAINING" = true ]; then
+echo "  Model:     $EXISTING_MODEL"
+else
 echo "  Model:     ${LERO_CORE_DIR}/${MODEL_PREFIX}_*"
+fi
 if [ "$SKIP_LERO_TEST" = true ]; then
 echo "  Lero Test: $EXISTING_LERO_TEST (cached)"
 else
-echo "  Lero Test: ${TODAY}_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+echo "  Lero Test: ${TIMESTAMP}_test_lero_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 fi
 echo ""
 echo "End Time: $(date)"

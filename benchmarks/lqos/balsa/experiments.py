@@ -303,6 +303,8 @@ class BalsaParams(object):
         p.Define('track_model_moving_averages', False,
                  'Track EMA/SWA of the agent?')
         p.Define('ema_decay', 0.95, 'Use an EMA model to evaluate on test.')
+        p.Define('test_early_stop_patience', None,
+                 'If set, stop training if test latency does not improve for this many consecutive tests.')
 
         # Pre-training.
         p.Define('sim', True, 'Initialize from a pre-trained SIM model?')

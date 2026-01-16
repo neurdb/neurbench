@@ -31,7 +31,7 @@ class PlanCardReplacer():
         self.SCAN_TYPES = SCAN_TYPES
         self.JOIN_TYPES = JOIN_TYPES
         self.SAME_CARD_TYPES = ["Hash", "Materialize",
-                                "Sort", "Incremental Sort", "Gather", "GatherMerge", "Limit"]
+                                "Sort", "Incremental Sort", "Gather", "GatherMerge", "Limit", "Unique"]
         self.OP_TYPES = ["Aggregate", "Bitmap Index Scan"] + \
             self.SCAN_TYPES + self.JOIN_TYPES + self.SAME_CARD_TYPES
         self.table_idx_map = {}
@@ -72,9 +72,10 @@ class PlanCardReplacer():
         if node_type in self.JOIN_TYPES:
             tag = self.encode_input_tables(input_tables)
             if tag not in self.table_card_map:
-                print(input_tables)
-                raise Exception("Unknown tag " + str(tag))
-            card = self.table_card_map[tag]
+                # Use original Plan Rows if tag not found (optimizer explored different join order)
+                card = plan.get('Plan Rows', 1.0)
+            else:
+                card = self.table_card_map[tag]
             plan['Plan Rows'] = card
             output_card = card
         elif node_type in self.SAME_CARD_TYPES:

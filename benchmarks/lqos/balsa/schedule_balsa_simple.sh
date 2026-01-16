@@ -28,6 +28,7 @@
 #
 
 set -e  # Exit on error
+set -o pipefail  # Capture errors in pipelines (e.g., python3 | tee)
 
 # Activate conda environment (for docker exec -c mode)
 if [ -f "/root/miniconda3/etc/profile.d/conda.sh" ]; then
@@ -55,6 +56,7 @@ show_help() {
     echo "  --test-query-set QUERY_SET   Query set for testing (default: same as train-query-set)"
     echo "  --force-retrain              Force retraining even if model exists"
     echo "  --force-retest               Force retesting even if test results exist"
+    echo "  --continue-training          Continue training from existing model and data"
     echo "  -h, --help                   Show this help message"
     echo ""
     echo "Note: The script auto-detects existing models and test results."
@@ -105,6 +107,7 @@ TEST_DATASET=""
 TEST_QUERY_SET=""
 FORCE_RETRAIN=false
 FORCE_RETEST=false
+CONTINUE_TRAINING=false
 
 # Check if using advanced mode (any argument starts with --)
 if [[ "$1" == -* ]]; then
@@ -133,6 +136,10 @@ if [[ "$1" == -* ]]; then
                 ;;
             --force-retest)
                 FORCE_RETEST=true
+                shift
+                ;;
+            --continue-training)
+                CONTINUE_TRAINING=true
                 shift
                 ;;
             *)
@@ -232,27 +239,78 @@ echo "----------------------------------------------------------------"
 TRAIN_TIME_START=$(date +%s)
 SKIP_TRAINING=false
 
-# Model checkpoint pattern for Balsa
-MODEL_PREFIX="train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
-CHECKPOINT_FILE="${LOG_DIR}/balsa_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_full_checkpoint.pt"
+# Model checkpoint pattern for Balsa (with timestamp)
+MODEL_PREFIX="${TIMESTAMP}_${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
+
+# Find existing checkpoint - Balsa saves to: {LOG_DIR}/balsa_{dataset}_{query_set}_full_checkpoint.pt
+# Model prefix pattern: balsa_imdb_job_full
+MODEL_PREFIX_PATTERN="balsa_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_full"
+DIRECT_CHECKPOINT="${LOG_DIR}/${MODEL_PREFIX_PATTERN}_checkpoint.pt"
+CHECKPOINT_DIR_PATTERN="${LOG_DIR}/${MODEL_PREFIX_PATTERN}_checkpoints"
+
+if [ -f "$DIRECT_CHECKPOINT" ]; then
+    CHECKPOINT_FILE="$DIRECT_CHECKPOINT"
+    echo "Found checkpoint: $CHECKPOINT_FILE"
+else
+    CHECKPOINT_FILE=""
+fi
+
+# Find the latest model directory for data/replay buffers (train_imdb_job or similar)
+LATEST_MODEL_DIR=$(ls -dt ${LOG_DIR}/train_${TRAIN_DATASET}_${TRAIN_QUERY_SET} ${LOG_DIR}/*_${TRAIN_DATASET}_${TRAIN_QUERY_SET} 2>/dev/null | grep -v "_test_" | head -1 || true)
+if [ -n "$LATEST_MODEL_DIR" ]; then
+    echo "Found model directory: $LATEST_MODEL_DIR"
+fi
 
 if [ "$FORCE_RETRAIN" = true ]; then
     echo "--force-retrain specified, will retrain model"
     EXISTING_MODEL=""
-elif [ -f "$CHECKPOINT_FILE" ]; then
+elif [ -n "$CHECKPOINT_FILE" ] && [ -f "$CHECKPOINT_FILE" ]; then
     EXISTING_MODEL="$CHECKPOINT_FILE"
 else
     EXISTING_MODEL=""
 fi
 
-if [ -n "$EXISTING_MODEL" ]; then
+# Find existing replay buffers for continue training
+# Check both direct logs dir and timestamped dir
+EXISTING_REPLAY_BUFFERS=""
+REPLAY_BUFFER_LOCATION=""
+# First check direct logs dir (new real-time save location)
+if [ -d "${LOG_DIR}/data" ]; then
+    EXISTING_REPLAY_BUFFERS=$(ls "${LOG_DIR}/data"/replay-*.pkl 2>/dev/null | head -1 || true)
+    if [ -n "$EXISTING_REPLAY_BUFFERS" ]; then
+        REPLAY_BUFFER_LOCATION="${LOG_DIR}/data/"
+    fi
+fi
+# If not found, check timestamped training dir
+if [ -z "$EXISTING_REPLAY_BUFFERS" ] && [ -n "$LATEST_MODEL_DIR" ] && [ -d "$LATEST_MODEL_DIR/data" ]; then
+    EXISTING_REPLAY_BUFFERS=$(ls "$LATEST_MODEL_DIR/data"/replay-*.pkl 2>/dev/null | head -1 || true)
+    if [ -n "$EXISTING_REPLAY_BUFFERS" ]; then
+        REPLAY_BUFFER_LOCATION="$LATEST_MODEL_DIR/data/"
+    fi
+fi
+
+if [ -n "$EXISTING_MODEL" ] && [ "$CONTINUE_TRAINING" = false ]; then
     echo "Found existing model: $EXISTING_MODEL"
-    echo "  Skipping training (use --force-retrain to override)"
+    echo "  Skipping training (use --force-retrain to override or --continue-training to continue)"
     SKIP_TRAINING=true
     TRAIN_TIME=0
-else
-    echo "No existing model found for ${MODEL_PREFIX}"
-    echo "Starting training..."
+elif [ -n "$EXISTING_MODEL" ] && [ "$CONTINUE_TRAINING" = true ]; then
+    echo "Continue training mode enabled"
+    echo "Found existing model: $EXISTING_MODEL"
+    if [ -n "$EXISTING_REPLAY_BUFFERS" ]; then
+        echo "Found existing replay buffers in: $REPLAY_BUFFER_LOCATION"
+    fi
+    # Fall through to training section below
+fi
+
+# Run training if not skipping
+if [ "$SKIP_TRAINING" = false ]; then
+    if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
+        echo "Continuing training from existing model..."
+    else
+        echo "No existing model found for ${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
+        echo "Starting training (will save as ${MODEL_PREFIX})..."
+    fi
 
     # Update config with training database
     update_db_config "$TRAIN_DATASET"
@@ -260,48 +318,129 @@ else
     # Change to Balsa directory
     cd "$BALSA_DIR"
 
-    # Clean up old/failed training artifacts
+    # Clean up old/failed training artifacts (but preserve for continue training)
     echo "Cleaning up old training artifacts..."
-    rm -rf logs tensorboard_logs data runs
-    mkdir -p logs
+    if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
+        # For continue training, copy existing replay buffers to current data dir
+        rm -rf logs tensorboard_logs runs
+        mkdir -p logs data
+
+        # Copy replay buffer from the location found earlier
+        if [ -n "$REPLAY_BUFFER_LOCATION" ]; then
+            echo "Copying replay buffer from: ${PROJECT_ROOT}/${REPLAY_BUFFER_LOCATION}"
+            cp "${PROJECT_ROOT}/${REPLAY_BUFFER_LOCATION}"replay-*.pkl data/ 2>/dev/null || true
+        else
+            echo "Warning: No replay buffer found for continue training"
+        fi
+
+        # Copy initial_policy_data from multiple possible locations
+        cp "${PROJECT_ROOT}/${LOG_DIR}/data"/initial_policy_data*.pkl data/ 2>/dev/null || true
+        cp "${PROJECT_ROOT}/${LATEST_MODEL_DIR}/data"/initial_policy_data*.pkl data/ 2>/dev/null || true
+    else
+        rm -rf logs tensorboard_logs data runs
+        mkdir -p logs
+    fi
 
     # Install packages
     echo "Installing Balsa packages..."
     pip install -e . > /dev/null 2>&1
     pip install -e pg_executor > /dev/null 2>&1
 
-    # Run training (twice as per template)
-    echo "Running Balsa training (iteration 1/2)..."
+    # Prewarm database once before training
+    echo "Prewarming database before training..."
+    python3 -c "
+import sys
+sys.path.insert(0, 'pg_executor')
+from pg_executor.pg_executor import prewarm_database
+prewarm_database()
+"
+
+    # Build continue training arguments
+    CONTINUE_ARGS=""
+    if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
+        CONTINUE_ARGS="--agent_checkpoint ${PROJECT_ROOT}/${EXISTING_MODEL}"
+        if [ -d "data" ] && ls data/replay-*.pkl 1>/dev/null 2>&1; then
+            CONTINUE_ARGS="$CONTINUE_ARGS --prev_replay_buffers data/replay-*.pkl"
+        fi
+
+        # Find the last completed iteration from checkpoint filenames
+        # Checkpoints are in: {LOG_DIR}/balsa_{dataset}_{query_set}_full_checkpoints/{timestamp}/checkpoint__iter{N}.pt
+        LAST_ITER=0
+        ITER_CHECKPOINT_DIR="${PROJECT_ROOT}/${LOG_DIR}/${MODEL_PREFIX_PATTERN}_checkpoints"
+        if [ -d "$ITER_CHECKPOINT_DIR" ]; then
+            echo "Looking for iterations in: $ITER_CHECKPOINT_DIR"
+            for ckpt in "$ITER_CHECKPOINT_DIR"/*/checkpoint__iter*.pt; do
+                if [ -f "$ckpt" ]; then
+                    # Extract iteration number from filename
+                    iter_num=$(basename "$ckpt" | sed 's/checkpoint__iter\([0-9]*\)\.pt/\1/')
+                    if [ "$iter_num" -gt "$LAST_ITER" ] 2>/dev/null; then
+                        LAST_ITER=$iter_num
+                    fi
+                fi
+            done
+        fi
+
+        if [ "$LAST_ITER" -gt 0 ]; then
+            START_ITER=$((LAST_ITER + 1))
+            CONTINUE_ARGS="$CONTINUE_ARGS --start_iter $START_ITER"
+            echo "Found last completed iteration: $LAST_ITER, resuming from iteration $START_ITER"
+        fi
+
+        echo "Continue training args: $CONTINUE_ARGS"
+    fi
+
+    # Run training
     export WANDB_MODE=disabled
     export PYTHONUNBUFFERED=1
-    CUDA_VISIBLE_DEVICES=3 python3 -u run.py \
-        --run NB_Balsa_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_datashift \
-        --local \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_1_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+    export BALSA_EXECUTION_MODE=single  # Training mode (1 run, prewarm already done)
+    export BALSA_SKIP_PREWARM=1  # Skip per-query prewarm since we did it once above
 
-    echo "Running Balsa training (iteration 2/2)..."
-    CUDA_VISIBLE_DEVICES=3 python3 -u run.py \
-        --run NB_Balsa_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_datashift \
-        --local \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_train_2_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+    if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
+        # Continue training: only run once (baseline already collected, just continue RL training)
+        echo "Running Balsa continue training..."
+        CUDA_VISIBLE_DEVICES=3 python3 -u run.py \
+            --run NB_Balsa_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_datashift \
+            --local \
+            $CONTINUE_ARGS \
+            2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_continue_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+        TRAIN_RESULT=$?
+    else
+        # Fresh training: run twice
+        # 1st run: collects baseline (expert) data if initial_policy_data.pkl doesn't exist
+        # 2nd run: actual RL training using the collected baseline
+        echo "Running Balsa training (iteration 1/2 - baseline collection)..."
+        CUDA_VISIBLE_DEVICES=3 python3 -u run.py \
+            --run NB_Balsa_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_datashift \
+            --local \
+            $CONTINUE_ARGS \
+            2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_1_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
 
-    TRAIN_RESULT=$?
+        echo "Running Balsa training (iteration 2/2 - RL training)..."
+        CUDA_VISIBLE_DEVICES=3 python3 -u run.py \
+            --run NB_Balsa_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_datashift \
+            --local \
+            $CONTINUE_ARGS \
+            2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_2_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
+        TRAIN_RESULT=$?
+    fi
 
-    # Save training artifacts
+    # Save training artifacts with timestamp
     sleep 10
     TRAIN_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/${MODEL_PREFIX}"
     mkdir -p "$TRAIN_SAVE_DIR"
+    echo "Saving training artifacts to: $TRAIN_SAVE_DIR"
 
     [ -d tensorboard_logs ] && mv tensorboard_logs "$TRAIN_SAVE_DIR/" && echo "Saved tensorboard_logs"
     [ -d data ] && mv data "$TRAIN_SAVE_DIR/" && echo "Saved data"
     [ -d runs ] && mv runs "$TRAIN_SAVE_DIR/" && echo "Saved runs"
     [ -d logs ] && mv logs "$TRAIN_SAVE_DIR/" && echo "Saved logs"
 
-    # Find and copy the checkpoint file
-    LATEST_CHECKPOINT=$(find "$TRAIN_SAVE_DIR" -name "*.pt" -type f 2>/dev/null | head -1)
+    # Find and copy the checkpoint file to the timestamped directory
+    LATEST_CHECKPOINT=$(find "$TRAIN_SAVE_DIR" -name "*.pt" -type f 2>/dev/null | head -1 || true)
     if [ -n "$LATEST_CHECKPOINT" ]; then
-        cp "$LATEST_CHECKPOINT" "${PROJECT_ROOT}/${CHECKPOINT_FILE}"
-        echo "Saved checkpoint to $CHECKPOINT_FILE"
+        cp "$LATEST_CHECKPOINT" "$TRAIN_SAVE_DIR/checkpoint.pt"
+        echo "Saved checkpoint to $TRAIN_SAVE_DIR/checkpoint.pt"
+        CHECKPOINT_FILE="$TRAIN_SAVE_DIR/checkpoint.pt"
     fi
 
     cd "$PROJECT_ROOT"
@@ -326,14 +465,15 @@ echo "----------------------------------------------------------------"
 TEST_BALSA_START=$(date +%s)
 SKIP_BALSA_TEST=false
 
-# Check if Balsa test results already exist
-TEST_RESULT_DIR="${LOG_DIR}/train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_test_${TEST_DATASET}_${TEST_QUERY_SET}"
+# Check if Balsa test results already exist (find latest)
+TEST_RESULT_DIR="${LOG_DIR}/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_test_${TEST_DATASET}_${TEST_QUERY_SET}"
+LATEST_TEST_DIR=$(ls -dt ${LOG_DIR}/*_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_test_${TEST_DATASET}_${TEST_QUERY_SET} 2>/dev/null | head -1 || true)
 EXISTING_BALSA_TEST=""
 
 if [ "$FORCE_RETEST" = true ]; then
     echo "--force-retest specified, will run Balsa test"
-elif [ -d "$TEST_RESULT_DIR" ] && [ "$(ls -A $TEST_RESULT_DIR 2>/dev/null)" ]; then
-    EXISTING_BALSA_TEST="$TEST_RESULT_DIR"
+elif [ -n "$LATEST_TEST_DIR" ] && [ -d "$LATEST_TEST_DIR" ] && [ "$(ls -A $LATEST_TEST_DIR 2>/dev/null)" ]; then
+    EXISTING_BALSA_TEST="$LATEST_TEST_DIR"
 fi
 
 if [ -n "$EXISTING_BALSA_TEST" ]; then
@@ -348,17 +488,22 @@ else
     # Change to Balsa directory
     cd "$BALSA_DIR"
 
-    # Clean up old logs
-    rm -rf logs
+    # Clean up old artifacts
+    rm -rf logs data tensorboard_logs runs
     mkdir -p logs
 
-    # Copy training artifacts back for testing
-    TRAIN_SAVE_DIR="${PROJECT_ROOT}/${LOG_DIR}/${MODEL_PREFIX}"
-    if [ -d "$TRAIN_SAVE_DIR" ]; then
-        echo "Restoring training artifacts from $TRAIN_SAVE_DIR..."
-        [ -d "$TRAIN_SAVE_DIR/tensorboard_logs" ] && cp -r "$TRAIN_SAVE_DIR/tensorboard_logs" ./
-        [ -d "$TRAIN_SAVE_DIR/data" ] && cp -r "$TRAIN_SAVE_DIR/data" ./
-        [ -d "$TRAIN_SAVE_DIR/runs" ] && cp -r "$TRAIN_SAVE_DIR/runs" ./
+    # Find the latest training directory (for testing, we need the most recent model, exclude test directories)
+    LATEST_TRAIN_DIR=$(ls -dt ${PROJECT_ROOT}/${LOG_DIR}/*_${TRAIN_DATASET}_${TRAIN_QUERY_SET} 2>/dev/null | grep -v "_train_" | head -1 || true)
+    if [ -z "$LATEST_TRAIN_DIR" ]; then
+        echo "ERROR: No training directory found for ${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
+        exit 1
+    fi
+    echo "Using training directory: $LATEST_TRAIN_DIR"
+
+    # Copy only data directory for testing (needed for workload info)
+    if [ -d "$LATEST_TRAIN_DIR/data" ]; then
+        echo "Copying data from $LATEST_TRAIN_DIR..."
+        cp -r "$LATEST_TRAIN_DIR/data" ./
     fi
 
     # Install packages
@@ -366,33 +511,44 @@ else
     pip install -e . > /dev/null 2>&1
     pip install -e pg_executor > /dev/null 2>&1
 
-    # Find checkpoint file
-    if [ ! -f "${PROJECT_ROOT}/${CHECKPOINT_FILE}" ]; then
-        echo "ERROR: No trained model found at ${PROJECT_ROOT}/${CHECKPOINT_FILE}"
+    # Find checkpoint file from the latest training directory
+    CHECKPOINT_FILE=$(find "$LATEST_TRAIN_DIR" -name "checkpoint.pt" -type f 2>/dev/null | head -1 || true)
+    if [ -z "$CHECKPOINT_FILE" ] || [ ! -f "$CHECKPOINT_FILE" ]; then
+        echo "ERROR: No trained model found in $LATEST_TRAIN_DIR"
         exit 1
     fi
+    echo "Using checkpoint: $CHECKPOINT_FILE"
 
-    echo "Using model: ${PROJECT_ROOT}/${CHECKPOINT_FILE}"
+    # Prewarm database once before testing
+    echo "Prewarming database before testing..."
+    python3 -c "
+import sys
+sys.path.insert(0, 'pg_executor')
+from pg_executor.pg_executor import prewarm_database
+prewarm_database()
+"
 
     # Run test
     echo "Running Balsa test..."
     export WANDB_MODE=disabled
     export PYTHONUNBUFFERED=1
+    export BALSA_EXECUTION_MODE=single  # Testing mode (1 run, prewarm already done)
+    export BALSA_SKIP_PREWARM=1  # Skip per-query prewarm since we did it once above
     CUDA_VISIBLE_DEVICES=3 python3 -u test_model.py \
         --run NB_Balsa_test_${TEST_DATASET}_${TEST_QUERY_SET}_datashift \
-        --model_checkpoint "${PROJECT_ROOT}/${CHECKPOINT_FILE}" \
-        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TODAY}_test_balsa_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+        --model_checkpoint "$CHECKPOINT_FILE" \
+        2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_test_balsa_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 
     TEST_RESULT=$?
 
-    # Save test artifacts
-    sleep 10
+    # Save test logs only (not training artifacts)
+    sleep 5
     mkdir -p "${PROJECT_ROOT}/${TEST_RESULT_DIR}"
 
-    [ -d tensorboard_logs ] && mv tensorboard_logs "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved tensorboard_logs"
-    [ -d data ] && mv data "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved data"
-    [ -d runs ] && mv runs "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved runs"
-    [ -d logs ] && mv logs "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved logs"
+    [ -d logs ] && mv logs "${PROJECT_ROOT}/${TEST_RESULT_DIR}/" && echo "Saved test logs"
+
+    # Clean up copied training data
+    rm -rf data tensorboard_logs runs
 
     cd "$PROJECT_ROOT"
 
@@ -411,7 +567,7 @@ END_TIME=$(date +%s)
 TOTAL_TIME=$((END_TIME - START_TIME))
 HOURS=$((TOTAL_TIME / 3600))
 MINUTES=$(((TOTAL_TIME % 3600) / 60))
-SECONDS=$((TOTAL_TIME % 60))
+SECS=$((TOTAL_TIME % 60))
 
 echo ""
 echo "================================================================"
@@ -438,14 +594,14 @@ echo "  Balsa Testing:      (cached)"
 else
 echo "  Balsa Testing:      ${TEST_BALSA_TIME}s ($(($TEST_BALSA_TIME / 60))m)"
 fi
-echo "  Total:              ${HOURS}h ${MINUTES}m ${SECONDS}s"
+echo "  Total:              ${HOURS}h ${MINUTES}m ${SECS}s"
 echo ""
 echo "Files in: $LOG_DIR/"
 echo "  Model:      ${CHECKPOINT_FILE}"
 if [ "$SKIP_BALSA_TEST" = true ]; then
 echo "  Balsa Test: $EXISTING_BALSA_TEST (cached)"
 else
-echo "  Balsa Test: ${TODAY}_test_balsa_${TEST_DATASET}_${TEST_QUERY_SET}.log"
+echo "  Balsa Test: ${TIMESTAMP}_test_balsa_${TEST_DATASET}_${TEST_QUERY_SET}.log"
 fi
 echo ""
 echo "End Time: $(date)"

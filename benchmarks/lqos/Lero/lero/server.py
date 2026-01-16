@@ -14,10 +14,15 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         str_buf = ""
+        recv_count = 0
         while True:
-            str_buf += self.request.recv(81960).decode("UTF-8")
+            chunk = self.request.recv(81960).decode("UTF-8")
+            recv_count += 1
+            str_buf += chunk
             if not str_buf:
                 # no more data, connection is finished.
+                print(f"[NO_RESPONSE] Empty buffer after {recv_count} recv calls - connection closed without data", flush=True)
+                print_log(f"[NO_RESPONSE] Empty buffer - connection closed without data", "./server.log", True)
                 return
 
             if (null_loc := str_buf.find("*LERO_END*")) != -1:
@@ -28,10 +33,21 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
                         self.handle_msg(json_msg)
                         break
                     except json.decoder.JSONDecodeError as e:
-                        print("handle error", str(e))
+                        print(f"[NO_RESPONSE] JSONDecodeError: {str(e)}", flush=True)
+                        print(f"[NO_RESPONSE] Received {len(json_msg)} bytes, first 500 chars: {json_msg[:500]}", flush=True)
                         print_log(
                             "Error decoding JSON:" + json_msg.replace("\"", "\'"), "./server.log", True)
+                        print_log(f"[NO_RESPONSE] JSONDecodeError - no response sent!", "./server.log", True)
                         break
+                else:
+                    print(f"[NO_RESPONSE] Empty json_msg after finding LERO_END marker", flush=True)
+                    print_log(f"[NO_RESPONSE] Empty json_msg after LERO_END", "./server.log", True)
+
+            # Check if we're stuck (received EOF but no LERO_END found)
+            if not chunk and str_buf:
+                print(f"[NO_RESPONSE] EOF received but no LERO_END found. Buffer size: {len(str_buf)}, first 500 chars: {str_buf[:500]}", flush=True)
+                print_log(f"[NO_RESPONSE] EOF without LERO_END marker", "./server.log", True)
+                return
 
     def handle_msg(self, json_msg):
         json_obj = json.loads(json_msg)
@@ -71,10 +87,9 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
         print("init query", qid)
         card_picker = CardPicker(json_obj['rows_array'], json_obj['table_array'],
                                 self.server.swing_factor_lower_bound, self.server.swing_factor_upper_bound, self.server.swing_factor_step)
-        print(json_obj['table_array'], json_obj['rows_array'])
         plan_card_replacer = PlanCardReplacer(json_obj['table_array'], json_obj['rows_array'])
         opt_state = OptState(card_picker, plan_card_replacer, self.server.dump_card)
-        
+
         self.server.opt_state_dict[qid] = opt_state
         reply_msg['msg_type'] = "succ"
 

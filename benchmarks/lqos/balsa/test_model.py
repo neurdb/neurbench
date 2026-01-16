@@ -22,6 +22,8 @@ def main(args, balsa_params):
     agent.overall_best_test_latency = np.inf
     agent.overall_best_test_swa_latency = np.inf
     agent.overall_best_test_ema_latency = np.inf
+    agent.test_no_improvement_count = 0
+    agent.prev_test_latency = np.inf
     agent.train_nodes = plans_lib.FilterScansOrJoins(agent.train_nodes)
     agent.test_nodes = plans_lib.FilterScansOrJoins(agent.test_nodes)
 

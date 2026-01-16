@@ -908,10 +908,11 @@ class Sim(object):
             early_stop_callback=pl.callbacks.EarlyStopping(patience=5,
                                                            mode='min',
                                                            verbose=True),
-            weights_summary='full',
+            weights_summary=None,  # Disable model summary
             logger=loggers,
             gradient_clip_val=p.gradient_clip_val,
             num_sanity_val_steps=2 if p.validate_fraction > 0 else 0,
+            progress_bar_refresh_rate=1000,  # Update ~once per epoch
         )
 
     def _GetPlanner(self):
