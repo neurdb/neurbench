@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Postgres connector: issues commands and parses results."""
+import os
 import pprint
 import re
 import subprocess
@@ -253,6 +254,10 @@ def _run_explain(explain_str,
 
 @lru_cache()
 def pg_executor_timestamp():
+    # Use timestamp from environment variable if provided (for consistency with shell script)
+    env_ts = os.environ.get('BALSA_TIMESTAMP')
+    if env_ts:
+        return env_ts
     return datetime.datetime.now().strftime('%Y_%m_%d__%H%M%S')
 
 

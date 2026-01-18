@@ -243,22 +243,28 @@ SKIP_TRAINING=false
 MODEL_PREFIX="${TIMESTAMP}_${TRAIN_DATASET}_${TRAIN_QUERY_SET}"
 
 # Find existing checkpoint - Balsa saves to: {LOG_DIR}/balsa_{dataset}_{query_set}_full_checkpoint.pt
-# Model prefix pattern: balsa_imdb_job_full
+# After training, it's moved to: {LOG_DIR}/{timestamp}_{dataset}_{query_set}/checkpoint.pt
 MODEL_PREFIX_PATTERN="balsa_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_full"
 DIRECT_CHECKPOINT="${LOG_DIR}/${MODEL_PREFIX_PATTERN}_checkpoint.pt"
 CHECKPOINT_DIR_PATTERN="${LOG_DIR}/${MODEL_PREFIX_PATTERN}_checkpoints"
 
-if [ -f "$DIRECT_CHECKPOINT" ]; then
-    CHECKPOINT_FILE="$DIRECT_CHECKPOINT"
-    echo "Found checkpoint: $CHECKPOINT_FILE"
-else
-    CHECKPOINT_FILE=""
-fi
-
-# Find the latest model directory for data/replay buffers (train_imdb_job or similar)
+# Find the latest model directory for data/replay buffers
 LATEST_MODEL_DIR=$(ls -dt ${LOG_DIR}/train_${TRAIN_DATASET}_${TRAIN_QUERY_SET} ${LOG_DIR}/*_${TRAIN_DATASET}_${TRAIN_QUERY_SET} 2>/dev/null | grep -v "_test_" | head -1 || true)
 if [ -n "$LATEST_MODEL_DIR" ]; then
     echo "Found model directory: $LATEST_MODEL_DIR"
+fi
+
+# Find checkpoint: first check direct location, then search in timestamped directory
+if [ -f "$DIRECT_CHECKPOINT" ]; then
+    CHECKPOINT_FILE="$DIRECT_CHECKPOINT"
+    echo "Found checkpoint: $CHECKPOINT_FILE"
+elif [ -n "$LATEST_MODEL_DIR" ]; then
+    CHECKPOINT_FILE=$(find "$LATEST_MODEL_DIR" -name "checkpoint.pt" -type f 2>/dev/null | head -1 || true)
+    if [ -n "$CHECKPOINT_FILE" ]; then
+        echo "Found checkpoint: $CHECKPOINT_FILE"
+    fi
+else
+    CHECKPOINT_FILE=""
 fi
 
 if [ "$FORCE_RETRAIN" = true ]; then
@@ -394,6 +400,7 @@ prewarm_database()
     export PYTHONUNBUFFERED=1
     export BALSA_EXECUTION_MODE=single  # Training mode (1 run, prewarm already done)
     export BALSA_SKIP_PREWARM=1  # Skip per-query prewarm since we did it once above
+    export BALSA_TIMESTAMP=$TIMESTAMP  # Pass timestamp to Python for consistent directory naming
 
     if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
         # Continue training: only run once (baseline already collected, just continue RL training)
@@ -431,16 +438,30 @@ prewarm_database()
     echo "Saving training artifacts to: $TRAIN_SAVE_DIR"
 
     [ -d tensorboard_logs ] && mv tensorboard_logs "$TRAIN_SAVE_DIR/" && echo "Saved tensorboard_logs"
-    [ -d data ] && mv data "$TRAIN_SAVE_DIR/" && echo "Saved data"
     [ -d runs ] && mv runs "$TRAIN_SAVE_DIR/" && echo "Saved runs"
     [ -d logs ] && mv logs "$TRAIN_SAVE_DIR/" && echo "Saved logs"
 
-    # Find and copy the checkpoint file to the timestamped directory
-    LATEST_CHECKPOINT=$(find "$TRAIN_SAVE_DIR" -name "*.pt" -type f 2>/dev/null | head -1 || true)
-    if [ -n "$LATEST_CHECKPOINT" ]; then
-        cp "$LATEST_CHECKPOINT" "$TRAIN_SAVE_DIR/checkpoint.pt"
-        echo "Saved checkpoint to $TRAIN_SAVE_DIR/checkpoint.pt"
+    # Move data from balsa_logs_all/data/ to timestamped directory (real-time saved data)
+    # Python saves to both balsa_logs_all/data/ and local data/, we move one and clean the other
+    BALSA_DATA_DIR="${PROJECT_ROOT}/${LOG_DIR}/data"
+    if [ -d "$BALSA_DATA_DIR" ]; then
+        mv "$BALSA_DATA_DIR" "$TRAIN_SAVE_DIR/" && echo "Moved data from $BALSA_DATA_DIR"
+        # Clean up local backup
+        [ -d data ] && rm -rf data
+    elif [ -d data ]; then
+        # Fallback: use local data/ if balsa_logs_all/data/ doesn't exist
+        mv data "$TRAIN_SAVE_DIR/" && echo "Saved local data"
+    fi
+
+    # Move checkpoint to timestamped directory
+    # Balsa saves checkpoint to: balsa_logs_all/balsa_{dataset}_{query_set}_full_checkpoint.pt
+    BALSA_CHECKPOINT="${PROJECT_ROOT}/${LOG_DIR}/balsa_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_full_checkpoint.pt"
+    if [ -f "$BALSA_CHECKPOINT" ]; then
+        mv "$BALSA_CHECKPOINT" "$TRAIN_SAVE_DIR/checkpoint.pt"
+        echo "Moved checkpoint to $TRAIN_SAVE_DIR/checkpoint.pt"
         CHECKPOINT_FILE="$TRAIN_SAVE_DIR/checkpoint.pt"
+    else
+        echo "Warning: No checkpoint file found after training"
     fi
 
     cd "$PROJECT_ROOT"
@@ -500,7 +521,7 @@ else
     fi
     echo "Using training directory: $LATEST_TRAIN_DIR"
 
-    # Copy only data directory for testing (needed for workload info)
+    # Copy data directory for testing (needed for workload info)
     if [ -d "$LATEST_TRAIN_DIR/data" ]; then
         echo "Copying data from $LATEST_TRAIN_DIR..."
         cp -r "$LATEST_TRAIN_DIR/data" ./

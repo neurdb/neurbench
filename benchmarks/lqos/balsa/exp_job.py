@@ -55,6 +55,21 @@ class NB_Balsa_train_imdb_job_datashift(Balsa_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
+class NB_Balsa_train_imdb_4_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_4_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_train_job
+        p.validate_every_n_epochs = 200
+        p.val_iters = current_val_iters
+        p.test_every_n_iters = 50
+        p.test_early_stop_patience = 2
+        p.model_save_path = MODEL_SAVE_BASE
+        p.model_prefix = 'balsa_imdb_4_gen_job_full'
+        return p
+
+@balsa.params_registry.Register
 class NB_Balsa_train_imdb_01v2_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
@@ -202,6 +217,86 @@ class NB_Balsa_test_imdb_2017_job_datashift(Balsa_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
         p.db = 'imdb_2017'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_2015_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_2015'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_2015_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_2015_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_2017_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_2017_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_1_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_1_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_3_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_3_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_4_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_4_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_5_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_5_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_imdb_5_both_gen_job_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_5_both_gen'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
         return p

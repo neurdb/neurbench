@@ -731,7 +731,8 @@ class BalsaAgent(object):
         self.prev_optimizer_state_dict = None
         # Ray.
         if p.use_local_execution:
-            ray.init(resources={'pg': 1})
+            ray.init(resources={'pg': 1},
+                     _system_config={"local_fs_capacity_threshold": 0.99})
         else:
             # Cluster access: make sure the cluster has been launched.
             import uuid
@@ -1921,6 +1922,40 @@ class BalsaAgent(object):
             agent_plans_diffs.append((real_cost - to_execute[-2]) / 1e3)
             expert_plans_diffs.append(
                 (node.cost - node.info['curr_predicted_latency']) / 1e3)
+
+        # Save test results to CSV file
+        p = self.params
+        if hasattr(p, 'model_save_path') and p.model_save_path and tag == 'latency_test':
+            test_results_dir = os.path.join(p.model_save_path, f'{p.model_prefix}_test_results')
+            os.makedirs(test_results_dir, exist_ok=True)
+
+            # Save per-query results
+            csv_path = os.path.join(test_results_dir, f'test_iter_{self.curr_value_iter}.csv')
+            try:
+                with open(csv_path, 'w') as f:
+                    f.write("query,time_ms,time_s,iteration\n")
+                    for node, to_execute, result_tup in zip(self.test_nodes, to_execute_test, execution_results):
+                        _, real_cost, _ = result_tup
+                        query_name = node.info['query_name']
+                        f.write(f"{query_name},{real_cost:.3f},{real_cost/1000:.3f},{self.curr_value_iter}\n")
+                    f.write(f"\n# Total: {iter_total_latency:.3f}ms = {iter_total_latency/1000:.2f}s\n")
+                    f.write(f"# Timeouts: {has_timeouts}\n")
+                print(f"[Test] Results saved to {csv_path}")
+            except Exception as e:
+                print(f"[Test] Failed to save results: {e}")
+
+            # Append to summary file
+            summary_path = os.path.join(test_results_dir, 'test_summary.csv')
+            try:
+                write_header = not os.path.exists(summary_path)
+                with open(summary_path, 'a') as f:
+                    if write_header:
+                        f.write("iteration,total_time_ms,total_time_s,has_timeouts,best_time_s\n")
+                    best_so_far = min(self.overall_best_test_latency, iter_total_latency / 1e3)
+                    f.write(f"{self.curr_value_iter},{iter_total_latency:.3f},{iter_total_latency/1000:.2f},{has_timeouts},{best_so_far:.2f}\n")
+            except Exception as e:
+                print(f"[Test] Failed to update summary: {e}")
+
         if has_timeouts:
             # "Timeouts" for test set queries are rare events such as
             # out-of-disk errors due to a lot of intermediate results being

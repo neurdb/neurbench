@@ -53,6 +53,8 @@ BATCH_TEST_DATASETS=""
 TRAIN_DATASET=""
 MIN_QUERIES=""
 CONTINUE_TRAINING=""
+TEST_INTERVAL=""
+CHECKPOINT_INTERVAL=""
 
 # Parse arguments
 show_help() {
@@ -69,6 +71,8 @@ show_help() {
     echo "  --force-retrain        Force retraining even if model exists"
     echo "  --force-retest         Force retesting even if results exist"
     echo "  --min-queries N        Minimum training queries (sample with replacement)"
+    echo "  --test-interval N      Run test every N iterations (Bao: default 20, Lero: default 25)"
+    echo "  --checkpoint-interval N  Save checkpoint every N iterations (Bao only, default: 20)"
     echo "  --continue-training    Continue from existing model and data (Lero, Balsa)"
     echo "  --parallel             Run systems in parallel (experimental)"
     echo "  -h, --help             Show this help message"
@@ -126,6 +130,14 @@ while [[ $# -gt 0 ]]; do
         --continue-training)
             CONTINUE_TRAINING="--continue-training"
             shift
+            ;;
+        --test-interval)
+            TEST_INTERVAL="$2"
+            shift 2
+            ;;
+        --checkpoint-interval)
+            CHECKPOINT_INTERVAL="$2"
+            shift 2
             ;;
         -h|--help)
             show_help
@@ -217,8 +229,23 @@ run_system() {
         continue_training_arg="$CONTINUE_TRAINING"
     fi
 
+    # Build system-specific arguments
+    local system_args=""
+    if [[ "$system" == "bao" ]]; then
+        if [ -n "$TEST_INTERVAL" ]; then
+            system_args="$system_args --test-interval $TEST_INTERVAL"
+        fi
+        if [ -n "$CHECKPOINT_INTERVAL" ]; then
+            system_args="$system_args --checkpoint-interval $CHECKPOINT_INTERVAL"
+        fi
+    elif [[ "$system" == "lero" ]]; then
+        if [ -n "$TEST_INTERVAL" ]; then
+            system_args="$system_args --test-interval $TEST_INTERVAL"
+        fi
+    fi
+
     # Note: BAO/Balsa/Lero scripts auto-skip training if model exists
-    local cmd="./$script --train-dataset $train_ds --train-query-set $QUERY_SET --test-dataset $test_ds --test-query-set $QUERY_SET $FORCE_RETRAIN $FORCE_RETEST $min_queries_arg $continue_training_arg"
+    local cmd="./$script --train-dataset $train_ds --train-query-set $QUERY_SET --test-dataset $test_ds --test-query-set $QUERY_SET $FORCE_RETRAIN $FORCE_RETEST $min_queries_arg $continue_training_arg $system_args"
 
     echo "Command: $cmd"
     echo ""

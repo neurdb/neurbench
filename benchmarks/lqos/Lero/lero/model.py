@@ -14,10 +14,13 @@ from TreeConvolution.tcnn import (BinaryTreeConv, DynamicPooling,
 from TreeConvolution.util import prepare_trees
 
 CUDA = torch.cuda.is_available()
-GPU_LIST = [4, 5]
+# GPU_LIST should be [0, 1, ...] based on visible GPUs (set by CUDA_VISIBLE_DEVICES)
+GPU_LIST = list(range(torch.cuda.device_count())) if CUDA else []
+# Only use DataParallel when multiple GPUs are available
+USE_DATA_PARALLEL = CUDA and len(GPU_LIST) > 1
 
-torch.set_default_tensor_type(torch.DoubleTensor)
-device = torch.device("cuda:4" if CUDA else "cpu")
+# Use default float32 for compatibility (removed DoubleTensor to avoid dtype mismatch)
+device = torch.device("cuda:0" if CUDA else "cpu")
 
 
 def _nn_path(base):
@@ -37,7 +40,7 @@ def collate_fn(x):
         trees.append(tree)
         targets.append(target)
 
-    targets = torch.tensor(targets)
+    targets = torch.tensor(targets, dtype=torch.float32)
     return trees, targets
 
 def collate_pairwise_fn(x):
@@ -90,10 +93,10 @@ class LeroNet(nn.Module):
     def build_trees(self, feature):
         return prepare_trees(feature, transformer, left_child, right_child, cuda=self._cuda, device=self.device)
 
-    def cuda(self, device):
+    def cuda(self, device=None):
         self._cuda = True
         self.device = device
-        return super().cuda()
+        return super().cuda(device)
 
 
 class LeroModel():
@@ -108,11 +111,9 @@ class LeroModel():
             self._input_feature_dim = joblib.load(f)
 
         self._net = LeroNet(self._input_feature_dim)
-        if CUDA:
-            self._net.load_state_dict(torch.load(_nn_path(path)))
-        else:
-            self._net.load_state_dict(torch.load(
-                _nn_path(path), map_location=torch.device('cpu')))
+        # Always load to CPU first, then move to GPU if needed (avoids device mismatch)
+        self._net.load_state_dict(torch.load(
+            _nn_path(path), map_location=torch.device('cpu')))
         self._net.eval()
 
         with open(_feature_generator_path(path), "rb") as f:
@@ -121,7 +122,7 @@ class LeroModel():
     def save(self, path):
         os.makedirs(path, exist_ok=True)
 
-        if CUDA:
+        if USE_DATA_PARALLEL:
             torch.save(self._net.module.state_dict(), _nn_path(path))
         else:
             torch.save(self._net.state_dict(), _nn_path(path))
@@ -156,23 +157,24 @@ class LeroModel():
             self._net = LeroNet(input_feature_dim)
             self._input_feature_dim = input_feature_dim
             if CUDA:
-                self._net = self._net.cuda(device)
-                self._net = torch.nn.DataParallel(
-                    self._net, device_ids=GPU_LIST)
-                self._net.cuda(device)
+                self._net = self._net.to(device)
+                self._net._cuda = True
+                self._net.device = device
+                if USE_DATA_PARALLEL:
+                    self._net = torch.nn.DataParallel(self._net, device_ids=GPU_LIST)
         else:
             # Move pretrained model to GPU if needed
             if CUDA:
                 print("Moving pretrained model to GPU...")
-                self._net = self._net.cuda(device)
-                self._net = torch.nn.DataParallel(
-                    self._net, device_ids=GPU_LIST)
-                self._net.cuda(device)
+                self._net = self._net.to(device)
+                self._net._cuda = True
+                self._net.device = device
+                if USE_DATA_PARALLEL:
+                    self._net = torch.nn.DataParallel(self._net, device_ids=GPU_LIST)
 
-        optimizer = None
-        if CUDA:
+        # Create optimizer (access .module if using DataParallel)
+        if USE_DATA_PARALLEL:
             optimizer = torch.optim.Adam(self._net.module.parameters())
-            optimizer = nn.DataParallel(optimizer, device_ids=GPU_LIST)
         else:
             optimizer = torch.optim.Adam(self._net.parameters())
 
@@ -183,10 +185,10 @@ class LeroModel():
             loss_accum = 0
             for x, y in dataset:
                 if CUDA:
-                    y = y.cuda(device)
+                    y = y.to(device)
 
                 tree = None
-                if CUDA:
+                if USE_DATA_PARALLEL:
                     tree = self._net.module.build_trees(x)
                 else:
                     tree = self._net.build_trees(x)
@@ -195,14 +197,9 @@ class LeroModel():
                 loss = loss_fn(y_pred, y)
                 loss_accum += loss.item()
 
-                if CUDA:
-                    optimizer.module.zero_grad()
-                    loss.backward()
-                    optimizer.module.step()
-                else:
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
             loss_accum /= len(dataset)
             losses.append(loss_accum)
@@ -211,14 +208,16 @@ class LeroModel():
         print("training time:", time() - start_time, "batch size:", batch_size)
 
     def predict(self, x):
-        if CUDA:
-            self._net = self._net.cuda(device)
+        if CUDA and not self._net._cuda:
+            self._net = self._net.to(device)
+            self._net._cuda = True
+            self._net.device = device
 
         if not isinstance(x, list):
             x = [x]
 
         tree = None
-        if CUDA:
+        if USE_DATA_PARALLEL:
             tree = self._net.module.build_trees(x)
         else:
             tree = self._net.build_trees(x)
@@ -248,25 +247,27 @@ class LeroModelPairWise(LeroModel):
             self._net = LeroNet(input_feature_dim)
             self._input_feature_dim = input_feature_dim
             if CUDA:
-                self._net = self._net.cuda(device)
-                self._net = torch.nn.DataParallel(
-                    self._net, device_ids=GPU_LIST)
-                self._net.cuda(device)
+                self._net = self._net.to(device)
+                self._net._cuda = True
+                self._net.device = device
+                if USE_DATA_PARALLEL:
+                    self._net = torch.nn.DataParallel(self._net, device_ids=GPU_LIST)
         else:
             # Move pretrained model to GPU if needed
             if CUDA:
                 print("Moving pretrained model to GPU...")
-                self._net = self._net.cuda(device)
-                self._net = torch.nn.DataParallel(
-                    self._net, device_ids=GPU_LIST)
-                self._net.cuda(device)
+                self._net = self._net.to(device)
+                self._net._cuda = True
+                self._net.device = device
+                if USE_DATA_PARALLEL:
+                    self._net = torch.nn.DataParallel(self._net, device_ids=GPU_LIST)
 
         pairs = []
         for i in range(len(X1)):
             pairs.append((X1[i], X2[i], 1.0 if Y1[i] >= Y2[i] else 0.0))
 
         batch_size = 64
-        if CUDA:
+        if USE_DATA_PARALLEL:
             batch_size = batch_size * len(GPU_LIST)
 
         dataset = DataLoader(pairs,
@@ -274,10 +275,9 @@ class LeroModelPairWise(LeroModel):
                              shuffle=True,
                              collate_fn=collate_pairwise_fn)
 
-        optimizer = None
-        if CUDA:
+        # Create optimizer (access .module if using DataParallel)
+        if USE_DATA_PARALLEL:
             optimizer = torch.optim.Adam(self._net.module.parameters())
-            optimizer = nn.DataParallel(optimizer, device_ids=GPU_LIST)
         else:
             optimizer = torch.optim.Adam(self._net.parameters())
 
@@ -295,7 +295,7 @@ class LeroModelPairWise(LeroModel):
             
             for batch_idx, (x1, x2, label) in enumerate(dataset):
                 tree_x1, tree_x2 = None, None
-                if CUDA:
+                if USE_DATA_PARALLEL:
                     tree_x1 = self._net.module.build_trees(x1)
                     tree_x2 = self._net.module.build_trees(x2)
                 else:
@@ -308,9 +308,9 @@ class LeroModelPairWise(LeroModel):
                 diff = y_pred_1 - y_pred_2
                 prob_y = sigmoid(diff)
 
-                label_y = torch.tensor(np.array(label).reshape(-1, 1))
+                label_y = torch.tensor(np.array(label).reshape(-1, 1), dtype=torch.float32)
                 if CUDA:
-                    label_y = label_y.cuda(device)
+                    label_y = label_y.to(device)
 
                 # Calculate loss
                 loss = bce_loss_fn(prob_y, label_y)
@@ -333,14 +333,9 @@ class LeroModelPairWise(LeroModel):
                     'accuracy': batch_correct / batch_total if batch_total > 0 else 0
                 })
 
-                if CUDA:
-                    optimizer.module.zero_grad()
-                    loss.backward()
-                    optimizer.module.step()
-                else:
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
                 
                 total_iteration += 1
 
@@ -355,14 +350,16 @@ class LeroModelPairWise(LeroModel):
         return history
 
     def predict(self, x):
-        if CUDA:
-            self._net = self._net.cuda(device)
+        if CUDA and not self._net._cuda:
+            self._net = self._net.to(device)
+            self._net._cuda = True
+            self._net.device = device
 
         if not isinstance(x, list):
             x = [x]
 
         tree = None
-        if CUDA:
+        if USE_DATA_PARALLEL:
             tree = self._net.module.build_trees(x)
         else:
             tree = self._net.build_trees(x)

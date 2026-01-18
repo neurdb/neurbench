@@ -63,7 +63,7 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
             elif msg_type == "join_card":
                 reply_msg['msg_type'] = "succ"
                 new_card_list = self.server.opt_state_dict[json_obj['query_id']].card_picker.get_card_list()
-                reply_msg['join_card'] = new_card_list
+                reply_msg['join_card'] = [float(card) for card in new_card_list]
             elif msg_type == "load":
                 self._load(json_obj, reply_msg)
             elif msg_type == "reset":
@@ -124,7 +124,7 @@ class LeroJSONHandler(socketserver.BaseRequestHandler):
             y = 1
 
         reply_msg['msg_type'] = "succ"
-        reply_msg['latency'] = y
+        reply_msg['latency'] = float(y)
 
     def _load(self, json_obj, reply_msg):
         print("load new Lero model")

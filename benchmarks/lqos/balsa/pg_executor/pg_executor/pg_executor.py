@@ -34,7 +34,7 @@ import ray
 
 # STACK
 # everytime we execute, we need to change this
-LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:5433/imdb"
+LOCAL_DSN = "postgres://postgres:postgres@172.17.0.1:5433/imdb_4_gen"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_01v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_05v2"
 # LOCAL_DSN = "postgres://postgres:postgres@localhost:54333/imdb_07v2"
@@ -205,7 +205,7 @@ def ExecuteRemote(sql, verbose=False, geqo_off=False, timeout_ms=None, file_pref
     return _ExecuteRemoteImpl.remote(sql, verbose, geqo_off, timeout_ms, file_prefix=file_prefix)
 
 
-@ray.remote(resources={'pg': 1})
+@ray.remote(resources={'pg': 1}, num_cpus=8)
 def _ExecuteRemoteImpl(sql, verbose, geqo_off, timeout_ms, file_prefix=''):
     with Cursor(dsn=REMOTE_DSN) as cursor:
         return Execute(sql, verbose, geqo_off, timeout_ms, cursor, file_prefix=file_prefix)

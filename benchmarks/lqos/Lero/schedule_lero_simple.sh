@@ -113,6 +113,7 @@ FORCE_RETEST=false
 TRAINING_STYLE="lero"  # "lero" (cardinality-guided) or "bao" (hint-based)
 MIN_QUERIES=""  # Minimum training queries (will sample with replacement if needed)
 CONTINUE_TRAINING=false  # Continue training from existing model and data
+TEST_INTERVAL=""  # Run test every N iterations (default: 25)
 
 # Check if using advanced mode (any argument starts with --)
 if [[ "$1" == -* ]]; then
@@ -154,6 +155,10 @@ if [[ "$1" == -* ]]; then
             --continue-training)
                 CONTINUE_TRAINING=true
                 shift
+                ;;
+            --test-interval)
+                TEST_INTERVAL="$2"
+                shift 2
                 ;;
             *)
                 echo "Unknown option: $1"
@@ -339,9 +344,9 @@ Port = 14567
 ListenOn = 0.0.0.0
 ModelPath = ${CONTINUE_MODEL_BASENAME}
 EOF
-        nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py --config_name server_continue.conf >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
+        nohup env CUDA_VISIBLE_DEVICES="4" python3 -u server.py --config_name server_continue.conf >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
     else
-        nohup env CUDA_VISIBLE_DEVICES="" python3 -u server.py >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
+        nohup env CUDA_VISIBLE_DEVICES="4" python3 -u server.py >> "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_server_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log" 2>&1 &
     fi
     LERO_SERVER_PID=$!
     echo "Lero server started with PID: $LERO_SERVER_PID"
@@ -361,6 +366,13 @@ EOF
     if [ -n "$MIN_QUERIES" ]; then
         MIN_QUERIES_ARG="--min_queries $MIN_QUERIES"
         echo "Using min_queries: $MIN_QUERIES"
+    fi
+
+    # Build test_interval argument if specified
+    TEST_INTERVAL_ARG=""
+    if [ -n "$TEST_INTERVAL" ]; then
+        TEST_INTERVAL_ARG="--test_interval $TEST_INTERVAL"
+        echo "Using test_interval: $TEST_INTERVAL"
     fi
 
     # Build continue training arguments
@@ -383,7 +395,7 @@ EOF
         OUTPUT_LATENCY_FILE="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
     fi
 
-    CUDA_VISIBLE_DEVICES="" python3 train_model.py \
+    CUDA_VISIBLE_DEVICES="4" python3 train_model.py \
         --query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --test_query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --algo lero \
@@ -393,6 +405,7 @@ EOF
         --topK 3 \
         --training_style "${TRAINING_STYLE}" \
         $MIN_QUERIES_ARG \
+        $TEST_INTERVAL_ARG \
         $CONTINUE_ARGS \
         2>&1 | tee "${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_output_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
 
@@ -467,14 +480,36 @@ else
     # Kill any existing Lero server
     kill_lero_server
 
-    # Get the latest model directory (supports both old and new naming formats)
-    LATEST_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_* 2>/dev/null | head -1 || true)
-    if [ -z "$LATEST_MODEL" ]; then
-        echo "ERROR: No trained model found for pattern *train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_*"
-        exit 1
+    # Try to find best model from checkpoint directory first
+    # Look for best_model file in timestamped subdirectories matching the model prefix pattern
+    # Path: lero_checkpoints/{timestamp}_{model_prefix}/best_model_{model_prefix}.txt
+    BEST_MODEL_PATTERN="${PROJECT_ROOT}/${LOG_DIR}/lero_checkpoints/*_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model/best_model_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model.txt"
+    BEST_MODEL_FILE=$(ls -t $BEST_MODEL_PATTERN 2>/dev/null | head -1 || true)
+    BEST_MODEL=""
+    if [ -n "$BEST_MODEL_FILE" ] && [ -f "$BEST_MODEL_FILE" ]; then
+        BEST_MODEL=$(cat "$BEST_MODEL_FILE")
+        if [ -d "${LERO_CORE_DIR}/${BEST_MODEL}" ]; then
+            echo "Found best model from early stopping: $BEST_MODEL"
+            echo "  (from $BEST_MODEL_FILE)"
+            FULL_MODEL_PATH="$BEST_MODEL"
+        else
+            echo "Best model file exists but model directory not found: ${LERO_CORE_DIR}/${BEST_MODEL}"
+            BEST_MODEL=""
+        fi
     fi
-    FULL_MODEL_PATH=$(basename "$LATEST_MODEL")
-    echo "Using model: $FULL_MODEL_PATH"
+
+    # If no best model, get the latest model directory (supports both old and new naming formats)
+    if [ -z "$BEST_MODEL" ]; then
+        LATEST_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_* 2>/dev/null | head -1 || true)
+        if [ -z "$LATEST_MODEL" ]; then
+            echo "ERROR: No trained model found for pattern *train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model_*"
+            exit 1
+        fi
+        FULL_MODEL_PATH=$(basename "$LATEST_MODEL")
+        echo "Using latest model: $FULL_MODEL_PATH"
+    else
+        echo "Using best model: $FULL_MODEL_PATH"
+    fi
 
     # Update server_test.conf with model path (needs [lero] section header)
     echo "[lero]" > "${LERO_CORE_DIR}/server_test.conf"
