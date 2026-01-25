@@ -489,12 +489,10 @@ def main():
         print(f"Auto-detected columns: {columns}")
 
     # Calculate
-    calc_correlation(df1, df2)
+    corr_result = calc_correlation(df1, df2)
     mean_drift = calc_drift(df1, df2, columns)
-    print("\n" + "=" * 60)
-    print(f"TARGET DRIFT VALUE: {mean_drift:.6f}")
-    print(f"Use: gd {args.dataset_name or 'DATASET'} {args.table_name or 'TABLE'} {mean_drift:.2f} --auto")
-    print("=" * 60)
+
+    print(f"\nJS Divergence: {mean_drift:.4f}, Pearson Corr Loss: {corr_result['pearson']:.4f}")
 
 
 if __name__ == "__main__":
