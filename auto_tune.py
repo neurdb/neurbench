@@ -1044,6 +1044,33 @@ class AutoTuner:
         best_drift_weight = 1.0
         best_drift_error_in_focus = float('inf')
 
+        # Flag to force retrain on next iteration (set when search range resets)
+        force_retrain_next = False
+
+        # Counter to prevent infinite resets
+        reset_count = 0
+        max_resets = 3  # Maximum number of search range resets allowed
+
+        # Track retrain variants - try different hyperparams each time (one param at a time)
+        retrain_variant = 0
+        # Different training configurations to try when stuck
+        # Each variant changes ONE parameter from default to isolate the effect
+        # Default: diffuser_lr=0.0018, controller_lr=0.001, controller_steps=10000
+        RETRAIN_CONFIGS = [
+            # variant 0: default
+            {"diffuser_lr": 0.0018, "controller_lr": 0.001, "controller_steps": 10000, "desc": "default"},
+            # variant 1: higher diffuser_lr
+            {"diffuser_lr": 0.004, "controller_lr": 0.001, "controller_steps": 10000, "desc": "higher diffuser_lr"},
+            # variant 2: lower diffuser_lr
+            {"diffuser_lr": 0.0008, "controller_lr": 0.001, "controller_steps": 10000, "desc": "lower diffuser_lr"},
+            # variant 3: higher controller_lr
+            {"diffuser_lr": 0.0018, "controller_lr": 0.003, "controller_steps": 10000, "desc": "higher controller_lr"},
+            # variant 4: more controller_steps
+            {"diffuser_lr": 0.0018, "controller_lr": 0.001, "controller_steps": 20000, "desc": "more controller_steps"},
+            # variant 5: even more controller_steps
+            {"diffuser_lr": 0.0018, "controller_lr": 0.001, "controller_steps": 30000, "desc": "even more controller_steps"},
+        ]
+
         for i in range(max_iterations):
             # === DETERMINE PARAMS BASED ON MODE ===
             # Default values
@@ -1053,11 +1080,22 @@ class AutoTuner:
             has_reference = self.reference_dataset and self.reference_dataset != self.dataset_name
             ctrl_real_weight = 0.1 if has_reference else 0.0
 
+            # Get current training config based on retrain_variant
+            current_config = RETRAIN_CONFIGS[retrain_variant % len(RETRAIN_CONFIGS)]
+
             if mode == "normal":
                 retrain_controller_only = False
-                if i == 0:
-                    # First iteration: train with default params
+                if i == 0 or force_retrain_next:
+                    # First iteration or after reset: train with current variant's params
                     should_retrain = True
+                    if force_retrain_next:
+                        retrain_variant += 1
+                        current_config = RETRAIN_CONFIGS[retrain_variant % len(RETRAIN_CONFIGS)]
+                        print(f"*** Retrain variant {retrain_variant} ({current_config['desc']}): "
+                              f"diffuser_lr={current_config['diffuser_lr']}, "
+                              f"controller_lr={current_config['controller_lr']}, "
+                              f"controller_steps={current_config['controller_steps']} ***")
+                    force_retrain_next = False
                 else:
                     # Normal: just adjust scale_factor, no retrain
                     should_retrain = False
@@ -1093,12 +1131,21 @@ class AutoTuner:
                 loss_weight_drift=ctrl_drift_weight,
                 loss_weight_corr=ctrl_corr_weight,
                 loss_weight_real=ctrl_real_weight,
+                # Use variant-specific training params when retraining
+                diffuser_lr=current_config["diffuser_lr"],
+                controller_lr=current_config["controller_lr"],
+                controller_steps=current_config["controller_steps"],
             )
 
             print(f"\n[Iteration {i+1}/{max_iterations}] mode={mode}")
             train_mode = "controller_only" if retrain_controller_only else ("full" if should_retrain else "none")
             print(f"Params: sf={current_sf:.4f}, drift_w={ctrl_drift_weight:.2f}, "
                   f"corr_w={ctrl_corr_weight:.2f}, real_w={ctrl_real_weight:.2f}, train={train_mode}")
+            if should_retrain:
+                print(f"Training config ({current_config['desc']}): "
+                      f"diffuser_lr={current_config['diffuser_lr']}, "
+                      f"controller_lr={current_config['controller_lr']}, "
+                      f"controller_steps={current_config['controller_steps']}")
 
             result, _ = self._evaluate_params(params, target_drift, retrain=should_retrain, retrain_controller_only=retrain_controller_only)
 
@@ -1354,9 +1401,9 @@ class AutoTuner:
                             consecutive_small_gradient += 1
                             print(f"  ⚠️ Stuck at lower bound (sf={sf_low:.4f}), drift still too high")
                             if consecutive_small_gradient >= 3:
-                                print(f"  → Triggering retrain with different controller params")
-                                should_retrain = True
-                                retrain_controller_only = False  # Need full retrain
+                                print(f"  → Triggering full retrain in next iteration")
+                                force_retrain_next = True
+                                consecutive_small_gradient = 0  # Reset counter after triggering
                         else:
                             if drift_diff > 0:
                                 sf_high = current_sf
@@ -1403,8 +1450,11 @@ class AutoTuner:
                                 sf_low = current_sf
                                 current_sf = current_sf * 2.0
 
-                        # Note: if consecutive_small_gradient >= 3, next iteration will
-                        # transition to drift_focus mode (handled in mode transition section)
+                        # If gradient is small for too long, trigger retrain with different params
+                        if consecutive_small_gradient >= 5:
+                            print(f"  → Gradient stuck for {consecutive_small_gradient} iterations, triggering retrain")
+                            force_retrain_next = True
+                            consecutive_small_gradient = 0
                 else:
                     # sf didn't change much, use default adjustment
                     adjustment = min(0.5, abs(drift_diff) * 2)
@@ -1435,12 +1485,20 @@ class AutoTuner:
                     print("Stopping due to convergence (stop_only_on_tolerance=False)")
                     break
                 else:
+                    reset_count += 1
+                    if reset_count > max_resets:
+                        print(f"Max resets ({max_resets}) reached, stopping search")
+                        break
                     # Reset and try with different parameters
-                    print("Resetting search bounds and retraining with different settings...")
+                    # Use different multipliers for each reset to explore different regions
+                    reset_multipliers = [1.5, 0.5, 2.5, 0.25]
+                    multiplier = reset_multipliers[min(reset_count - 1, len(reset_multipliers) - 1)]
+                    print(f"Resetting search bounds (reset {reset_count}/{max_resets}) with multiplier {multiplier}...")
                     sf_low = 0.001
                     sf_high = 30.0
-                    current_sf = self._get_initial_scale_factor(target_drift) * 1.5  # Try different starting point
+                    current_sf = self._get_initial_scale_factor(target_drift) * multiplier
                     iterations_without_improvement = 0
+                    force_retrain_next = True  # Ensure next iteration does full retrain
 
         if best_result:
             print(f"\n{'='*60}")

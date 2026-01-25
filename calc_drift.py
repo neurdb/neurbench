@@ -265,11 +265,18 @@ def calc_drift(df1: pd.DataFrame, df2: pd.DataFrame, columns: list, verbose: boo
 
 
 def _generate_dataset_info(src_dir: str) -> dict:
-    """Auto-generate dataset_info.json by copying structure from imdb and updating n_samples."""
+    """Auto-generate dataset_info.json by copying structure from base dataset and updating n_samples."""
     import json
 
-    # Use imdb's dataset_info.json as template
-    template_path = "datasets/imdb/dataset_info.json"
+    # Detect dataset type from directory name
+    src_name = os.path.basename(src_dir.rstrip('/'))
+    if 'stack' in src_name.lower():
+        template_path = "datasets/stack/dataset_info.json"
+        template_name = "stack"
+    else:
+        template_path = "datasets/imdb/dataset_info.json"
+        template_name = "imdb"
+
     if not os.path.exists(template_path):
         print(f"Error: Template {template_path} not found")
         return {}
@@ -278,7 +285,7 @@ def _generate_dataset_info(src_dir: str) -> dict:
         template = json.load(f)
 
     dataset_info = {}
-    print(f"Auto-generating dataset_info.json using imdb as template...")
+    print(f"Auto-generating dataset_info.json using {template_name} as template...")
 
     for table_name, table_config in template.items():
         csv_path = f"{src_dir}/{table_name}.csv"
@@ -396,19 +403,24 @@ def calc_all_tables(src_dir: str, dst_dir: str, output: str):
     # Save to CSV (append if exists)
     df_new = pd.DataFrame(results)
 
-    if os.path.exists(output):
+    if os.path.exists(output) and os.path.getsize(output) > 0:
         # Load existing and append
-        df_existing = pd.read_csv(output)
+        try:
+            df_existing = pd.read_csv(output)
+        except pd.errors.EmptyDataError:
+            df_existing = pd.DataFrame()
         # Remove duplicates (same src_dataset, dst_dataset, table_name)
-        key_cols = ["src_dataset", "dst_dataset", "table_name"]
-        for _, row in df_new.iterrows():
-            mask = (
-                (df_existing["src_dataset"] == row["src_dataset"]) &
-                (df_existing["dst_dataset"] == row["dst_dataset"]) &
-                (df_existing["table_name"] == row["table_name"])
-            )
-            df_existing = df_existing[~mask]
-        df = pd.concat([df_existing, df_new], ignore_index=True)
+        if not df_existing.empty and "src_dataset" in df_existing.columns:
+            for _, row in df_new.iterrows():
+                mask = (
+                    (df_existing["src_dataset"] == row["src_dataset"]) &
+                    (df_existing["dst_dataset"] == row["dst_dataset"]) &
+                    (df_existing["table_name"] == row["table_name"])
+                )
+                df_existing = df_existing[~mask]
+            df = pd.concat([df_existing, df_new], ignore_index=True)
+        else:
+            df = df_new
         print(f"\nAppended to existing file: {output}")
     else:
         df = df_new

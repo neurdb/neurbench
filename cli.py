@@ -412,9 +412,13 @@ def _merge_npy_with_freq_preservation(
 
         # 3. Set up reference distributions for FK columns
         FK_TO_TABLE = {
+            # IMDB FK mappings
             'movie_id': 'title', 'person_id': 'name', 'company_id': 'company_name',
             'keyword_id': 'keyword', 'linked_movie_id': 'title', 'link_type_id': 'link_type',
             'info_type_id': 'info_type', 'kind_id': 'kind_type', 'role_id': 'role_type',
+            # STACK FK mappings
+            'site_id': 'site', 'user_id': 'so_user', 'owner_user_id': 'so_user',
+            'question_id': 'question', 'tag_id': 'tag',
         }
         has_real_ref = reference_dataset and reference_dataset != dataset_name
 

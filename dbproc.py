@@ -499,6 +499,7 @@ def main(args: argparse.Namespace):
 
     # Mapping from foreign key column to primary table
     FK_TO_TABLE = {
+        # IMDB FK mappings
         'movie_id': 'title',
         'person_id': 'name',
         'company_id': 'company_name',
@@ -508,6 +509,12 @@ def main(args: argparse.Namespace):
         'info_type_id': 'info_type',
         'kind_id': 'kind_type',
         'role_id': 'role_type',
+        # STACK FK mappings
+        'site_id': 'site',
+        'user_id': 'so_user',
+        'owner_user_id': 'so_user',
+        'question_id': 'question',
+        'tag_id': 'tag',
     }
 
     # Check if we have a real reference dataset (different from original)
