@@ -124,6 +124,54 @@ class NB_Balsa_train_imdb_2017_job_datashift(Balsa_JOB_EvaluationBase):
 
 
 @balsa.params_registry.Register
+class NB_Balsa_train_imdb_1_gen_imdb_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_1_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_train_job
+        p.validate_every_n_epochs = 200
+        p.val_iters = current_val_iters
+        p.test_every_n_iters = 50
+        p.test_early_stop_patience = 2
+        p.model_save_path = MODEL_SAVE_BASE
+        p.model_prefix = 'balsa_imdb_1_gen_imdb_full'
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_train_imdb_3_gen_imdb_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_3_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_train_job
+        p.validate_every_n_epochs = 200
+        p.val_iters = current_val_iters
+        p.test_every_n_iters = 50
+        p.test_early_stop_patience = 2
+        p.model_save_path = MODEL_SAVE_BASE
+        p.model_prefix = 'balsa_imdb_3_gen_imdb_full'
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_train_imdb_5_gen_imdb_datashift(Balsa_JOB_EvaluationBase):
+    def Params(self):
+        p = super().Params()
+        p.db = 'imdb_5_gen'
+        p.query_dir = current_used_query_dir_job
+        p.test_query_glob = current_used_test_query_glob_in_train_job
+        p.validate_every_n_epochs = 200
+        p.val_iters = current_val_iters
+        p.test_every_n_iters = 50
+        p.test_early_stop_patience = 2
+        p.model_save_path = MODEL_SAVE_BASE
+        p.model_prefix = 'balsa_imdb_5_gen_imdb_full'
+        return p
+
+
+@balsa.params_registry.Register
 class NB_Neo_train_imdb_job_datashift(Neo_JOB_EvaluationBase):
     def Params(self):
         p = super().Params()
@@ -356,4 +404,42 @@ class NB_Neo_test_imdb_2017_job_datashift(Neo_JOB_EvaluationBase):
         p.db = 'imdb_2017'
         p.query_dir = current_used_query_dir_job
         p.test_query_glob = current_used_test_query_glob_in_test_job
+        return p
+
+
+######################### 2. STACK query on multiple datasets #########################
+
+# Query directory for stack
+full_query_query_dir_stack = '/app/AI4QueryOptimizer/neurbench/queries/stack'
+
+# Test queries - use all stack queries
+full_query_test_query_glob_stack = ['*.sql']
+
+# Val iters for stack (originally 50 for stack datasets)
+current_val_iters_stack = 500
+
+
+@balsa.params_registry.Register
+class NB_Balsa_train_stack_2013_stack_datashift(Balsa_STACK_EvaluationBase):
+    """Train Balsa on stack_2013 database with stack queries."""
+    def Params(self):
+        p = super().Params()
+        p.db = 'stack_2013'
+        p.query_dir = full_query_query_dir_stack
+        p.test_query_glob = full_query_test_query_glob_stack
+        p.validate_every_n_epochs = 200
+        p.val_iters = current_val_iters_stack
+        p.test_every_n_iters = 50  # Run test every 50 iterations
+        p.test_after_n_iters = 0
+        return p
+
+
+@balsa.params_registry.Register
+class NB_Balsa_test_stack_2013_stack_datashift(Balsa_STACK_EvaluationBase):
+    """Test Balsa on stack_2013 database with stack queries."""
+    def Params(self):
+        p = super().Params()
+        p.db = 'stack_2013'
+        p.query_dir = full_query_query_dir_stack
+        p.test_query_glob = full_query_test_query_glob_stack
         return p

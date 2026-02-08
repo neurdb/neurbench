@@ -22,10 +22,10 @@ class BaoTester:
         if not query_dir:
             raise ValueError("query_dir is required for testing")
 
-        self.query_dir = query_dir
+        self.query_dir = Path(query_dir).resolve()  # Convert to absolute path
         self.database_name = database_name
         self.db_port = db_port
-        self.output_file = output_file
+        self.output_file = Path(output_file).resolve()  # Convert to absolute path
 
         # Test mode configuration
         self.use_bao = use_bao and (not use_postgres)
@@ -129,8 +129,8 @@ class BaoTester:
             print("No query directory specified")
             return False
 
-        # Prepare output file path
-        output_path = self.bao_dir / self.output_file
+        # Prepare output file path (already absolute)
+        output_path = self.output_file
         if output_path.exists():
             print(f"Removing existing output file: {output_path}")
             output_path.unlink()

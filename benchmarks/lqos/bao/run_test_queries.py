@@ -6,6 +6,7 @@ from time import time, sleep
 import datetime
 import argparse
 import glob
+import numpy as np
 
 TIMEOUT_LIMIT = 6 * 60 * 1000
 
@@ -83,26 +84,27 @@ def prewarm_database(db_name, port=5430):
         return False
 
 
-def extract_q_errors(plan):
-    est = plan.get('Plan Rows')
-    act = plan.get('Actual Rows')
-    if est is not None and act not in (None, 0):
-        return [max(est / act, act / est)]
-    else:
-        return []
-    # q_errors = []
+def extract_q_errors(plan, root_only=False):
+    """Extract Q-errors from plan nodes.
 
-    # def traverse(node):
-    #     est = node.get('Plan Rows')
-    #     act = node.get('Actual Rows')
-    #     if est is not None and act not in (None, 0):
-    #         q_error = max(est / act, act / est)
-    #         q_errors.append(q_error)
-    #     for subplan in node.get('Plans', []):
-    #         traverse(subplan)
+    Args:
+        plan: The plan JSON
+        root_only: If True, only return root node Q-error. If False, traverse all nodes.
+    """
+    q_errors = []
 
-    # traverse(plan)
-    # return q_errors
+    def traverse(node):
+        est = node.get('Plan Rows')
+        act = node.get('Actual Rows')
+        if est is not None and act not in (None, 0):
+            q_error = max(est / act, act / est)
+            q_errors.append(q_error)
+        if not root_only:
+            for subplan in node.get('Plans', []):
+                traverse(subplan)
+
+    traverse(plan)
+    return q_errors
 
 def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_geqo=True, use_bao=True, port=5430, num_executions=1):
     """
@@ -139,8 +141,11 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
             result = cur.fetchall()[0][0]
 
             q_errors = []
+            q_error_root = None
             if not use_bao:
-                q_errors = extract_q_errors(result[0]['Plan'])
+                q_errors = extract_q_errors(result[0]['Plan'], root_only=False)
+                q_errors_root = extract_q_errors(result[0]['Plan'], root_only=True)
+                q_error_root = q_errors_root[0] if q_errors_root else None
 
             # Get actual execution time
             actual_time = result[-1]['Execution Time']
@@ -162,7 +167,8 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
                 'planning_time': result[-1]['Planning Time'],
                 'hint': bao_hint,
                 'predicted_time': predicted_time,
-                'q_errors': q_errors
+                'q_errors': q_errors,
+                'q_error_root': q_error_root
             })
 
             # print(
@@ -180,7 +186,8 @@ def run_query(sql, bao_select=False, bao_reward=False, db_name='imdbload', use_g
                 'planning_time': 2 * TIMEOUT_LIMIT,
                 'hint': None,
                 'predicted_time': None,
-                'q_errors': []
+                'q_errors': [],
+                'q_error_root': None
             })
         return tmp
 
@@ -237,8 +244,23 @@ def main(args):
         measurements = run_query(q, bao_select=use_bao, bao_reward=False, db_name=db_name, use_geqo=use_geqo, use_bao=use_bao, port=args.db_port, num_executions=num_executions)
 
         for i, measurement in enumerate(measurements):
-            avg_q_error = sum(measurement['q_errors']) / len(measurement['q_errors']) if measurement['q_errors'] else 'N/A'
-            output_string = f"{'x' if measurement['hint'] is None else measurement['hint']}, {i}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, {measurement['predicted_time'] if measurement['predicted_time'] is not None else 'N/A'}, {'Bao' if use_bao else 'PG'}, {avg_q_error}"
+            # Root node Q-error (comparable to Bao's prediction Q-error scale)
+            root_q = measurement.get('q_error_root')
+            root_q_str = f"{root_q:.2f}" if root_q is not None else "N/A"
+
+            # All nodes Q-error stats
+            if measurement['q_errors']:
+                q_arr = np.array(measurement['q_errors'])
+                avg_q_error = np.mean(q_arr)
+                median_q_error = np.median(q_arr)
+                p90_q_error = np.percentile(q_arr, 90)
+                max_q_error = np.max(q_arr)
+                num_nodes = len(q_arr)
+                q_error_str = f"{avg_q_error:.2f}, {median_q_error:.2f}, {p90_q_error:.2f}, {max_q_error:.2f}, {num_nodes}"
+            else:
+                q_error_str = "N/A, N/A, N/A, N/A, 0"
+            # Format: hint, iter, timestamp, query, planning_time, exec_time, pred_time, optimizer, root_q, avg_q, median_q, p90_q, max_q, num_nodes
+            output_string = f"{'x' if measurement['hint'] is None else measurement['hint']}, {i}, {current_timestamp_str()}, {fp}, {measurement['planning_time']}, {measurement['execution_time']}, {measurement['predicted_time'] if measurement['predicted_time'] is not None else 'N/A'}, {'Bao' if use_bao else 'PG'}, {root_q_str}, {q_error_str}"
             # print(output_string, flush=True)
             with open(args.output_file, 'a') as f:
                 f.write(output_string)

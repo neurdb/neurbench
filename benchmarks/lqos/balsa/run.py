@@ -368,6 +368,12 @@ def TrainSim(p, loggers=None):
 
     if 'stack' in p.query_dir:
         sim_p.workload = envs.STACK.Params()
+        # Override with actual parameters
+        sim_p.workload.query_dir = p.query_dir
+        sim_p.workload.query_glob = p.query_glob
+        sim_p.workload.test_query_glob = p.test_query_glob
+        sim_p.workload.search_space_join_ops = p.search_space_join_ops
+        sim_p.workload.search_space_scan_ops = p.search_space_scan_ops
     else:
         sim_p.workload.query_dir = p.query_dir
         sim_p.workload.query_glob = p.query_glob

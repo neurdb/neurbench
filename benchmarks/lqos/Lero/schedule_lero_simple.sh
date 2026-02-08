@@ -273,8 +273,6 @@ echo "----------------------------------------------------------------"
 TRAIN_TIME_START=$(date +%s)
 SKIP_TRAINING=false
 
-# Model pattern for Lero (with timestamp to avoid overwriting previous models)
-MODEL_PREFIX="${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model"
 # Search for any model matching dataset/query_set pattern (both old and new naming formats)
 # Old format: train_{dataset}_{queryset}_model_*
 # New format: {timestamp}_train_{dataset}_{queryset}_model_*
@@ -283,6 +281,19 @@ EXISTING_MODEL=$(ls -dt ${LERO_CORE_DIR}/*train_${TRAIN_DATASET}_${TRAIN_QUERY_S
 if [ "$FORCE_RETRAIN" = true ]; then
     echo "--force-retrain specified, will retrain model"
     EXISTING_MODEL=""
+fi
+
+# Model pattern for Lero
+# When continuing training, extract the prefix from existing model to match chunk numbering
+# Otherwise, use new timestamp to avoid overwriting previous models
+if [ "$CONTINUE_TRAINING" = true ] && [ -n "$EXISTING_MODEL" ]; then
+    # Extract prefix from existing model: e.g., "/path/to/20260118_051201_train_imdb_job_model_32" -> "20260118_051201_train_imdb_job_model"
+    EXISTING_MODEL_BASENAME=$(basename "$EXISTING_MODEL")
+    # Remove trailing _NUMBER (chunk number) from basename
+    MODEL_PREFIX=$(echo "$EXISTING_MODEL_BASENAME" | sed 's/_[0-9]*$//')
+    echo "Continue training mode: using existing model prefix: $MODEL_PREFIX"
+else
+    MODEL_PREFIX="${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}_model"
 fi
 
 if [ -n "$EXISTING_MODEL" ] && [ "$CONTINUE_TRAINING" = false ]; then
@@ -296,8 +307,9 @@ else
     CONTINUE_MODEL=""
     if [ "$CONTINUE_TRAINING" = true ]; then
         echo "Continue training mode enabled"
-        # Find existing training data file (without timestamp prefix, or most recent with timestamp)
-        EXISTING_DATA=$(ls -t ${LOG_DIR}/*_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log 2>/dev/null | head -1 || true)
+        # Find existing training data file (exclude server logs and output logs)
+        # Pattern: {timestamp}_train_{dataset}_{queryset}.log (NOT server_train or train_output)
+        EXISTING_DATA=$(ls -t ${LOG_DIR}/*_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log 2>/dev/null | grep -v '_server_train_' | grep -v '_train_output_' | head -1 || true)
         if [ -n "$EXISTING_DATA" ]; then
             CONTINUE_DATA_FILE="$EXISTING_DATA"
             echo "Found existing training data: $CONTINUE_DATA_FILE"
@@ -395,7 +407,7 @@ EOF
         OUTPUT_LATENCY_FILE="${PROJECT_ROOT}/${LOG_DIR}/${TIMESTAMP}_train_${TRAIN_DATASET}_${TRAIN_QUERY_SET}.log"
     fi
 
-    CUDA_VISIBLE_DEVICES="4" python3 train_model.py \
+    CUDA_VISIBLE_DEVICES="4,5,6" python3 train_model.py \
         --query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --test_query_path "${PROJECT_ROOT}/${TRAIN_QUERY_FILE}" \
         --algo lero \

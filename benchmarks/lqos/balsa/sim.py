@@ -733,7 +733,12 @@ class Sim(object):
                 self._MakeOnEnumeratedHook(accum, info_to_attach, num_rels))
 
             # Enumerate plans.
-            self.search.Run(query_node, query_node.info['sql_str'])
+            try:
+                self.search.Run(query_node, query_node.info['sql_str'])
+            except Exception as e:
+                logging.warning(f'Skipping query {query_node.info["query_name"]} due to error: {e}')
+                self.search.PopOnEnumeratedHook()
+                continue
 
             self.search.PopOnEnumeratedHook()
 

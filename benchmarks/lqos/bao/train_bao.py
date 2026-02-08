@@ -11,7 +11,7 @@ import psutil
 from pathlib import Path
 
 class BaoTrainer:
-    def __init__(self, bao_dir=".", query_dir=None, database_name='imdbload', output_file="bao_training_results.log", db_port=5432, min_queries=None):
+    def __init__(self, bao_dir=".", query_dir=None, database_name='imdbload', output_file="bao_training_results.log", db_port=5432, min_queries=None, test_interval=None, checkpoint_interval=None):
         self.bao_dir = Path(bao_dir).resolve()
         self.bao_server_dir = self.bao_dir / "bao_server"
         self.server_process = None
@@ -21,11 +21,13 @@ class BaoTrainer:
         if not query_dir:
             raise ValueError("query_dir is required for training")
 
-        self.query_dir = query_dir
+        self.query_dir = Path(query_dir).resolve()  # Convert to absolute path
         self.database_name = database_name
         self.db_port = db_port
-        self.output_file = output_file
+        self.output_file = Path(output_file).resolve()  # Convert to absolute path
         self.min_queries = min_queries
+        self.test_interval = test_interval
+        self.checkpoint_interval = checkpoint_interval
 
         # Configurable parameters
         self.training_timeout = 300
@@ -126,8 +128,8 @@ class BaoTrainer:
             print("No query directory specified")
             return False
 
-        # Prepare output file path
-        output_path = self.bao_dir / self.output_file
+        # Prepare output file path (already absolute)
+        output_path = self.output_file
         if output_path.exists():
             print(f"Removing existing output file: {output_path}")
             output_path.unlink()
@@ -149,6 +151,10 @@ class BaoTrainer:
         cmd = f"cd {self.bao_dir} && python3 run_queries.py --query_dir {self.query_dir} --database_name {self.database_name} --output_file {output_path} --db-port {self.db_port}"
         if self.min_queries is not None:
             cmd += f" --min-queries {self.min_queries}"
+        if self.test_interval is not None:
+            cmd += f" --test-interval {self.test_interval}"
+        if self.checkpoint_interval is not None:
+            cmd += f" --checkpoint-interval {self.checkpoint_interval}"
         result = os.system(cmd)
 
         if result == 0:
@@ -301,6 +307,20 @@ How it works:
         help="Minimum number of training queries (sample with replacement if needed)"
     )
 
+    parser.add_argument(
+        "--test-interval",
+        type=int,
+        default=None,
+        help="Run test every N iterations (default: 20)"
+    )
+
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=None,
+        help="Save checkpoint every N iterations (default: 20)"
+    )
+
     args = parser.parse_args()
 
     # Create trainer with custom settings
@@ -310,7 +330,9 @@ How it works:
         database_name=args.database_name,
         output_file=args.output_file,
         db_port=args.db_port,
-        min_queries=args.min_queries
+        min_queries=args.min_queries,
+        test_interval=args.test_interval,
+        checkpoint_interval=args.checkpoint_interval
     )
 
     # Update trainer settings
