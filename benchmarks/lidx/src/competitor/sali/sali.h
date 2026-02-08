@@ -31,6 +31,18 @@ public:
       return sali.depth();
     }
 
+    PredictionStats get_prediction_stats() override {
+        PredictionStats stats;
+        stats.supported = true;
+        auto [max_depth, avg_depth, num_nodes] = sali.depth();
+        // Tree depth correlates with prediction error
+        // For a learned index, deeper traversal means worse prediction
+        stats.max_error = max_depth;
+        stats.avg_error = avg_depth;
+        stats.total_lookups = num_nodes;
+        return stats;
+    }
+
 private:
     sali::SALI<KEY_TYPE, PAYLOAD_TYPE> sali;
 };

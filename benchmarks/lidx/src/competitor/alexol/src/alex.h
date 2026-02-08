@@ -2772,6 +2772,30 @@ public:
   // Return a const reference to the current statistics
   const struct Stats &get_stats() const { return stats_; }
 
+  // Get prediction error statistics from all data nodes
+  // Returns: (total_exp_search_iterations, total_lookups, max_iterations_per_lookup)
+  std::tuple<long long, long long, double> get_prediction_error_stats() const {
+    long long total_exp_search = 0;
+    long long total_lookups = 0;
+    double max_avg_iterations = 0;
+
+    for (NodeIterator node_it = NodeIterator(this); !node_it.is_end(); node_it.next()) {
+      AlexNode<T, P> *cur = node_it.current();
+      if (cur->is_leaf_) {
+        auto data_node = static_cast<data_node_type *>(cur);
+        total_exp_search += data_node->num_exp_search_iterations_;
+        total_lookups += data_node->num_lookups_;
+        if (data_node->num_lookups_ > 0) {
+          double avg = (double)data_node->num_exp_search_iterations_ / data_node->num_lookups_;
+          if (avg > max_avg_iterations) {
+            max_avg_iterations = avg;
+          }
+        }
+      }
+    }
+    return {total_exp_search, total_lookups, max_avg_iterations};
+  }
+
   /*** Debugging ***/
 
 public:

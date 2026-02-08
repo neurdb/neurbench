@@ -1,4 +1,7 @@
 #include <iomanip>
+#include <cmath>
+#include <algorithm>
+#include <atomic>
 
 #pragma once
 
@@ -7,6 +10,22 @@ struct Param { // for xindex
   uint32_t thread_id;
 
   Param(size_t worker_num, uint32_t thread_id) : worker_num(worker_num), thread_id(thread_id) {}
+};
+
+// Prediction error statistics
+struct PredictionStats {
+  bool supported = false;        // whether this index supports prediction error tracking
+  double avg_error = 0.0;        // average |predicted_pos - actual_pos|
+  double max_error = 0.0;        // maximum prediction error
+  double p50_error = 0.0;        // 50th percentile error
+  double p99_error = 0.0;        // 99th percentile error
+  long long total_lookups = 0;   // number of lookups tracked
+  long long total_error = 0;     // sum of all errors
+
+  void reset() {
+    avg_error = max_error = p50_error = p99_error = 0.0;
+    total_lookups = total_error = 0;
+  }
 };
 
 struct BaseCompare {
@@ -38,4 +57,14 @@ public:
   virtual void init(Param *param = nullptr) = 0;
 
   virtual long long memory_consumption() = 0; // bytes
+
+  // Get prediction error statistics (for learned indexes)
+  virtual PredictionStats get_prediction_stats() {
+    PredictionStats stats;
+    stats.supported = false;
+    return stats;
+  }
+
+  // Reset prediction error tracking
+  virtual void reset_prediction_stats() {}
 };

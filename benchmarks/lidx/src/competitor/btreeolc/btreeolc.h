@@ -23,6 +23,20 @@ public:
 
   long long memory_consumption() { return 0; }
 
+  PredictionStats get_prediction_stats() override {
+      PredictionStats stats;
+      stats.supported = true;
+      auto [avg_cmp, max_cmp, total] = idx.get_search_stats();
+      stats.avg_error = avg_cmp;       // Average leaf binary search comparisons
+      stats.max_error = max_cmp;       // Max leaf binary search comparisons
+      stats.total_lookups = total;
+      return stats;
+  }
+
+  void reset_prediction_stats() override {
+      idx.reset_search_stats();
+  }
+
 private:
   btreeolc::BTree<KEY_TYPE, PAYLOAD_TYPE> idx;
 };

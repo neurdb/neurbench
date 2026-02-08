@@ -23,6 +23,21 @@ public:
 
     long long memory_consumption() { return index.model_size() + index.data_size(); }
 
+    PredictionStats get_prediction_stats() override {
+        PredictionStats stats;
+        stats.supported = true;
+        // Get actual prediction error from data nodes
+        auto [total_exp_search, total_lookups, max_avg_iter] = index.get_prediction_error_stats();
+        stats.total_lookups = total_lookups;
+        if (total_lookups > 0) {
+            // avg_error = average exponential search iterations per lookup
+            // When prediction is perfect, iterations = 0
+            stats.avg_error = (double)total_exp_search / total_lookups;
+        }
+        stats.max_error = max_avg_iter;  // max avg iterations among all data nodes
+        return stats;
+    }
+
 private:
     alexol::Alex <KEY_TYPE, PAYLOAD_TYPE, alexol::AlexCompare, std::allocator<
             std::pair < KEY_TYPE, PAYLOAD_TYPE>>, false>

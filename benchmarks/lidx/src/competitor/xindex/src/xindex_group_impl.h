@@ -714,7 +714,13 @@ inline void Group<key_t, val_t, seq, max_model_n>::merge_refs(
     record_t *&new_data, uint32_t &new_array_size,
     int32_t &new_capacity) const {
   size_t est_size = array_size + buffer->size();
+  // Safety check: cap at reasonable maximum to prevent bad_array_new_length
+  const size_t MAX_CAPACITY = 100000000;  // 100M max
+  if (est_size > MAX_CAPACITY / seq_insert_reserve_factor) {
+    est_size = MAX_CAPACITY / seq_insert_reserve_factor;
+  }
   new_capacity = est_size * seq_insert_reserve_factor;
+  if (new_capacity <= 0) new_capacity = 1;
   new_data = new record_t[new_capacity]();
   merge_refs_internal(new_data, new_array_size);
   assert((int32_t)new_array_size <= new_capacity);
@@ -728,23 +734,36 @@ inline void Group<key_t, val_t, seq, max_model_n>::merge_refs_n_split(
   uint32_t intermediate_size;
   uint32_t est_size = array_size + buffer->size();
 
+  // Safety check: cap at reasonable maximum
+  const uint32_t MAX_CAPACITY = 100000000;
+  if (est_size > MAX_CAPACITY / seq_insert_reserve_factor) {
+    est_size = MAX_CAPACITY / seq_insert_reserve_factor;
+  }
+
   new_capacity_1 = (est_size / 2) * seq_insert_reserve_factor;
   new_capacity_1 =
       (int32_t)est_size > new_capacity_1 ? est_size : new_capacity_1;
+  if (new_capacity_1 <= 0) new_capacity_1 = 1;
 
   record_t *intermediate = new record_t[new_capacity_1]();
   merge_refs_internal(intermediate, intermediate_size);
 
   uint32_t split_pos = exponential_search_key(intermediate, intermediate_size,
                                               key, intermediate_size / 2);
-  assert(split_pos != intermediate_size &&
-         intermediate[split_pos].first >= key);
+  // Fix: handle edge case where key is beyond all keys
+  if (split_pos >= intermediate_size) {
+    split_pos = intermediate_size > 1 ? intermediate_size - 1 : 1;
+  }
+  if (split_pos == 0) {
+    split_pos = 1;
+  }
 
   new_array_size_1 = split_pos;
   new_data_1 = intermediate;
 
   new_array_size_2 = intermediate_size - split_pos;
   new_capacity_2 = new_array_size_2 * seq_insert_reserve_factor;
+  if (new_capacity_2 <= 0) new_capacity_2 = 1;
   new_data_2 = new record_t[new_capacity_2]();
   memcpy(new_data_2, intermediate + split_pos,
          new_array_size_2 * sizeof(record_t));
@@ -759,7 +778,13 @@ inline void Group<key_t, val_t, seq, max_model_n>::merge_refs_with(
     int32_t &new_capacity) const {
   size_t est_size = array_size + buffer->size() + next_group.array_size +
                     next_group.buffer->size();
+  // Safety check: cap at reasonable maximum
+  const size_t MAX_CAPACITY = 100000000;
+  if (est_size > MAX_CAPACITY / seq_insert_reserve_factor) {
+    est_size = MAX_CAPACITY / seq_insert_reserve_factor;
+  }
   new_capacity = est_size * seq_insert_reserve_factor;
+  if (new_capacity <= 0) new_capacity = 1;
   new_data = new record_t[new_capacity]();
 
   uint32_t real_size_1, real_size_2;

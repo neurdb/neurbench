@@ -21,6 +21,17 @@ public:
 
     long long memory_consumption() { return lipp.total_size(); }
 
+    PredictionStats get_prediction_stats() override {
+        PredictionStats stats;
+        stats.supported = true;
+        // Get tree depth statistics - deeper tree means worse prediction
+        auto [max_depth, avg_depth, num_leaves] = lipp.get_depth_stats();
+        stats.avg_error = avg_depth;
+        stats.max_error = max_depth;
+        stats.total_lookups = num_leaves;
+        return stats;
+    }
+
 private:
     lippolc::LIPP<KEY_TYPE, PAYLOAD_TYPE> lipp;
 };
@@ -56,9 +67,5 @@ template<class KEY_TYPE, class PAYLOAD_TYPE>
 size_t LIPPOLInterface<KEY_TYPE, PAYLOAD_TYPE>::scan(KEY_TYPE key_low_bound, size_t key_num,
                                                    std::pair <KEY_TYPE, PAYLOAD_TYPE> *result,
                                                    Param *param) {
-    // if(!result) {
-    //     result = new std::pair <KEY_TYPE, PAYLOAD_TYPE>[key_num];
-    // }
-    // return lipp.range_query_len(result, key_low_bound, key_num);
-    return 0;
+    return lipp.range_query_len(result, key_low_bound, static_cast<int>(key_num));
 }

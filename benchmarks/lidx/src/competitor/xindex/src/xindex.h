@@ -52,6 +52,26 @@ class XIndex {
   size_t range_scan(const key_t &begin, const key_t &end,
                     std::vector<std::pair<key_t, val_t>> &result,
                     const uint32_t worker_id);
+
+  // Get prediction error stats: (avg_group_error, max_group_error, group_count)
+  // Use log2(error + 1) to match ALEX's exponential search iterations metric
+  std::tuple<double, double, size_t> get_prediction_stats() const {
+    root_t* r = root;  // snapshot the volatile pointer
+    if (!r || !r->groups) return {0, 0, 0};
+    size_t n = r->group_n;
+    if (n == 0) return {0, 0, 0};
+    double avg_error = 0, max_error = 0;
+    for (size_t i = 0; i < n; i++) {
+      if (!r->groups[i].second) continue;
+      double raw_err = r->groups[i].second->mean_error;
+      double err = std::log2(raw_err + 1);
+      avg_error += err;
+      if (err > max_error) max_error = err;
+    }
+    avg_error /= n;
+    return {avg_error, max_error, n};
+  }
+
  private:
   void start_bg();
   void terminate_bg();

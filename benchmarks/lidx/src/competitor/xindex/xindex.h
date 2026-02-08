@@ -79,6 +79,16 @@ public:
         return 0;
     }
 
+    PredictionStats get_prediction_stats() override {
+        PredictionStats stats;
+        stats.supported = true;
+        auto [avg_err, max_err, group_n] = index->get_prediction_stats();
+        stats.avg_error = avg_err;
+        stats.max_error = max_err;
+        stats.total_lookups = group_n;
+        return stats;
+    }
+
     ~xindexInterface() {
         delete this->index;
     }
