@@ -1,0 +1,113 @@
+(no hint), 0, 2026-01-13 17:47:49.998510, ../../../queries/job/10a.sql, 347.245, 355.844, 267.029, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:47:51.135524, ../../../queries/job/10b.sql, 372.371,193.694276, 198.627, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:47:54.022655, ../../../queries/job/10c.sql, 315.754,2022.469769, 1647.525, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:47:55.207656, ../../../queries/job/11a.sql, 393.346,105.385693, 59.213, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:47:56.383174, ../../../queries/job/11b.sql, 397.879,68.790034, 59.213, Bao, N/A
+(no hint), 0, 2026-01-13 17:47:57.597453, ../../../queries/job/11c.sql, 397.88,198.206780, 150.522, Bao, N/A
+(no hint), 0, 2026-01-13 17:47:58.782648, ../../../queries/job/11d.sql, 367.287,184.243826, 169.506, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:00.004211, ../../../queries/job/12a.sql, 378.904,191.562742, 164.66, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:48:01.088390, ../../../queries/job/12b.sql, 441.743,4.760859, 4.508, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:02.881965, ../../../queries/job/12c.sql, 369.748,721.130251, 528.261, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:06.865456, ../../../queries/job/13a.sql, 436.832,3084.334533, 749.732, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:08.220848, ../../../queries/job/13b.sql, 450.426,191.832693, 140.508, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:09.525396, ../../../queries/job/13c.sql, 466.984,151.735228, 140.508, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:12.753481, ../../../queries/job/13d.sql, 443.302,2162.048556, 1131.29, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:14.235821, ../../../queries/job/14a.sql, 381.575,373.501185, 247.631, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:15.518436, ../../../queries/job/14b.sql, 387.58,163.785847, 114.043, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:17.079649, ../../../queries/job/14c.sql, 364.578,568.349773, 421.009, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:18.640443, ../../../queries/job/15a.sql, 506.749,284.360073, 143.338, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:20.071414, ../../../queries/job/15b.sql, 516.17,52.375924, 52.602, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:48:22.080738, ../../../queries/job/15c.sql, 571.866,731.046097, 298.173, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:48:24.050387, ../../../queries/job/15d.sql, 543.309,723.798448, 557.123, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:25.352305, ../../../queries/job/16a.sql, 402.637,225.353068, 215.576, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:48:30.758654, ../../../queries/job/16b.sql, 401.524,4639.951847, 2739.86, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:48:33.546376, ../../../queries/job/16c.sql, 400.776,1832.894947, 1586.194, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:48:36.091324, ../../../queries/job/16d.sql, 397.123,1473.073807, 1173.973, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:48:39.454743, ../../../queries/job/17a.sql, 357.518,2524.658832, 1738.938, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:48:45.255021, ../../../queries/job/17b.sql, 341.416,5100.002613, 2345.869, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:50.910397, ../../../queries/job/17c.sql, 346.644,4968.282644, 1707.36, Bao, N/A
+(no hint), 0, 2026-01-13 17:48:56.245863, ../../../queries/job/17d.sql, 344.835,4747.363254, 1707.36, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:49:00.479514, ../../../queries/job/17e.sql, 358.941,3552.324023, 2366.94, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:49:05.056487, ../../../queries/job/17f.sql, 346.492,3772.659240, 2254.925, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:49:08.520515, ../../../queries/job/18a.sql, 348.402,2655.715800, 1898.711, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:49:09.768203, ../../../queries/job/18b.sql, 355.893,237.933872, 173.39, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:49:13.806958, ../../../queries/job/18c.sql, 344.102,3243.348724, 2019.772, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:15.622997, ../../../queries/job/19a.sql, 673.221,222.790692, 157.569, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:17.392327, ../../../queries/job/19b.sql, 677.306,149.367216, 104.336, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:19.502375, ../../../queries/job/19c.sql, 691.293,503.839004, 328.187, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:49:25.711476, ../../../queries/job/19d.sql, 679.736,4941.505649, 3148.955, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:26.616221, ../../../queries/job/1a.sql, 312.26,15.124824, 31.343, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:27.496704, ../../../queries/job/1b.sql, 313.67,1.808673, 14.628, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:28.361432, ../../../queries/job/1c.sql, 305.73,20.654503, 29.494, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:29.250087, ../../../queries/job/1d.sql, 302.46,1.605669, 15.371, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:49:32.552465, ../../../queries/job/20a.sql, 555.291,2100.966167, 1127.015, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:35.299343, ../../../queries/job/20b.sql, 552.613,1498.607948, 543.791, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:37.528535, ../../../queries/job/20c.sql, 550.713,930.455779, 552.275, Bao, N/A
+(no hint), 0, 2026-01-13 17:49:38.926952, ../../../queries/job/21a.sql, 534.346,98.185556, 78.084, Bao, N/A
+(no hint), 0, 2026-01-13 17:49:40.329603, ../../../queries/job/21b.sql, 552.238,104.819876, 78.108, Bao, N/A
+(no hint), 0, 2026-01-13 17:49:41.679314, ../../../queries/job/21c.sql, 494.798,97.264483, 77.497, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:49:44.257060, ../../../queries/job/22a.sql, 932.202,509.933421, 347.888, Bao, N/A
+(no hint), 0, 2026-01-13 17:49:46.609267, ../../../queries/job/22b.sql, 920.088,252.664567, 310.779, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:50.796252, ../../../queries/job/22c.sql, 918.841,2225.836935, 517.514, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:49:53.727384, ../../../queries/job/22d.sql, 896.048,879.312992, 499.861, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:49:56.181257, ../../../queries/job/23a.sql, 958.95,214.713753, 181.37, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:49:58.423786, ../../../queries/job/23b.sql, 930.824,92.073862, 69.944, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:50:00.932778, ../../../queries/job/23c.sql, 936.459,380.636534, 274.411, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:50:04.815485, ../../../queries/job/24a.sql, 1678.438,339.540249, 194.368, Bao, N/A
+SET enable_indexscan TO off; , 0, 2026-01-13 17:50:08.361770, ../../../queries/job/24b.sql, 1623.065,51.288561, 34.163, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:50:12.879440, ../../../queries/job/25a.sql, 486.988,3381.539962, 1247.701, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:50:14.472887, ../../../queries/job/25b.sql, 515.447,350.410643, 235.559, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:50:21.456730, ../../../queries/job/25c.sql, 486.228,6174.528087, 2614.515, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:50:25.402993, ../../../queries/job/26a.sql, 1497.931,684.340227, 316.247, Bao, N/A
+(no hint), 0, 2026-01-13 17:50:28.760167, ../../../queries/job/26b.sql, 1497.243,109.329140, 83.612, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:50:33.423829, ../../../queries/job/26c.sql, 1476.657,1571.983912, 715.317, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:50:36.646311, ../../../queries/job/27a.sql, 1484.465,15.476840, 20.264, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:50:39.939315, ../../../queries/job/27b.sql, 1504.655,15.010364, 10.483, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:50:43.226528, ../../../queries/job/27c.sql, 1468.671,83.853309, 50.798, Bao, N/A
+(no hint), 0, 2026-01-13 17:50:47.470119, ../../../queries/job/28a.sql, 1828.047,301.923095, 206.649, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:50:51.694413, ../../../queries/job/28b.sql, 1862.777,294.450847, 257.914, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:50:56.437600, ../../../queries/job/28c.sql, 1841.668,847.116457, 398.713, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:51:01.537548, ../../../queries/job/29a.sql, 2393.194,65.702873, 68.706, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:51:06.539991, ../../../queries/job/29b.sql, 2372.012,44.032274, 30.95, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:51:11.797597, ../../../queries/job/29c.sql, 2310.919,359.737995, 211.845, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:13.134636, ../../../queries/job/2a.sql, 294.186,521.724888, 656.396, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:14.501190, ../../../queries/job/2b.sql, 306.267,547.682312, 556.028, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:15.815784, ../../../queries/job/2c.sql, 296.756,500.240015, 542.012, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:17.342188, ../../../queries/job/2d.sql, 302.159,691.688298, 640.739, Bao, N/A
+SET enable_hashjoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:51:22.414176, ../../../queries/job/30a.sql, 1559.165,1840.345599, 897.903, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:51:26.118472, ../../../queries/job/30b.sql, 1553.45,353.224614, 163.208, Bao, N/A
+SET enable_hashjoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:51:32.881495, ../../../queries/job/30c.sql, 1509.141,3782.836399, 1376.826, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:51:35.802410, ../../../queries/job/31a.sql, 1187.004,282.195064, 223.202, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:38.634679, ../../../queries/job/31b.sql, 1201.688,162.170460, 102.099, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:51:41.653089, ../../../queries/job/31c.sql, 1197.644,424.640733, 280.248, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:42.534447, ../../../queries/job/32a.sql, 312.71,22.255853, 67.351, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:43.575095, ../../../queries/job/32b.sql, 307.841,150.110122, 67.351, Bao, N/A
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-13 17:51:47.426501, ../../../queries/job/33a.sql, 1777.217,30.034766, 16.006, Bao, N/A
+SET enable_indexscan TO off; , 0, 2026-01-13 17:51:51.305388, ../../../queries/job/33b.sql, 1776.213,32.090714, 32.001, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:51:55.143632, ../../../queries/job/33c.sql, 1771.3,31.643675, 19.928, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:56.156263, ../../../queries/job/3a.sql, 311.546,178.921469, 306.012, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:57.087721, ../../../queries/job/3b.sql, 302.993,111.364572, 225.311, Bao, N/A
+(no hint), 0, 2026-01-13 17:51:58.231106, ../../../queries/job/3c.sql, 309.402,311.075519, 339.113, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:51:59.203542, ../../../queries/job/4a.sql, 298.361,160.309956, 186.152, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:52:00.126273, ../../../queries/job/4b.sql, 299.979,88.785857, 95.791, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:52:01.131605, ../../../queries/job/4c.sql, 300.597,161.612201, 227.379, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:52:02.137915, ../../../queries/job/5a.sql, 317.864,148.646986, 111.283, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:03.142896, ../../../queries/job/5b.sql, 311.857,151.328141, 72.352, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:52:04.278439, ../../../queries/job/5c.sql, 331.081,213.823994, 183.563, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:05.184193, ../../../queries/job/6a.sql, 315.213,39.742210, 82.703, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:06.223661, ../../../queries/job/6b.sql, 308.956,207.899106, 169.021, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:52:07.103344, ../../../queries/job/6c.sql, 316.086,24.451096, 48.309, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:52:09.976964, ../../../queries/job/6d.sql, 315.422,2181.379219, 953.979, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:10.875069, ../../../queries/job/6e.sql, 311.364,37.714337, 159.662, Bao, N/A
+SET enable_nestloop TO off; , 0, 2026-01-13 17:52:14.794818, ../../../queries/job/6f.sql, 305.471,3159.975928, 1753.416, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:52:16.572745, ../../../queries/job/7a.sql, 390.837,796.888265, 428.691, Bao, N/A
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:52:17.828592, ../../../queries/job/7b.sql, 381.17,250.540591, 205.04, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:21.940633, ../../../queries/job/7c.sql, 388.349,3342.980139, 1195.053, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:52:23.664448, ../../../queries/job/8a.sql, 359.86,836.168318, 387.263, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:24.747789, ../../../queries/job/8b.sql, 331.594,161.706144, 116.349, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:28.892687, ../../../queries/job/8c.sql, 324.719,3460.812740, 1699.215, Bao, N/A
+(no hint), 0, 2026-01-13 17:52:31.445019, ../../../queries/job/8d.sql, 350.158,1617.912323, 1699.215, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:52:32.688182, ../../../queries/job/9a.sql, 394.712,218.131335, 138.086, Bao, N/A
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-13 17:52:33.911897, ../../../queries/job/9b.sql, 377.703,218.712270, 135.613, Bao, N/A
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-13 17:52:35.375718, ../../../queries/job/9c.sql, 390.903,473.260016, 277.552, Bao, N/A
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-13 17:52:38.038060, ../../../queries/job/9d.sql, 385.017,1779.565556, 1540.849, Bao, N/A
