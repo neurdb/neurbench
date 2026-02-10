@@ -323,6 +323,8 @@ class AutoTuner:
         force_cache_update: bool = False,  # Force update cache (for ops=all mode)
         skip_freq_preservation: bool = False,  # Skip frequency preservation (for non-drift-ref mode)
         variant_id: int = -1,  # Variant ID for separate output directories
+        drift_range_min: float = None,  # Override default drift_range_min
+        drift_range_max: float = None,  # Override default drift_range_max
     ):
         self.dataset_name = dataset_name
         self.table_name = table_name
@@ -337,6 +339,8 @@ class AutoTuner:
         self.force_cache_update = force_cache_update
         self.skip_freq_preservation = skip_freq_preservation
         self.variant_id = variant_id
+        self.drift_range_min = drift_range_min  # Custom drift range min
+        self.drift_range_max = drift_range_max  # Custom drift range max
         self.evaluator = DataEvaluator(dataset_name, table_name, reference_dataset)
         self.cache = self._load_cache()
 
@@ -1126,11 +1130,17 @@ class AutoTuner:
                     dir_str = "↑" if drift_focus_direction == "up" else "↓"
                     print(f"*** Drift Focus [bisect {dir_str}]: trying weight_drift={ctrl_drift_weight:.4f} (range [{drift_focus_bisect_low:.4f}, {drift_focus_bisect_high:.4f}]) ***")
 
+            # Use custom drift_range if provided, otherwise use defaults
+            drift_min = self.drift_range_min if self.drift_range_min is not None else 0.05
+            drift_max = self.drift_range_max if self.drift_range_max is not None else 0.75
+
             params = TuningParams(
                 scale_factor=current_sf,
                 loss_weight_drift=ctrl_drift_weight,
                 loss_weight_corr=ctrl_corr_weight,
                 loss_weight_real=ctrl_real_weight,
+                drift_range_min=drift_min,
+                drift_range_max=drift_max,
                 # Use variant-specific training params when retraining
                 diffuser_lr=current_config["diffuser_lr"],
                 controller_lr=current_config["controller_lr"],
@@ -1647,6 +1657,10 @@ if __name__ == "__main__":
                         help="Use cached/default params and force retrain (no tuning, for ops=retrain)")
     parser.add_argument("--variant-id", type=int, default=-1,
                         help="Variant ID for creating separate output directories")
+    parser.add_argument("--drift-range-min", type=float, default=None,
+                        help="Min drift for controller training (overrides default based on target_drift)")
+    parser.add_argument("--drift-range-max", type=float, default=None,
+                        help="Max drift for controller training (overrides default based on target_drift)")
 
     args = parser.parse_args()
 
@@ -1669,6 +1683,8 @@ if __name__ == "__main__":
         sample_steps=args.sample_steps,
         skip_freq_preservation=args.skip_freq_preservation,
         variant_id=args.variant_id,
+        drift_range_min=args.drift_range_min,
+        drift_range_max=args.drift_range_max,
     )
 
     # --retrain-only: use cached/default params and force retrain (no tuning)
