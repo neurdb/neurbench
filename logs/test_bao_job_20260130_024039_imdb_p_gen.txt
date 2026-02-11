@@ -1,0 +1,113 @@
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:41:04.377855, /app/AI4QueryOptimizer/neurbench/queries/job/10a.sql, 518.082, 406.137001, 212.613, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:41:05.916933, /app/AI4QueryOptimizer/neurbench/queries/job/10b.sql, 438.205, 233.389689, 274.464, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:09.834950, /app/AI4QueryOptimizer/neurbench/queries/job/10c.sql, 461.108, 2256.581732, 1693.257, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:11.415992, /app/AI4QueryOptimizer/neurbench/queries/job/11a.sql, 489.062, 234.843098, 348.19, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:12.817569, /app/AI4QueryOptimizer/neurbench/queries/job/11b.sql, 502.493, 72.537404, 139.312, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:14.956394, /app/AI4QueryOptimizer/neurbench/queries/job/11c.sql, 522.98, 681.136691, 261.527, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:20.522187, /app/AI4QueryOptimizer/neurbench/queries/job/11d.sql, 534.712, 3480.112718, 330.616, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:22.307481, /app/AI4QueryOptimizer/neurbench/queries/job/12a.sql, 505.978, 334.515822, 183.005, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:41:23.644981, /app/AI4QueryOptimizer/neurbench/queries/job/12b.sql, 494.011, 2.670858, 4.947, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:25.953521, /app/AI4QueryOptimizer/neurbench/queries/job/12c.sql, 503.414, 811.272430, 617.714, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:31.843302, /app/AI4QueryOptimizer/neurbench/queries/job/13a.sql, 530.223, 3751.125365, 848.657, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:33.499485, /app/AI4QueryOptimizer/neurbench/queries/job/13b.sql, 538.816, 192.241567, 145.088, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:35.124928, /app/AI4QueryOptimizer/neurbench/queries/job/13c.sql, 546.41, 155.850283, 145.088, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:38.569158, /app/AI4QueryOptimizer/neurbench/queries/job/13d.sql, 528.539, 1709.642293, 1222.826, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:40.299166, /app/AI4QueryOptimizer/neurbench/queries/job/14a.sql, 500.883, 327.734084, 139.59, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:41.763146, /app/AI4QueryOptimizer/neurbench/queries/job/14b.sql, 491.736, 125.876758, 112.576, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:44.051948, /app/AI4QueryOptimizer/neurbench/queries/job/14c.sql, 475.383, 709.289481, 156.022, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:41:46.139608, /app/AI4QueryOptimizer/neurbench/queries/job/15a.sql, 622.994, 253.484720, 145.126, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:47.845512, /app/AI4QueryOptimizer/neurbench/queries/job/15b.sql, 641.312, 53.456496, 60.058, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-30 02:41:50.318290, /app/AI4QueryOptimizer/neurbench/queries/job/15c.sql, 617.921, 735.230780, 443.052, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-30 02:41:54.523475, /app/AI4QueryOptimizer/neurbench/queries/job/15d.sql, 604.578, 2040.626256, 959.384, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:41:56.158869, /app/AI4QueryOptimizer/neurbench/queries/job/16a.sql, 507.434, 198.404121, 190.132, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:42:19.873185, /app/AI4QueryOptimizer/neurbench/queries/job/16b.sql, 490.033, 18606.891303, 2619.956, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:42:23.752428, /app/AI4QueryOptimizer/neurbench/queries/job/16c.sql, 487.189, 2168.129626, 1203.823, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:42:27.267515, /app/AI4QueryOptimizer/neurbench/queries/job/16d.sql, 487.094, 1744.579331, 955.324, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:42:31.827703, /app/AI4QueryOptimizer/neurbench/queries/job/17a.sql, 471.934, 2635.549108, 1803.436, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:42:39.060489, /app/AI4QueryOptimizer/neurbench/queries/job/17b.sql, 472.962, 5000.844487, 2234.869, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:42:46.081792, /app/AI4QueryOptimizer/neurbench/queries/job/17c.sql, 449.214, 4856.583822, 1539.79, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:42:53.298064, /app/AI4QueryOptimizer/neurbench/queries/job/17d.sql, 474.928, 4981.894947, 1539.79, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:42:59.435131, /app/AI4QueryOptimizer/neurbench/queries/job/17e.sql, 452.16, 3974.653295, 2290.213, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:43:04.041942, /app/AI4QueryOptimizer/neurbench/queries/job/17f.sql, 462.992, 2803.106152, 1792.136, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:05.776890, /app/AI4QueryOptimizer/neurbench/queries/job/18a.sql, 465.538, 415.498394, 240.273, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:07.587506, /app/AI4QueryOptimizer/neurbench/queries/job/18b.sql, 448.385, 464.494255, 208.442, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:43:12.986375, /app/AI4QueryOptimizer/neurbench/queries/job/18c.sql, 460.313, 3493.051990, 1896.61, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:15.341691, /app/AI4QueryOptimizer/neurbench/queries/job/19a.sql, 811.78, 335.308210, 257.831, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:17.513430, /app/AI4QueryOptimizer/neurbench/queries/job/19b.sql, 796.598, 152.128485, 106.245, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:20.031250, /app/AI4QueryOptimizer/neurbench/queries/job/19c.sql, 793.705, 461.039376, 494.981, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:38.823896, /app/AI4QueryOptimizer/neurbench/queries/job/19d.sql, 813.646, 14042.940527, 2845.921, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:40.023587, /app/AI4QueryOptimizer/neurbench/queries/job/1a.sql, 449.104, 12.942619, 39.881, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:41.209870, /app/AI4QueryOptimizer/neurbench/queries/job/1b.sql, 427.585, 0.917898, 18.395, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:42.357322, /app/AI4QueryOptimizer/neurbench/queries/job/1c.sql, 408.306, 10.914373, 37.162, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:43.538541, /app/AI4QueryOptimizer/neurbench/queries/job/1d.sql, 411.272, 1.333756, 19.695, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:47.067086, /app/AI4QueryOptimizer/neurbench/queries/job/20a.sql, 634.148, 1593.288418, 205.292, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:50.304492, /app/AI4QueryOptimizer/neurbench/queries/job/20b.sql, 712.071, 1100.639699, 150.643, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:53.040233, /app/AI4QueryOptimizer/neurbench/queries/job/20c.sql, 652.724, 881.391670, 157.176, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:43:55.242192, /app/AI4QueryOptimizer/neurbench/queries/job/21a.sql, 689.363, 343.719072, 394.715, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:57.247015, /app/AI4QueryOptimizer/neurbench/queries/job/21b.sql, 637.218, 220.631989, 117.06, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:43:59.642739, /app/AI4QueryOptimizer/neurbench/queries/job/21c.sql, 708.313, 487.079409, 157.707, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:02.680529, /app/AI4QueryOptimizer/neurbench/queries/job/22a.sql, 1012.542, 493.902984, 181.745, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:05.811071, /app/AI4QueryOptimizer/neurbench/queries/job/22b.sql, 1063.074, 401.247958, 181.745, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:10.657616, /app/AI4QueryOptimizer/neurbench/queries/job/22c.sql, 1000.601, 1782.671697, 182.929, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:18.696728, /app/AI4QueryOptimizer/neurbench/queries/job/22d.sql, 1049.745, 4425.182441, 175.756, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:44:21.354083, /app/AI4QueryOptimizer/neurbench/queries/job/23a.sql, 1030.889, 226.263216, 202.556, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:23.875025, /app/AI4QueryOptimizer/neurbench/queries/job/23b.sql, 1043.885, 56.614335, 182.532, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-30 02:44:27.170789, /app/AI4QueryOptimizer/neurbench/queries/job/23c.sql, 1001.523, 617.033577, 296.656, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:31.733977, /app/AI4QueryOptimizer/neurbench/queries/job/24a.sql, 1756.546, 515.762689, 229.956, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:35.683595, /app/AI4QueryOptimizer/neurbench/queries/job/24b.sql, 1786.441, 95.226313, 71.723, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:40.051656, /app/AI4QueryOptimizer/neurbench/queries/job/25a.sql, 589.695, 2288.447116, 198.767, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:44:41.960068, /app/AI4QueryOptimizer/neurbench/queries/job/25b.sql, 618.188, 260.872254, 239.713, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:51.287822, /app/AI4QueryOptimizer/neurbench/queries/job/25c.sql, 596.617, 6355.410702, 310.212, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:55.910240, /app/AI4QueryOptimizer/neurbench/queries/job/26a.sql, 1675.577, 791.619196, 187.6, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:44:59.860347, /app/AI4QueryOptimizer/neurbench/queries/job/26b.sql, 1662.013, 185.491624, 171.267, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:04.648909, /app/AI4QueryOptimizer/neurbench/queries/job/26c.sql, 1635.304, 903.079007, 168.403, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:45:09.442831, /app/AI4QueryOptimizer/neurbench/queries/job/27a.sql, 1631.251, 943.691620, 132.317, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:13.557049, /app/AI4QueryOptimizer/neurbench/queries/job/27b.sql, 1664.574, 226.855625, 133.62, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_indexscan TO off; , 0, 2026-01-30 02:45:18.143659, /app/AI4QueryOptimizer/neurbench/queries/job/27c.sql, 1652.962, 677.140444, 77.925, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:24.112714, /app/AI4QueryOptimizer/neurbench/queries/job/28a.sql, 1960.234, 1349.694743, 138.132, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:29.060234, /app/AI4QueryOptimizer/neurbench/queries/job/28b.sql, 1930.92, 485.566592, 132.306, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:34.613022, /app/AI4QueryOptimizer/neurbench/queries/job/28c.sql, 1968.43, 948.586520, 135.508, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:40.040946, /app/AI4QueryOptimizer/neurbench/queries/job/29a.sql, 2455.802, 65.872809, 42.908, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_seqscan TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:45:45.522481, /app/AI4QueryOptimizer/neurbench/queries/job/29b.sql, 2475.589, 152.845567, 159.819, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; , 0, 2026-01-30 02:45:52.991195, /app/AI4QueryOptimizer/neurbench/queries/job/29c.sql, 2508.158, 1678.212848, 195.902, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:55.153033, /app/AI4QueryOptimizer/neurbench/queries/job/2a.sql, 443.021, 722.788529, 705.675, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:57.309425, /app/AI4QueryOptimizer/neurbench/queries/job/2b.sql, 441.073, 710.429951, 539.075, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:45:59.343809, /app/AI4QueryOptimizer/neurbench/queries/job/2c.sql, 422.379, 672.311646, 540.113, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:01.674121, /app/AI4QueryOptimizer/neurbench/queries/job/2d.sql, 424.844, 866.560540, 566.974, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:08.780228, /app/AI4QueryOptimizer/neurbench/queries/job/30a.sql, 1759.676, 2635.278842, 236.53, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:13.054967, /app/AI4QueryOptimizer/neurbench/queries/job/30b.sql, 1667.318, 358.201283, 187.522, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:46:19.016976, /app/AI4QueryOptimizer/neurbench/queries/job/30c.sql, 1684.768, 1829.842639, 232.277, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:28.239658, /app/AI4QueryOptimizer/neurbench/queries/job/31a.sql, 1299.634, 5235.558728, 277.393, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:31.659500, /app/AI4QueryOptimizer/neurbench/queries/job/31b.sql, 1301.693, 390.920136, 273.866, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:43.047857, /app/AI4QueryOptimizer/neurbench/queries/job/31c.sql, 1254.255, 6901.937631, 340.068, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:44.271389, /app/AI4QueryOptimizer/neurbench/queries/job/32a.sql, 441.141, 20.370316, 118.539, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:46:47.047141, /app/AI4QueryOptimizer/neurbench/queries/job/32b.sql, 414.316, 1336.720329, 118.539, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-30 02:46:51.598456, /app/AI4QueryOptimizer/neurbench/queries/job/33a.sql, 1906.724, 235.123405, 95.57, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:46:56.281266, /app/AI4QueryOptimizer/neurbench/queries/job/33b.sql, 1953.042, 358.172834, 176.058, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_seqscan TO off; , 0, 2026-01-30 02:47:00.845167, /app/AI4QueryOptimizer/neurbench/queries/job/33c.sql, 1850.21, 288.798289, 19.378, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:02.339882, /app/AI4QueryOptimizer/neurbench/queries/job/3a.sql, 418.243, 186.462237, 340.031, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:03.931655, /app/AI4QueryOptimizer/neurbench/queries/job/3b.sql, 399.902, 362.812530, 145.421, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:05.459961, /app/AI4QueryOptimizer/neurbench/queries/job/3c.sql, 410.023, 331.218249, 374.685, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:06.778150, /app/AI4QueryOptimizer/neurbench/queries/job/4a.sql, 406.616, 125.800615, 140.305, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:08.057076, /app/AI4QueryOptimizer/neurbench/queries/job/4b.sql, 421.127, 74.786548, 101.066, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:09.388738, /app/AI4QueryOptimizer/neurbench/queries/job/4c.sql, 425.158, 141.608214, 160.99, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:10.694875, /app/AI4QueryOptimizer/neurbench/queries/job/5a.sql, 415.651, 142.866664, 115.561, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:12.127719, /app/AI4QueryOptimizer/neurbench/queries/job/5b.sql, 421.801, 149.730402, 83.541, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:47:13.623005, /app/AI4QueryOptimizer/neurbench/queries/job/5c.sql, 423.959, 200.000611, 192.312, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:14.853723, /app/AI4QueryOptimizer/neurbench/queries/job/6a.sql, 404.031, 84.246675, 121.055, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:16.731346, /app/AI4QueryOptimizer/neurbench/queries/job/6b.sql, 422.113, 539.432252, 338.057, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:17.945249, /app/AI4QueryOptimizer/neurbench/queries/job/6c.sql, 433.053, 33.920405, 49.654, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:47:22.530758, /app/AI4QueryOptimizer/neurbench/queries/job/6d.sql, 431.605, 2808.403522, 986.898, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:23.783822, /app/AI4QueryOptimizer/neurbench/queries/job/6e.sql, 433.895, 69.489178, 111.804, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:47:29.156603, /app/AI4QueryOptimizer/neurbench/queries/job/6f.sql, 407.53, 3487.826579, 1832.258, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:30.708059, /app/AI4QueryOptimizer/neurbench/queries/job/7a.sql, 514.583, 195.752507, 106.51, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_mergejoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:47:32.253551, /app/AI4QueryOptimizer/neurbench/queries/job/7b.sql, 504.163, 193.940976, 127.779, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_nestloop TO off; , 0, 2026-01-30 02:47:40.423307, /app/AI4QueryOptimizer/neurbench/queries/job/7c.sql, 499.455, 5654.614919, 1923.773, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:47:43.187541, /app/AI4QueryOptimizer/neurbench/queries/job/8a.sql, 453.091, 1185.805946, 293.195, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:44.659194, /app/AI4QueryOptimizer/neurbench/queries/job/8b.sql, 468.422, 165.575655, 124.352, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:50.401615, /app/AI4QueryOptimizer/neurbench/queries/job/8c.sql, 434.576, 3792.747917, 1777.93, Bao, N/A, N/A, N/A, N/A, 0
+(no hint), 0, 2026-01-30 02:47:54.264438, /app/AI4QueryOptimizer/neurbench/queries/job/8d.sql, 462.532, 2052.975630, 1777.93, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:47:56.249897, /app/AI4QueryOptimizer/neurbench/queries/job/9a.sql, 523.872, 388.416625, 218.085, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_mergejoin TO off; , 0, 2026-01-30 02:47:57.967985, /app/AI4QueryOptimizer/neurbench/queries/job/9b.sql, 516.076, 276.473181, 152.589, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexonlyscan TO off; , 0, 2026-01-30 02:48:00.017174, /app/AI4QueryOptimizer/neurbench/queries/job/9c.sql, 516.472, 512.880974, 455.445, Bao, N/A, N/A, N/A, N/A, 0
+SET enable_hashjoin TO off; SET enable_indexscan TO off; , 0, 2026-01-30 02:48:04.906383, /app/AI4QueryOptimizer/neurbench/queries/job/9d.sql, 510.838, 2846.192153, 2043.824, Bao, N/A, N/A, N/A, N/A, 0
